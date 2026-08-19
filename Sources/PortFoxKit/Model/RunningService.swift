@@ -41,6 +41,9 @@ public struct RunningService: Identifiable, Hashable, Sendable {
     public let detection: DetectionResult
     public let classification: ServiceClass
     public let project: ProjectSnapshot?
+    /// Version of the framework or runtime, resolved after detection because it
+    /// can need a file read or, rarely, asking the binary itself.
+    public var version: String?
 
     public init(
         id: String,
@@ -50,7 +53,8 @@ public struct RunningService: Identifiable, Hashable, Sendable {
         primarySocket: ListeningSocket,
         detection: DetectionResult,
         classification: ServiceClass,
-        project: ProjectSnapshot?
+        project: ProjectSnapshot?,
+        version: String? = nil
     ) {
         self.id = id
         self.listenerProcess = listenerProcess
@@ -60,6 +64,7 @@ public struct RunningService: Identifiable, Hashable, Sendable {
         self.detection = detection
         self.classification = classification
         self.project = project
+        self.version = version
     }
 
     public var type: ServiceType { detection.type }

@@ -21,8 +21,8 @@ struct ServiceRowView: View {
                         .foregroundStyle(Theme.primaryText)
                         .lineLimit(1)
                         .truncationMode(.tail)
-                    if let confidence = uncertainConfidence {
-                        ConfidenceChip(confidence: confidence)
+                    if let version = service.version {
+                        VersionLabel(text: version)
                     }
                 }
                 if let subtitle = service.subtitle {
@@ -62,30 +62,19 @@ struct ServiceRowView: View {
         .opacity(state.isBusy(service) ? 0.5 : 1)
     }
 
-    /// A confident detection needs no explanation. An uncertain one is worth
-    /// flagging, which is what the percentage chips in the design are for.
     private var showsActions: Bool { isHovering || forcedHover }
-
-    private var uncertainConfidence: Double? {
-        let confidence = service.detection.confidence
-        guard service.type != .unknown, confidence > 0, confidence < 0.9 else { return nil }
-        return confidence
-    }
 }
 
-private struct ConfidenceChip: View {
-    let confidence: Double
+/// The version of the thing that is running, beside its name.
+struct VersionLabel: View {
+    let text: String
 
     var body: some View {
-        Text("\(Int((confidence * 100).rounded()))%")
-            .font(.portChip)
-            .foregroundStyle(Theme.secondaryText)
-            .padding(.horizontal, 5)
-            .padding(.vertical, 1.5)
-            .background(
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .fill(Color.white.opacity(0.06))
-            )
+        Text(text)
+            .font(.portVersion)
+            .foregroundStyle(Theme.tertiaryText)
+            .lineLimit(1)
+            .fixedSize()
     }
 }
 

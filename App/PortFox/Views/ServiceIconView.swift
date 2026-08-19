@@ -29,12 +29,18 @@ struct ServiceIconView: View {
     }
 
     /// Decoded images are cached because the popover redraws every two seconds.
+    /// The key carries the file's modification date, so replacing a favicon shows
+    /// up on the next refresh instead of never.
     private static let cache = NSCache<NSString, NSImage>()
 
     static func loadImage(at path: String) -> NSImage? {
-        if let cached = cache.object(forKey: path as NSString) { return cached }
+        let attributes = try? FileManager.default.attributesOfItem(atPath: path)
+        let modified = (attributes?[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0
+        let key = "\(path)@\(modified)" as NSString
+
+        if let cached = cache.object(forKey: key) { return cached }
         guard let image = NSImage(contentsOfFile: path), image.isValid else { return nil }
-        cache.setObject(image, forKey: path as NSString)
+        cache.setObject(image, forKey: key)
         return image
     }
 }

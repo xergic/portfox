@@ -63,6 +63,7 @@ public struct ProjectResolver: ProjectResolving {
             root: root,
             serviceDirectory: directory,
             name: resolvedName(serviceManifest: serviceManifest, rootManifest: rootManifest, root: root),
+            version: serviceManifest.version ?? rootManifest.version,
             subpath: subpath(of: directory, relativeTo: root),
             files: entries[directory] ?? Self.directoryEntries(at: directory),
             rootFiles: entries[root] ?? Self.directoryEntries(at: root),

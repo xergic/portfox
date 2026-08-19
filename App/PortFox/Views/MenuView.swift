@@ -58,7 +58,7 @@ struct MenuView: View {
                 .foregroundStyle(Theme.primaryText)
 
             Text(String(state.serviceCount))
-                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .font(.portCount)
                 .foregroundStyle(Theme.secondaryText)
                 .padding(.horizontal, 6)
                 .padding(.vertical, 2)

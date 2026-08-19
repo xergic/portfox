@@ -23,6 +23,11 @@ targets:
     platform: macOS
     sources:
       - path: App/PortFox
+        excludes:
+          - Resources/Fonts
+      # A folder reference, so ATSApplicationFontsPath finds Contents/Resources/Fonts.
+      - path: App/PortFox/Resources/Fonts
+        type: folder
     dependencies:
       - package: PortFoxKit
         product: PortFoxKit

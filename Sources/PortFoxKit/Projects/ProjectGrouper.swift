@@ -77,7 +77,12 @@ public struct ProjectGrouper: Sendable {
 
         for (rootPath, rootServices) in servicesByRootPath where !mergedRootPaths.contains(rootPath) {
             guard let root = rootURLByPath[rootPath], let snapshot = snapshotByRootPath[rootPath] else { continue }
-            let project = Project(root: root, name: snapshot.name, iconPath: snapshot.iconPath)
+            let project = Project(
+                root: root,
+                name: snapshot.name,
+                version: snapshot.version,
+                iconPath: snapshot.iconPath
+            )
             groups.append(ProjectGroup(project: project, services: sortedByPort(rootServices)))
         }
 

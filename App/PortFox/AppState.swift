@@ -34,6 +34,8 @@ final class AppState {
 
     private let repository = ServiceRepository()
     private let controller = ProcessController()
+    private let assetScanner = ProjectAssetScanner()
+    private let iconOverrides = ProjectIconOverrides()
     private let defaults = UserDefaults.standard
 
     /// Refreshing every two seconds only matters while the user is looking. When
@@ -103,6 +105,39 @@ final class AppState {
     func reveal(_ service: RunningService) {
         guard let directory = service.revealDirectory else { return }
         NSWorkspace.shared.activateFileViewerSelecting([directory])
+    }
+
+    func reveal(_ directory: URL) {
+        NSWorkspace.shared.activateFileViewerSelecting([directory])
+    }
+
+    // MARK: - Project icons
+
+    /// The user's chosen icon, or whatever the resolver found on disk.
+    func iconPath(for group: ProjectGroup) -> String? {
+        iconOverrides.iconPath(forProjectAt: group.project.root) ?? group.project.iconPath
+    }
+
+    func hasIconOverride(for group: ProjectGroup) -> Bool {
+        iconOverrides.hasOverride(forProjectAt: group.project.root)
+    }
+
+    func setIcon(_ path: String?, for group: ProjectGroup) {
+        iconOverrides.set(path, forProjectAt: group.project.root)
+    }
+
+    /// Images the user could pick. A sibling group has no manifests of its own,
+    /// so every member project is scanned and the results merged.
+    func projectAssets(for group: ProjectGroup) -> [ProjectAsset] {
+        var seen: Set<String> = []
+        var found: [ProjectAsset] = []
+
+        for snapshot in group.services.compactMap(\.project) {
+            for asset in assetScanner.assets(in: snapshot) where seen.insert(asset.path).inserted {
+                found.append(asset)
+            }
+        }
+        return found
     }
 
     func copyURL(_ service: RunningService) {

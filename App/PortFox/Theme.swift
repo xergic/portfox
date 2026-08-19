@@ -29,10 +29,33 @@ enum Theme {
 }
 
 extension Font {
+    /// JetBrains Mono, bundled under the SIL Open Font License. Chosen over the
+    /// system monospace for its wider, more even digits, which is most of what
+    /// this UI shows. The NL cut has no ligatures, so a path never renders an
+    /// arrow where it should show two characters.
+    static func mono(_ size: CGFloat, _ weight: MonoWeight = .regular) -> Font {
+        .custom(weight.postScriptName, size: size)
+    }
+
+    enum MonoWeight {
+        case regular
+        case medium
+        case semibold
+
+        var postScriptName: String {
+            switch self {
+            case .regular: "JetBrainsMonoNL-Regular"
+            case .medium: "JetBrainsMonoNL-Medium"
+            case .semibold: "JetBrainsMonoNL-SemiBold"
+            }
+        }
+    }
+
     static let portName = Font.system(size: 13, weight: .semibold)
     static let portProject = Font.system(size: 13, weight: .bold)
-    static let portSubtitle = Font.system(size: 11, weight: .regular, design: .monospaced)
-    static let portPort = Font.system(size: 12, weight: .bold, design: .monospaced)
+    static let portSubtitle = Font.mono(11)
+    static let portPort = Font.mono(12, .medium)
+    static let portVersion = Font.mono(10)
     static let portSection = Font.system(size: 10, weight: .semibold)
-    static let portChip = Font.system(size: 9, weight: .semibold)
+    static let portCount = Font.mono(11, .medium)
 }
