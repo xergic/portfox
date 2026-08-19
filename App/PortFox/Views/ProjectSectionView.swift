@@ -9,6 +9,7 @@ struct ProjectSectionView: View {
     var forcesHover = false
 
     @State private var isPickingIcon = false
+    @State private var isHovering = false
     @State private var assets: [ProjectAsset] = []
 
     var body: some View {
@@ -38,7 +39,35 @@ struct ProjectSectionView: View {
                 .foregroundStyle(Theme.secondaryText)
                 .lineLimit(1)
                 .truncationMode(.head)
-            Spacer(minLength: 0)
+            Spacer(minLength: 4)
+
+            // A hover button rather than a context menu: SwiftUI context menus do
+            // not open inside a MenuBarExtra window, and a visible affordance is
+            // more discoverable than a hidden right-click anyway.
+            if isHovering || forcesHover {
+                HStack(spacing: 1) {
+                    IconButton(symbol: "photo", help: "Change icon") { presentIconPicker() }
+                    if state.hasIconOverride(for: group) {
+                        IconButton(symbol: "arrow.uturn.backward", help: "Use the default icon") {
+                            state.setIcon(nil, for: group)
+                        }
+                    }
+                    IconButton(symbol: "folder", help: "Reveal in Finder") {
+                        state.reveal(group.project.root)
+                    }
+                }
+                .fixedSize()
+                .padding(.horizontal, 3)
+                .padding(.vertical, 2)
+                .background(
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(Theme.pill)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                .strokeBorder(Theme.border, lineWidth: 1)
+                        )
+                )
+            }
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
@@ -47,13 +76,8 @@ struct ProjectSectionView: View {
                 .fill(Theme.card)
         )
         .contentShape(Rectangle())
-        .contextMenu {
-            Button("Change Icon…") { presentIconPicker() }
-            if state.hasIconOverride(for: group) {
-                Button("Reset Icon") { state.setIcon(nil, for: group) }
-            }
-            Divider()
-            Button("Reveal in Finder") { state.reveal(group.project.root) }
+        .onHover { hovering in
+            withAnimation(.easeOut(duration: 0.12)) { isHovering = hovering }
         }
         .popover(isPresented: $isPickingIcon, arrowEdge: .bottom) {
             IconPickerView(

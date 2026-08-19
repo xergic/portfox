@@ -34,6 +34,12 @@ public struct ProjectAssetScanner: Sendable {
     /// Hard cap so a menu never takes a noticeable time to open.
     public static let maximumResults = 60
 
+    /// How many candidates are collected before ranking. Truncating during the
+    /// scan would let a folder of screenshots, found early, starve out the real
+    /// favicon found later. Ranking first and truncating after costs a few more
+    /// `stat` calls and always surfaces the best icon.
+    static let collectionCeiling = 400
+
     private static let maximumFileSizeInBytes = 4 * 1024 * 1024
 
     private static let excludedDirectoryNames: Set<String> = [
@@ -102,15 +108,14 @@ public struct ProjectAssetScanner: Sendable {
                     ) else { continue }
 
                     candidates.append(candidate)
-                    // The remaining search directories cannot lower the count,
-                    // only lengthen the scan, so stop as soon as the cap is hit.
-                    if candidates.count >= Self.maximumResults { break collectLoop }
+                    if candidates.count >= Self.collectionCeiling { break collectLoop }
                 }
             }
         }
 
         return candidates
             .sorted(by: isOrderedBefore)
+            .prefix(Self.maximumResults)
             .map(\.asset)
     }
 
@@ -155,7 +160,10 @@ public struct ProjectAssetScanner: Sendable {
     /// so ties only need `searchPathIndex` when two directories both produce a
     /// match at the same array position.
     private func rank(filename: String, searchPathRelative: String) -> (tier: Int, searchPathIndex: Int) {
-        guard !IconResolver.genericIconNames.contains(filename) else { return (3, .max) }
+        let lowercasedName = filename.lowercased()
+        guard !IconResolver.genericIconNames.contains(where: { $0.lowercased() == lowercasedName }) else {
+            return (3, .max)
+        }
 
         if let index = IconResolver.searchPaths.firstIndex(where: {
             $0.compare(searchPathRelative, options: .caseInsensitive) == .orderedSame
@@ -163,8 +171,12 @@ public struct ProjectAssetScanner: Sendable {
             return (1, index)
         }
 
+        // Prefix rather than equality, because sized variants such as
+        // `icon-192.png` and `apple-touch-icon-180.png` are the common case.
         let stem = (filename as NSString).deletingPathExtension.lowercased()
-        if Self.iconNameStems.contains(stem) { return (2, .max) }
+        if Self.iconNameStems.contains(where: { stem == $0 || stem.hasPrefix($0 + "-") || stem.hasPrefix($0 + "_") }) {
+            return (2, .max)
+        }
 
         return (3, .max)
     }
