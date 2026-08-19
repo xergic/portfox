@@ -64,13 +64,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 private struct MenuBarLabel: View {
     let serviceCount: Int
 
+    /// A sized template `NSImage`, not `Image(.menuBarFox).frame(...)`. Inside a
+    /// `MenuBarExtra` label SwiftUI ignores the frame and draws the asset at the
+    /// status bar's own image size, so the only lever on the glyph is the image.
+    private static let glyph: NSImage = {
+        let image = NSImage(resource: .menuBarFox).copy() as? NSImage ?? NSImage()
+        image.size = NSSize(width: 10, height: 10)
+        image.isTemplate = true
+        return image
+    }()
+
     var body: some View {
         HStack(spacing: 3) {
-            Image(.menuBarFox)
-                .renderingMode(.template)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 13, height: 13)
+            Image(nsImage: Self.glyph)
             if serviceCount > 0 {
                 Text(String(serviceCount))
                     .font(.system(size: 11, weight: .semibold, design: .rounded))
