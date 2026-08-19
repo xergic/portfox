@@ -25,12 +25,21 @@ struct ServiceRowView: View {
                         VersionLabel(text: version)
                     }
                 }
-                if let location = service.locationLabel {
-                    Text(location)
-                        .font(.portSubtitle)
-                        .foregroundStyle(Theme.secondaryText)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
+                // Two labels rather than one string, so the version reads as
+                // secondary to the folder in the same way it does beside the
+                // service name, and so the folder is what survives truncation.
+                HStack(spacing: 4) {
+                    if let subtitle = service.subtitle {
+                        Text(subtitle)
+                            .font(.portSubtitle)
+                            .foregroundStyle(Theme.secondaryText)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                            .layoutPriority(1)
+                    }
+                    if let version = service.project?.version {
+                        VersionLabel(text: "@ \(version)", fixed: false)
+                    }
                 }
             }
             .layoutPriority(1)
@@ -73,13 +82,17 @@ struct ServiceRowView: View {
 /// The version of the thing that is running, beside its name.
 struct VersionLabel: View {
     let text: String
+    /// Beside a service name the version must never shrink, since the name can
+    /// truncate instead. Beside a folder it is the version that gives way.
+    var fixed = true
 
     var body: some View {
         Text(text)
             .font(.portVersion)
             .foregroundStyle(Theme.tertiaryText)
             .lineLimit(1)
-            .fixedSize()
+            .truncationMode(.tail)
+            .fixedSize(horizontal: fixed, vertical: false)
     }
 }
 
