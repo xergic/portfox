@@ -4,6 +4,8 @@ A macOS menu bar app that shows what is listening on your local ports, which pro
 
 Discovery works from processes, not from port numbers, so custom ports need no configuration.
 
+There is no signed release yet, so PortFox is built from source.
+
 ## Requirements
 
 - macOS 15 or later
@@ -25,10 +27,31 @@ make lint     # SwiftLint
 
 `PortFoxKit` is a SwiftPM library holding the whole pipeline. The app target is a thin SwiftUI shell.
 
+| Path | Holds |
+| --- | --- |
+| `Sources/PortFoxKit/` | The pipeline. No SwiftUI and no UI state. |
+| `Sources/portfox-scan/` | The command line tool over the same pipeline. |
+| `App/PortFox/` | The SwiftUI app: state, views, theme, snapshot renderer. |
+| `Tests/PortFoxKitTests/` | Tests for the kit. |
+| `Tools/` | Icon fetching and app icon generation. |
+| `docs/` | The original MVP specification, kept for history. |
+
+## Architecture
+
+One scan runs one pipeline. Each stage narrows raw sockets into something the UI can name.
+
 ```
 ListenerScanner → ProcessInspector → ProcessTree → ProjectResolver
     → DetectionEngine → ListenerClassifier → IconResolver → ServiceRepository → SwiftUI
 ```
+
+- **ListenerScanner** asks `lsof` for TCP sockets in LISTEN state. It needs no privileges and only ever returns the current user's processes.
+- **ProcessInspector** reads every process's parent, owner and start time from `sysctl`, then reads the expensive fields (executable, argv, working directory) for listeners and their ancestors only.
+- **ProcessTree** answers ancestors, descendants and the logical root, stopping at a shell, a terminal or an app bundle.
+- **ProjectResolver** walks up from the working directory looking for a manifest such as `package.json` or `pyproject.toml`.
+- **DetectionEngine** scores every detector and takes the winner, breaking ties toward the more specific service type.
+- **ListenerClassifier** sorts each service into a development service, infrastructure, a probable developer process, or system noise.
+- **ServiceRepository** is an actor that owns the pipeline and its caches. A tick whose socket set has not moved returns the previous result instead of rebuilding it.
 
 Every stage takes and returns plain value types, and no stage imports SwiftUI. `portfox-scan` drives the identical pipeline from the command line, so detection can be developed and verified without launching the GUI.
 
@@ -133,6 +156,58 @@ Preferences needs its own flag rather than sharing the dashboard's, because it i
 - An ignore is matched by port plus project directory, or port plus executable path for a service with no project. Move a project or change its port and the ignore no longer applies.
 - A service whose ports are all ephemeral is hidden by default. That is what orphaned `workerd` children look like. Turn on *Show all listeners* to see them.
 - Launch at login needs a signed build. It fails on a local ad hoc one.
+
+## Contributing
+
+PortFox will be open sourced. Issues and pull requests are welcome now.
+
+### Getting set up
+
+```sh
+brew install xcodegen swiftlint
+make test     # confirm the toolchain works
+make run      # build and launch
+```
+
+`make scan` runs the whole detection pipeline in the terminal. Use it while working on detection, because it is far faster than launching the GUI.
+
+### Before you open a pull request
+
+```sh
+make lint     # must be clean
+make test     # must pass
+make snapshot # after any UI change, then look at snapshots/
+```
+
+New behaviour in `PortFoxKit` needs a test. The kit is pure value types with injectable dependencies, so nearly everything is testable without a running machine. `Tests/PortFoxKitTests/Fixtures/live-machine-scan.txt` is a recorded `lsof` sweep used by the regression tests, so detection changes can be checked against a real machine.
+
+The app target has no tests. Verify UI changes with `make snapshot`.
+
+### House rules
+
+- Swift 6 language mode with complete strict concurrency. Do not weaken either.
+- `PortFoxKit` never imports SwiftUI or AppKit. If a change needs UI types in the kit, the change belongs in the app.
+- Preferences belong to the app, not the kit. The kit reports the machine as it is, which is why `portfox-scan` still lists a service you ignored in the app.
+- Nothing touches a user's dev server on the refresh tick. The HTTP probe only runs when the user presses Inspect.
+- Comments explain a non-obvious *why*, usually naming the bug that forced the decision. Do not add comments that restate the code.
+- `PortFox.xcodeproj` is generated and not in version control. Change `project.yml` and run `make gen`.
+
+### Commits and pull requests
+
+Commit messages use [Conventional Commits](https://www.conventionalcommits.org/), one short sentence, no body:
+
+```
+feat(dashboard): add a process tree card
+fix(detection): stop labelling ngrok as Angular
+```
+
+A pull request should say what the change does and why, not how. Mention any trade-off you made.
+
+The easiest first contribution is a new service detector. See *Adding a service detector* above.
+
+## License
+
+[MIT](LICENSE). Copyright (c) 2026 Ondra Kandera.
 
 ## Icons
 
