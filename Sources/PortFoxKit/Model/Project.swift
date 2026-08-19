@@ -67,6 +67,23 @@ public struct ProjectSnapshot: Hashable, Codable, Sendable {
     public func hasDependency(_ name: String) -> Bool {
         dependencies.contains(name.lowercased())
     }
+
+    /// Icons are resolved after the project itself, so the snapshot is rebuilt
+    /// with the result rather than resolved twice.
+    public func withIcon(path: String?) -> ProjectSnapshot {
+        ProjectSnapshot(
+            root: root,
+            serviceDirectory: serviceDirectory,
+            name: name,
+            subpath: subpath,
+            files: files,
+            rootFiles: rootFiles,
+            dependencies: dependencies,
+            scripts: scripts,
+            rootKind: rootKind,
+            iconPath: path ?? iconPath
+        )
+    }
 }
 
 /// A project as shown in the UI. Several services can point at the same project.

@@ -10,7 +10,7 @@ struct PortFoxApp: App {
             MenuView()
                 .environment(state)
         } label: {
-            MenuBarLabel(count: state.serviceCount)
+            MenuBarLabel(serviceCount: state.serviceCount)
         }
         .menuBarExtraStyle(.window)
 
@@ -22,7 +22,7 @@ struct PortFoxApp: App {
 }
 
 private struct MenuBarLabel: View {
-    let count: Int
+    let serviceCount: Int
 
     var body: some View {
         HStack(spacing: 3) {
@@ -31,8 +31,8 @@ private struct MenuBarLabel: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 17, height: 17)
-            if count > 0 {
-                Text("\(count)")
+            if serviceCount > 0 {
+                Text("\(serviceCount)")
                     .font(.system(size: 11, weight: .semibold, design: .rounded))
                     .monospacedDigit()
             }

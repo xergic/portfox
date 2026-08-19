@@ -195,7 +195,7 @@ public actor ServiceRepository {
             sockets: sockets.sorted { $0.port < $1.port },
             primarySocket: primary,
             detection: detection,
-            classification: classifier.classify(process: listener, detection: detection, ports: ports),
+            classification: classifier.classify(process: listener, detection: detection, project: project),
             project: project
         )
     }
@@ -246,6 +246,7 @@ public actor ServiceRepository {
         if let entry = projectCache[key], entry.expires > .now { return entry.snapshot }
 
         let resolved = resolver.resolve(serviceDirectory: directory)
+            .map { snapshot in snapshot.withIcon(path: iconResolver.projectIconPath(for: snapshot)) }
         projectCache[key] = (resolved, .now + projectCacheTTL)
         return resolved
     }
