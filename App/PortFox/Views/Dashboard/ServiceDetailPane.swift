@@ -8,16 +8,17 @@ struct ServiceDetailPane: View {
 
     var body: some View {
         content
-            .padding(16)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
+    /// The padding lives inside the scroll view, not around it, so the overlay
+    /// scroller rides the window edge instead of sitting on top of the content.
     @ViewBuilder
     private var content: some View {
         if scrolls {
-            ScrollView { panels }.scrollBounceBehavior(.basedOnSize)
+            ScrollView { panels.padding(16) }.scrollBounceBehavior(.basedOnSize)
         } else {
-            panels
+            panels.padding(16)
         }
     }
 

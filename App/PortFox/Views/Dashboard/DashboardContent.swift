@@ -94,9 +94,7 @@ struct DashboardContent: View {
                 state.presentedSheet = .preferences
             }
         }
-        // Leading inset clears the traffic lights, which sit inside this bar.
-        .padding(.leading, 78)
-        .padding(.trailing, 14)
+        .padding(.horizontal, 14)
         .frame(height: 52)
     }
 
