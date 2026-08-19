@@ -1,0 +1,178 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+env:
+  HOMEBREW_NO_AUTO_UPDATE: 1
+  HOMEBREW_NO_INSTALL_CLEANUP: 1
+
+jobs:
+  release:
+    runs-on: macos-26
+    steps:
+      # Pinned to a commit, not a moving major tag. This job holds the signing
+      # identity and a contents:write token.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Select Xcode 26
+        run: .github/scripts/select-xcode.sh
+
+      - name: Install XcodeGen and SwiftLint
+        run: brew install xcodegen swiftlint
+
+      # A tag can point anywhere, so re-run the checks here rather than trust
+      # that the tagged commit ever went through CI.
+      - name: Lint and test
+        run: |
+          make lint
+          make test
+
+      - name: Derive the version from the tag
+        id: version
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Tag $GITHUB_REF_NAME is not vMAJOR.MINOR.PATCH" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Import the Developer ID certificate
+        env:
+          CERT_P12: ${{ secrets.DEVELOPER_ID_CERT_P12 }}
+          CERT_PASSWORD: ${{ secrets.DEVELOPER_ID_CERT_PASSWORD }}
+        run: |
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          password=$(uuidgen)
+
+          echo "$CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p "$password" "$keychain"
+          # Six hours, not the 5 minute default. Notarization can hold the job for
+          # many minutes and a relocked keychain fails the DMG signature after it.
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          security import "$RUNNER_TEMP/cert.p12" -k "$keychain" -P "$CERT_PASSWORD" \
+            -T /usr/bin/codesign -T /usr/bin/security
+          # Without a partition list codesign blocks on a GUI prompt nobody can answer.
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$password" "$keychain" >/dev/null
+          # Replace the search list outright. Nothing else in this job reads the
+          # login keychain, and preserving it means an unquoted expansion.
+          security list-keychains -d user -s "$keychain"
+          rm "$RUNNER_TEMP/cert.p12"
+
+          security find-identity -v -p codesigning "$keychain"
+
+      - name: Write the notarization key
+        env:
+          KEY_P8: ${{ secrets.NOTARY_API_KEY_P8 }}
+        run: |
+          echo "$KEY_P8" | base64 --decode > "$RUNNER_TEMP/notary.p8"
+          chmod 600 "$RUNNER_TEMP/notary.p8"
+
+      - name: Archive
+        env:
+          TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          make gen
+          # generic/platform=macOS is what makes this universal. A bare `build`
+          # resolves the destination to the runner's own arch and ships arm64 only.
+          xcodebuild archive \
+            -project PortFox.xcodeproj \
+            -scheme PortFox \
+            -configuration Release \
+            -destination 'generic/platform=macOS' \
+            -archivePath "$RUNNER_TEMP/PortFox.xcarchive" \
+            -quiet \
+            MARKETING_VERSION="$VERSION" \
+            CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Developer ID Application" \
+            DEVELOPMENT_TEAM="$TEAM_ID" \
+            OTHER_CODE_SIGN_FLAGS="--timestamp"
+
+      - name: Export
+        env:
+          TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+        run: |
+          plist="$RUNNER_TEMP/export.plist"
+          plutil -create xml1 "$plist"
+          plutil -insert method -string developer-id "$plist"
+          plutil -insert teamID -string "$TEAM_ID" "$plist"
+          plutil -insert signingStyle -string manual "$plist"
+          plutil -insert signingCertificate -string "Developer ID Application" "$plist"
+
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/PortFox.xcarchive" \
+            -exportOptionsPlist "$plist" \
+            -exportPath "$RUNNER_TEMP/export"
+
+      - name: Verify the build before notarizing
+        run: |
+          app="$RUNNER_TEMP/export/PortFox.app"
+          archs=$(lipo -archs "$app/Contents/MacOS/PortFox")
+          echo "architectures: $archs"
+          for arch in arm64 x86_64; do
+            case " $archs " in
+              *" $arch "*) ;;
+              *) echo "Missing the $arch slice, the build is not universal" >&2; exit 1 ;;
+            esac
+          done
+          codesign --verify --deep --strict --verbose=2 "$app"
+          codesign --display --verbose=4 "$app"
+
+      - name: Notarize and staple the app
+        env:
+          KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
+          ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
+        run: |
+          app="$RUNNER_TEMP/export/PortFox.app"
+          ditto -c -k --keepParent "$app" "$RUNNER_TEMP/PortFox.zip"
+          xcrun notarytool submit "$RUNNER_TEMP/PortFox.zip" \
+            --key "$RUNNER_TEMP/notary.p8" --key-id "$KEY_ID" --issuer "$ISSUER_ID" \
+            --wait --timeout 30m
+          # Staple the app itself, not only the DMG. A ticket stapled to the DMG
+          # alone leaves the copied app needing an online check on first launch.
+          xcrun stapler staple "$app"
+
+      - name: Build, sign, notarize and staple the DMG
+        env:
+          KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
+          ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          dmg="$RUNNER_TEMP/PortFox-$VERSION.dmg"
+          Tools/make-dmg.sh "$RUNNER_TEMP/export/PortFox.app" "$dmg" "PortFox"
+          codesign --sign "Developer ID Application" --timestamp "$dmg"
+          xcrun notarytool submit "$dmg" \
+            --key "$RUNNER_TEMP/notary.p8" --key-id "$KEY_ID" --issuer "$ISSUER_ID" \
+            --wait --timeout 30m
+          xcrun stapler staple "$dmg"
+          echo "DMG=$dmg" >> "$GITHUB_ENV"
+
+      - name: Verify Gatekeeper accepts the DMG and the app inside it
+        run: |
+          hdiutil attach "$DMG" -nobrowse -quiet -mountpoint "$RUNNER_TEMP/mnt"
+          spctl --assess --type execute --verbose=4 "$RUNNER_TEMP/mnt/PortFox.app"
+          xcrun stapler validate "$RUNNER_TEMP/mnt/PortFox.app"
+          hdiutil detach "$RUNNER_TEMP/mnt" -quiet
+          xcrun stapler validate "$DMG"
+          spctl --assess --type open --context context:primary-signature --verbose=4 "$DMG"
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "$DMG" \
+            --title "PortFox $VERSION" \
+            --generate-notes
+
+      - name: Remove the signing keychain
+        if: always()
+        run: security delete-keychain "$RUNNER_TEMP/signing.keychain-db" || true
