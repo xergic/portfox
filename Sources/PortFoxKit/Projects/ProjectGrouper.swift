@@ -45,5 +45,46 @@ public struct ProjectGrouper: Sendable {
 
     /// Groups services that have a project. Services without one are the caller's
     /// problem, they belong in the infrastructure section.
-    public func group(_ services: [RunningService]) -> [ProjectGroup] { [] }
+    public func group(_ services: [RunningService]) -> [ProjectGroup] {
+        var servicesByRootPath: [String: [RunningService]] = [:]
+        var rootURLByPath: [String: URL] = [:]
+        var snapshotByRootPath: [String: ProjectSnapshot] = [:]
+
+        for service in services {
+            guard let snapshot = service.project else { continue }
+            let key = snapshot.root.path
+            servicesByRootPath[key, default: []].append(service)
+            rootURLByPath[key] = snapshot.root
+            snapshotByRootPath[key] = snapshot
+        }
+
+        var groups: [ProjectGroup] = []
+        var mergedRootPaths: Set<String> = []
+
+        if groupSiblingRepositories {
+            let rootsByParent = Dictionary(grouping: rootURLByPath.values) { $0.deletingLastPathComponent().path }
+            for (parentPath, roots) in rootsByParent {
+                guard roots.count > 1, !codeCollectionRoots.contains(parentPath) else { continue }
+
+                let rootPaths = roots.map(\.path)
+                let siblingServices = rootPaths.flatMap { servicesByRootPath[$0] ?? [] }
+                let parentURL = roots[0].deletingLastPathComponent()
+                let project = Project(root: parentURL, name: parentURL.lastPathComponent, isSiblingGroup: true)
+                groups.append(ProjectGroup(project: project, services: sortedByPort(siblingServices)))
+                mergedRootPaths.formUnion(rootPaths)
+            }
+        }
+
+        for (rootPath, rootServices) in servicesByRootPath where !mergedRootPaths.contains(rootPath) {
+            guard let root = rootURLByPath[rootPath], let snapshot = snapshotByRootPath[rootPath] else { continue }
+            let project = Project(root: root, name: snapshot.name, iconPath: snapshot.iconPath)
+            groups.append(ProjectGroup(project: project, services: sortedByPort(rootServices)))
+        }
+
+        return groups.sorted { $0.project.name.localizedCaseInsensitiveCompare($1.project.name) == .orderedAscending }
+    }
+
+    private func sortedByPort(_ services: [RunningService]) -> [RunningService] {
+        services.sorted { $0.port < $1.port }
+    }
 }
