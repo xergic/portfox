@@ -1,0 +1,50 @@
+included:
+  - Sources
+  - App
+  - Tests
+
+excluded:
+  - .build
+  - DerivedData
+
+disabled_rules:
+  - todo
+  - trailing_comma
+  - optional_data_string_conversion
+
+opt_in_rules:
+  - empty_count
+  - explicit_init
+  - first_where
+  - last_where
+  - redundant_nil_coalescing
+  - toggle_bool
+  - unneeded_parentheses_in_closure_argument
+
+line_length:
+  warning: 140
+  error: 200
+  ignores_comments: true
+
+type_body_length:
+  warning: 400
+  error: 600
+
+file_length:
+  warning: 600
+  error: 900
+
+function_body_length:
+  warning: 80
+  error: 140
+
+identifier_name:
+  min_length: 2
+  excluded: [id, x, y]
+
+cyclomatic_complexity:
+  warning: 15
+  error: 25
+
+nesting:
+  type_level: 2

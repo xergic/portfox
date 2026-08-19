@@ -1,0 +1,350 @@
+87 listeners
+
+  :2525	127.0.0.1	pid 69221	ppid 1
+	exe  /usr/local/bin/node
+	cwd  /Users/ondra/Work/Personal/sklokan
+	argv node srv.mjs
+  :3000	::1	pid 3991	ppid 3902
+	exe  /usr/local/bin/node
+	cwd  /Users/ondra/Work/Wishfox/wishfox-admin
+	argv node /Users/ondra/Work/Wishfox/wishfox-admin/node_modules/.bin/../.pnpm/nuxt@4.5.2_@babel+plugin-syntax-jsx@7.29.7_@babel+core@7.29.7__@babel+plugin-syntax-typ_cd5cf74929dfd41f907babafbfd60539/node_modules/nuxt/bin/nuxt.mjs dev --dotenv .env.local
+  :3001	0.0.0.0	pid 21980	ppid 21792
+	exe  /usr/local/bin/node
+	cwd  /Users/ondra/Work/Wishfox/wishfox-front
+	argv node /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.bin/../nuxt/bin/nuxt.mjs dev --dotenv .env.local
+  :3002	::1	pid 27399	ppid 27377
+	exe  /usr/local/bin/node
+	cwd  /Users/ondra/Work/Wishfox/wishfox-admin
+	argv node /Users/ondra/Work/Wishfox/wishfox-admin/node_modules/.bin/../.pnpm/nuxt@4.5.2_@babel+plugin-syntax-jsx@7.29.7_@babel+core@7.29.7__@babel+plugin-syntax-typ_cd5cf74929dfd41f907babafbfd60539/node_modules/nuxt/bin/nuxt.mjs dev --dotenv .env.local
+  :3003	0.0.0.0	pid 87883	ppid 58787
+	exe  /usr/local/bin/node
+	cwd  /Users/ondra/Work/iDevBand/verisoft/omnitracker/apps/api
+	argv /usr/local/bin/node --require /Users/ondra/Work/iDevBand/verisoft/omnitracker/node_modules/.pnpm/tsx@4.23.1/node_modules/tsx/dist/preflight.cjs --import file:///Users/ondra/Work/iDevBand/verisoft/omnitracker/node_modules/.pnpm/tsx@4.23.1/node_modules/tsx/dist/loader.mjs src/index.ts
+  :3111	0.0.0.0	pid 74417	ppid 1
+	exe  /usr/local/bin/node
+	cwd  /Users/ondra/Work/iDevBand/dvaptaci/eshop
+	argv next-server (v16.3.1)    
+  :3773	0.0.0.0	pid 7308	ppid 7251
+	exe  /Applications/T3 Code (Alpha).app/Contents/MacOS/T3 Code (Alpha)
+	cwd  /Users/ondra
+	argv /Applications/T3 Code (Alpha).app/Contents/MacOS/T3 Code (Alpha) /Applications/T3 Code (Alpha).app/Contents/Resources/app.asar/apps/server/dist/bin.mjs --bootstrap-fd 3
+  :4000	0.0.0.0	pid 3292	ppid 3291
+	exe  /Users/ondra/.bun/bin/bun
+	cwd  /Users/ondra/Work/Wishfox/wishfox-api
+	argv bun run --hot index.ts
+  :5000	0.0.0.0	pid 1144	ppid 1
+	exe  /System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter
+	cwd  /
+	argv /System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter
++ :5000	0.0.0.0	pid 1144	ppid 1
+	exe  /System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter
+	cwd  /
+	argv /System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter
+  :5037	127.0.0.1	pid 99032	ppid 1
+	exe  /Users/ondra/Library/Android/sdk/platform-tools/adb
+	cwd  /Users/ondra/Work/iDevBand/shiftcalendar/shifter-mobile
+	argv adb -L tcp:5037 fork-server server --reply-fd 4
+  :5432	::1	pid 70289	ppid 1
+	exe  -
+	cwd  /opt/homebrew/var/postgresql@17
+	argv /opt/homebrew/opt/postgresql@17/bin/postgres -D /opt/homebrew/var/postgresql@17
++ :5432	127.0.0.1	pid 70289	ppid 1
+	exe  -
+	cwd  /opt/homebrew/var/postgresql@17
+	argv /opt/homebrew/opt/postgresql@17/bin/postgres -D /opt/homebrew/var/postgresql@17
+  :5435	::1	pid 35330	ppid 1
+	exe  /Users/Shared/DBngin/postgresql/17.0/bin/postgres
+	cwd  /Users/ondra/Library/Application Support/com.tinyapp.DBngin/Engines/postgresql/3C934D2E-C1E9-436E-A961-43D76B94F4DD
+	argv /Users/Shared/DBngin/postgresql/17.0/bin/postgres -D /Users/Ondra/Library/Application Support/com.tinyapp.DBngin/Engines/postgresql/3C934D2E-C1E9-436E-A961-43D76B94F4DD -p 5435
++ :5435	127.0.0.1	pid 35330	ppid 1
+	exe  /Users/Shared/DBngin/postgresql/17.0/bin/postgres
+	cwd  /Users/ondra/Library/Application Support/com.tinyapp.DBngin/Engines/postgresql/3C934D2E-C1E9-436E-A961-43D76B94F4DD
+	argv /Users/Shared/DBngin/postgresql/17.0/bin/postgres -D /Users/Ondra/Library/Application Support/com.tinyapp.DBngin/Engines/postgresql/3C934D2E-C1E9-436E-A961-43D76B94F4DD -p 5435
+  :6284	127.0.0.1	pid 38135	ppid 38126
+	exe  /usr/local/bin/node
+	cwd  /Users/ondra/Work/Wishfox/wishfox-scraper
+	argv /usr/local/bin/node --no-warnings --experimental-vm-modules /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/wrangler@3.83.0_@cloudflare+workers-types@4.20241022.0/node_modules/wrangler/wrangler-dist/cli.js dev --port 8788 --local -c _phase0-a.toml
+  :6379	0.0.0.0	pid 35338	ppid 1
+	exe  /Users/Shared/DBngin/redis/7.0.0/bin/redis-server
+	cwd  /Users/ondra/Library/Application Support/com.tinyapp.DBngin/Engines/redis/5940E86B-C9F6-4A5E-A96B-BA6DBDD09713
+	argv /Users/Shared/DBngin/redis/7.0.0/bin/redis-server *:6379   
++ :6379	0.0.0.0	pid 35338	ppid 1
+	exe  /Users/Shared/DBngin/redis/7.0.0/bin/redis-server
+	cwd  /Users/ondra/Library/Application Support/com.tinyapp.DBngin/Engines/redis/5940E86B-C9F6-4A5E-A96B-BA6DBDD09713
+	argv /Users/Shared/DBngin/redis/7.0.0/bin/redis-server *:6379   
+  :6463	127.0.0.1	pid 48061	ppid 47726
+	exe  /Applications/Discord.app/Contents/Frameworks/Discord Helper (Renderer).app/Contents/MacOS/Discord Helper (Renderer)
+	cwd  /
+	argv /Applications/Discord.app/Contents/Frameworks/Discord Helper (Renderer).app/Contents/MacOS/Discord Helper (Renderer) --type=renderer --user-data-dir=/Users/ondra/Library/Application Support/discord --standard-schemes=disclip --secure-schemes=disclip,sentry-ipc --bypasscsp-schemes=sentry-ipc --cors-schemes=disclip,sentry-ipc --fetch-schemes=disclip,sentry-ipc --streaming-schemes=disclip --app-path=/Applications/Discord.app/Contents/Resources/app.asar --no-sandbox --no-zygote --enable-blink-features=EnumerateDevices,AudioOutputDevices --autoplay-policy=no-user-gesture-required --lang=en-US --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=6 --time-ticks-at-unix-epoch=-1785351762733613 --launch-time-ticks=1456780708747 --shared-files --field-trial-handle=1718379636,r,15633335446542286171,8310812583315457719,262144 --enable-features=DocumentPolicyIncludeJSCallStacksInCrashReports,ScreenCaptureKitPickerScreen,ScreenCaptureKitStreamPickerSonoma --disable-features=AllowAggressiveThrottlingWithWebSocket,DropInputEventsWhilePaintHolding,HardwareMediaKeyHandling,IntensiveWakeUpThrottling,LocalNetworkAccessChecks,MediaSessionService,ScreenAIOCREnabled,SpareRendererForSitePerProcess,TimeoutHangingVideoCaptureStarts,TraceSiteInstanceGetProcessCreation,UseEcoQoSForBackgroundProcess,WinRetrieveSuggestionsOnlyOnDemand --variations-seed-version --pseudonymization-salt-handle=1935764596,r,12933653410997094074,1823018860491503165,4 --trace-process-track-uuid=3190708991934122588 --enable-node-leakage-in-renderers
+  :6736	127.0.0.1	pid 21965	ppid 1
+	exe  /Applications/OpenUsage.app/Contents/MacOS/OpenUsage
+	cwd  /
+	argv /Applications/OpenUsage.app/Contents/MacOS/OpenUsage
++ :7000	0.0.0.0	pid 1144	ppid 1
+	exe  /System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter
+	cwd  /
+	argv /System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter
++ :7000	0.0.0.0	pid 1144	ppid 1
+	exe  /System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter
+	cwd  /
+	argv /System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter
+  :7265	127.0.0.1	pid 558	ppid 1
+	exe  /Applications/Raycast.app/Contents/MacOS/Raycast
+	cwd  /
+	argv /Applications/Raycast.app/Contents/MacOS/Raycast UPDATED_VERSION AUTOMATIC_UPDATE
+  :8793	127.0.0.1	pid 39761	ppid 39756
+	exe  /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-scraper
+	argv /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=localhost:8793 --external-addr=loopback=localhost:60807 --control-fd=3 -
++ :8793	::1	pid 39761	ppid 39756
+	exe  /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-scraper
+	argv /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=localhost:8793 --external-addr=loopback=localhost:60807 --control-fd=3 -
+  :8794	127.0.0.1	pid 48012	ppid 48008
+	exe  /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-scraper
+	argv /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=localhost:8794 --external-addr=loopback=localhost:64264 --control-fd=3 -
++ :8794	::1	pid 48012	ppid 48008
+	exe  /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-scraper
+	argv /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=localhost:8794 --external-addr=loopback=localhost:64264 --control-fd=3 -
+  :8795	127.0.0.1	pid 1644	ppid 1640
+	exe  /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-scraper
+	argv /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=localhost:8795 --external-addr=loopback=localhost:50041 --control-fd=3 -
++ :8795	::1	pid 1644	ppid 1640
+	exe  /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-scraper
+	argv /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=localhost:8795 --external-addr=loopback=localhost:50041 --control-fd=3 -
+  :15251	127.0.0.1	pid 49106	ppid 94039
+	exe  /Applications/Visual Studio Code.app/Contents/Frameworks/Code Helper (Plugin).app/Contents/MacOS/Code Helper (Plugin)
+	cwd  /
+	argv /Applications/Visual Studio Code.app/Contents/Frameworks/Code Helper (Plugin).app/Contents/MacOS/Code Helper (Plugin) --type=utility --utility-sub-type=node.mojom.NodeService --lang=en-US --service-sandbox-type=none --dns-result-order=ipv4first --experimental-network-inspection --inspect-port=0 --user-data-dir=/Users/ondra/Library/Application Support/Code --standard-schemes=vscode-webview,vscode-file --enable-sandbox --secure-schemes=vscode-webview,vscode-file,vscode-remote-resource,vscode-managed-remote-resource --cors-schemes=vscode-webview,vscode-file,vscode-remote-resource,vscode-managed-remote-resource --fetch-schemes=vscode-webview,vscode-file,vscode-remote-resource,vscode-managed-remote-resource --service-worker-schemes=vscode-webview --code-cache-schemes=vscode-webview,vscode-file --shared-files --field-trial-handle=1718379636,r,11842351017587479126,14380846929136159086,262144 --enable-features=DocumentPolicyIncludeJSCallStacksInCrashReports,EarlyEstablishGpuChannel,EstablishGpuChannelAsync,PdfUseShowSaveFilePicker,ScreenCaptureKitPickerScreen,ScreenCaptureKitStreamPickerSonoma --disable-features=CalculateNativeWinOcclusion,DropInputEventsWhilePaintHolding,LocalNetworkAccessChecks,ScreenAIOCREnabled,SpareRendererForSitePerProcess,TimeoutHangingVideoCaptureStarts,TraceSiteInstanceGetProcessCreation --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16389765419296424230,8626978254204288314,4 --trace-process-track-uuid=3190709126868148844
+  :20241	127.0.0.1	pid 7350	ppid 7308
+	exe  /opt/homebrew/Cellar/cloudflared/2026.8.2/bin/cloudflared
+	cwd  /Users/ondra
+	argv /opt/homebrew/bin/cloudflared tunnel run
+  :25700	127.0.0.1	pid 48238	ppid 94039
+	exe  /Applications/Visual Studio Code.app/Contents/Frameworks/Code Helper (Plugin).app/Contents/MacOS/Code Helper (Plugin)
+	cwd  /
+	argv /Applications/Visual Studio Code.app/Contents/Frameworks/Code Helper (Plugin).app/Contents/MacOS/Code Helper (Plugin) --type=utility --utility-sub-type=node.mojom.NodeService --lang=en-US --service-sandbox-type=none --dns-result-order=ipv4first --experimental-network-inspection --inspect-port=0 --user-data-dir=/Users/ondra/Library/Application Support/Code --standard-schemes=vscode-webview,vscode-file --enable-sandbox --secure-schemes=vscode-webview,vscode-file,vscode-remote-resource,vscode-managed-remote-resource --cors-schemes=vscode-webview,vscode-file,vscode-remote-resource,vscode-managed-remote-resource --fetch-schemes=vscode-webview,vscode-file,vscode-remote-resource,vscode-managed-remote-resource --service-worker-schemes=vscode-webview --code-cache-schemes=vscode-webview,vscode-file --shared-files --field-trial-handle=1718379636,r,11842351017587479126,14380846929136159086,262144 --enable-features=DocumentPolicyIncludeJSCallStacksInCrashReports,EarlyEstablishGpuChannel,EstablishGpuChannelAsync,PdfUseShowSaveFilePicker,ScreenCaptureKitPickerScreen,ScreenCaptureKitStreamPickerSonoma --disable-features=CalculateNativeWinOcclusion,DropInputEventsWhilePaintHolding,LocalNetworkAccessChecks,ScreenAIOCREnabled,SpareRendererForSitePerProcess,TimeoutHangingVideoCaptureStarts,TraceSiteInstanceGetProcessCreation --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16389765419296424230,8626978254204288314,4 --trace-process-track-uuid=3190709122182939599
+  :37701	127.0.0.1	pid 47078	ppid 1
+	exe  /Users/ondra/.bun/bin/bun
+	cwd  /Users/ondra
+	argv /Users/ondra/.bun/bin/bun /Users/ondra/.claude/plugins/cache/thedotmack/claude-mem/13.15.2/scripts/worker-service.cjs --daemon
+  :44950	127.0.0.1	pid 1411	ppid 1
+	exe  /Users/ondra/Library/Application Support/Figma/FigmaAgent.app/Contents/MacOS/figma_agent
+	cwd  /
+	argv /Users/ondra/Library/Application Support/Figma/FigmaAgent.app/Contents/MacOS/figma_agent
++ :44960	127.0.0.1	pid 1411	ppid 1
+	exe  /Users/ondra/Library/Application Support/Figma/FigmaAgent.app/Contents/MacOS/figma_agent
+	cwd  /
+	argv /Users/ondra/Library/Application Support/Figma/FigmaAgent.app/Contents/MacOS/figma_agent
++ :50040	127.0.0.1	pid 1644	ppid 1640
+	exe  /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-scraper
+	argv /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=localhost:8795 --external-addr=loopback=localhost:50041 --control-fd=3 -
+  :50041	::1	pid 1640	ppid 1628
+	exe  /usr/local/bin/node
+	cwd  /Users/ondra/Work/Wishfox/wishfox-scraper
+	argv /usr/local/bin/node --no-warnings --experimental-vm-modules /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/wrangler@3.83.0_@cloudflare+workers-types@4.20241022.0/node_modules/wrangler/wrangler-dist/cli.js dev --port 8795 --local
++ :50047	127.0.0.1	pid 1640	ppid 1628
+	exe  /usr/local/bin/node
+	cwd  /Users/ondra/Work/Wishfox/wishfox-scraper
+	argv /usr/local/bin/node --no-warnings --experimental-vm-modules /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/wrangler@3.83.0_@cloudflare+workers-types@4.20241022.0/node_modules/wrangler/wrangler-dist/cli.js dev --port 8795 --local
+  :50050	127.0.0.1	pid 76644	ppid 1640
+	exe  /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-scraper
+	argv /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:0 --external-addr=loopback=127.0.0.1:50047 --control-fd=3 - --inspector-addr=localhost:50050
++ :50050	::1	pid 76644	ppid 1640
+	exe  /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-scraper
+	argv /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:0 --external-addr=loopback=127.0.0.1:50047 --control-fd=3 - --inspector-addr=localhost:50050
++ :50053	127.0.0.1	pid 76644	ppid 1640
+	exe  /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-scraper
+	argv /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:0 --external-addr=loopback=127.0.0.1:50047 --control-fd=3 - --inspector-addr=localhost:50050
++ :50054	127.0.0.1	pid 76644	ppid 1640
+	exe  /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-scraper
+	argv /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:0 --external-addr=loopback=127.0.0.1:50047 --control-fd=3 - --inspector-addr=localhost:50050
++ :50218	::1	pid 38135	ppid 38126
+	exe  /usr/local/bin/node
+	cwd  /Users/ondra/Work/Wishfox/wishfox-scraper
+	argv /usr/local/bin/node --no-warnings --experimental-vm-modules /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/wrangler@3.83.0_@cloudflare+workers-types@4.20241022.0/node_modules/wrangler/wrangler-dist/cli.js dev --port 8788 --local -c _phase0-a.toml
++ :50220	127.0.0.1	pid 38135	ppid 38126
+	exe  /usr/local/bin/node
+	cwd  /Users/ondra/Work/Wishfox/wishfox-scraper
+	argv /usr/local/bin/node --no-warnings --experimental-vm-modules /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/wrangler@3.83.0_@cloudflare+workers-types@4.20241022.0/node_modules/wrangler/wrangler-dist/cli.js dev --port 8788 --local -c _phase0-a.toml
+  :50647	127.0.0.1	pid 26661	ppid 1
+	exe  /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-front
+	argv /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:50647 --external-addr=loopback=127.0.0.1:50646 --control-fd=3 - --debug-port=127.0.0.1:0
+  :51171	127.0.0.1	pid 739	ppid 1
+	exe  /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-front
+	argv /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:57801 --external-addr=loopback=127.0.0.1:57800 --control-fd=3 - --debug-port=127.0.0.1:0
++ :51369	127.0.0.1	pid 26661	ppid 1
+	exe  /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-front
+	argv /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:50647 --external-addr=loopback=127.0.0.1:50646 --control-fd=3 - --debug-port=127.0.0.1:0
+  :51420	127.0.0.1	pid 8924	ppid 1
+	exe  /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-front
+	argv /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:51420 --external-addr=loopback=127.0.0.1:51419 --control-fd=3 - --debug-port=127.0.0.1:0
++ :51757	127.0.0.1	pid 8924	ppid 1
+	exe  /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-front
+	argv /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:51420 --external-addr=loopback=127.0.0.1:51419 --control-fd=3 - --debug-port=127.0.0.1:0
+  :53047	127.0.0.1	pid 6098	ppid 1
+	exe  /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-front
+	argv /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:53047 --external-addr=loopback=127.0.0.1:53042 --control-fd=3 - --debug-port=127.0.0.1:0
+  :53494	127.0.0.1	pid 27476	ppid 1
+	exe  /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-front
+	argv /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:53494 --external-addr=loopback=127.0.0.1:53493 --control-fd=3 - --debug-port=127.0.0.1:0
+  :54999	127.0.0.1	pid 76211	ppid 1
+	exe  /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-front
+	argv /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:0 --external-addr=loopback=127.0.0.1:54998 --control-fd=3 - --debug-port=127.0.0.1:0
++ :55000	127.0.0.1	pid 76211	ppid 1
+	exe  /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-front
+	argv /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:0 --external-addr=loopback=127.0.0.1:54998 --control-fd=3 - --debug-port=127.0.0.1:0
+  :55839	127.0.0.1	pid 37165	ppid 1
+	exe  /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-front
+	argv /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:0 --external-addr=loopback=127.0.0.1:55835 --control-fd=3 - --debug-port=127.0.0.1:0
++ :55840	127.0.0.1	pid 37165	ppid 1
+	exe  /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-front
+	argv /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:0 --external-addr=loopback=127.0.0.1:55835 --control-fd=3 - --debug-port=127.0.0.1:0
+  :56800	127.0.0.1	pid 31350	ppid 1
+	exe  /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-front
+	argv /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:0 --external-addr=loopback=127.0.0.1:56799 --control-fd=3 - --debug-port=127.0.0.1:0
++ :56801	127.0.0.1	pid 31350	ppid 1
+	exe  /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-front
+	argv /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:0 --external-addr=loopback=127.0.0.1:56799 --control-fd=3 - --debug-port=127.0.0.1:0
+  :56940	0.0.0.0	pid 1017	ppid 1
+	exe  /usr/libexec/rapportd
+	cwd  /
+	argv /usr/libexec/rapportd
++ :56940	0.0.0.0	pid 1017	ppid 1
+	exe  /usr/libexec/rapportd
+	cwd  /
+	argv /usr/libexec/rapportd
++ :57801	127.0.0.1	pid 739	ppid 1
+	exe  /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-front
+	argv /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:57801 --external-addr=loopback=127.0.0.1:57800 --control-fd=3 - --debug-port=127.0.0.1:0
+  :57990	127.0.0.1	pid 74979	ppid 1
+	exe  /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-front
+	argv /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:0 --external-addr=loopback=127.0.0.1:57989 --control-fd=3 - --debug-port=127.0.0.1:0
++ :57991	127.0.0.1	pid 74979	ppid 1
+	exe  /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-front
+	argv /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:0 --external-addr=loopback=127.0.0.1:57989 --control-fd=3 - --debug-port=127.0.0.1:0
+  :59295	127.0.0.1	pid 76556	ppid 39756
+	exe  /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-scraper
+	argv /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:0 --external-addr=loopback=127.0.0.1:60813 --control-fd=3 - --inspector-addr=localhost:60816
+  :59358	127.0.0.1	pid 76560	ppid 48008
+	exe  /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-scraper
+	argv /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:0 --external-addr=loopback=127.0.0.1:64272 --control-fd=3 - --inspector-addr=localhost:64275
++ :59417	127.0.0.1	pid 76644	ppid 1640
+	exe  /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-scraper
+	argv /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:0 --external-addr=loopback=127.0.0.1:50047 --control-fd=3 - --inspector-addr=localhost:50050
++ :60401	127.0.0.1	pid 6098	ppid 1
+	exe  /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-front
+	argv /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:53047 --external-addr=loopback=127.0.0.1:53042 --control-fd=3 - --debug-port=127.0.0.1:0
++ :60806	127.0.0.1	pid 39761	ppid 39756
+	exe  /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-scraper
+	argv /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=localhost:8793 --external-addr=loopback=localhost:60807 --control-fd=3 -
+  :60807	::1	pid 39756	ppid 39747
+	exe  /usr/local/bin/node
+	cwd  /Users/ondra/Work/Wishfox/wishfox-scraper
+	argv /usr/local/bin/node --no-warnings --experimental-vm-modules /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/wrangler@3.83.0_@cloudflare+workers-types@4.20241022.0/node_modules/wrangler/wrangler-dist/cli.js dev --port 8793 --local
++ :60813	127.0.0.1	pid 39756	ppid 39747
+	exe  /usr/local/bin/node
+	cwd  /Users/ondra/Work/Wishfox/wishfox-scraper
+	argv /usr/local/bin/node --no-warnings --experimental-vm-modules /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/wrangler@3.83.0_@cloudflare+workers-types@4.20241022.0/node_modules/wrangler/wrangler-dist/cli.js dev --port 8793 --local
++ :60816	127.0.0.1	pid 76556	ppid 39756
+	exe  /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-scraper
+	argv /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:0 --external-addr=loopback=127.0.0.1:60813 --control-fd=3 - --inspector-addr=localhost:60816
++ :60816	::1	pid 76556	ppid 39756
+	exe  /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-scraper
+	argv /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:0 --external-addr=loopback=127.0.0.1:60813 --control-fd=3 - --inspector-addr=localhost:60816
++ :60820	127.0.0.1	pid 76556	ppid 39756
+	exe  /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-scraper
+	argv /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:0 --external-addr=loopback=127.0.0.1:60813 --control-fd=3 - --inspector-addr=localhost:60816
++ :60821	127.0.0.1	pid 76556	ppid 39756
+	exe  /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-scraper
+	argv /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:0 --external-addr=loopback=127.0.0.1:60813 --control-fd=3 - --inspector-addr=localhost:60816
+  :62801	127.0.0.1	pid 21171	ppid 1
+	exe  /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-front
+	argv /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:0 --external-addr=loopback=127.0.0.1:62800 --control-fd=3 - --debug-port=127.0.0.1:0
++ :62802	127.0.0.1	pid 21171	ppid 1
+	exe  /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-front
+	argv /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:0 --external-addr=loopback=127.0.0.1:62800 --control-fd=3 - --debug-port=127.0.0.1:0
++ :63254	127.0.0.1	pid 27476	ppid 1
+	exe  /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-front
+	argv /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:53494 --external-addr=loopback=127.0.0.1:53493 --control-fd=3 - --debug-port=127.0.0.1:0
+  :63761	127.0.0.1	pid 94069	ppid 94039
+	exe  /Applications/Visual Studio Code.app/Contents/Frameworks/Code Helper.app/Contents/MacOS/Code Helper
+	cwd  /
+	argv /Applications/Visual Studio Code.app/Contents/Frameworks/Code Helper.app/Contents/MacOS/Code Helper --type=utility --utility-sub-type=node.mojom.NodeService --lang=en-US --service-sandbox-type=none --user-data-dir=/Users/ondra/Library/Application Support/Code --standard-schemes=vscode-webview,vscode-file --enable-sandbox --secure-schemes=vscode-webview,vscode-file,vscode-remote-resource,vscode-managed-remote-resource --cors-schemes=vscode-webview,vscode-file,vscode-remote-resource,vscode-managed-remote-resource --fetch-schemes=vscode-webview,vscode-file,vscode-remote-resource,vscode-managed-remote-resource --service-worker-schemes=vscode-webview --code-cache-schemes=vscode-webview,vscode-file --shared-files --field-trial-handle=1718379636,r,11842351017587479126,14380846929136159086,262144 --enable-features=DocumentPolicyIncludeJSCallStacksInCrashReports,EarlyEstablishGpuChannel,EstablishGpuChannelAsync,PdfUseShowSaveFilePicker,ScreenCaptureKitPickerScreen,ScreenCaptureKitStreamPickerSonoma --disable-features=CalculateNativeWinOcclusion,DropInputEventsWhilePaintHolding,LocalNetworkAccessChecks,ScreenAIOCREnabled,SpareRendererForSitePerProcess,TimeoutHangingVideoCaptureStarts,TraceSiteInstanceGetProcessCreation --variations-seed-version --pseudonymization-salt-handle=1935764596,r,16389765419296424230,8626978254204288314,4 --trace-process-track-uuid=3190708990997080739
++ :64263	127.0.0.1	pid 48012	ppid 48008
+	exe  /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-scraper
+	argv /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=localhost:8794 --external-addr=loopback=localhost:64264 --control-fd=3 -
+  :64264	::1	pid 48008	ppid 47999
+	exe  /usr/local/bin/node
+	cwd  /Users/ondra/Work/Wishfox/wishfox-scraper
+	argv /usr/local/bin/node --no-warnings --experimental-vm-modules /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/wrangler@3.83.0_@cloudflare+workers-types@4.20241022.0/node_modules/wrangler/wrangler-dist/cli.js dev --port 8794 --local
++ :64272	127.0.0.1	pid 48008	ppid 47999
+	exe  /usr/local/bin/node
+	cwd  /Users/ondra/Work/Wishfox/wishfox-scraper
+	argv /usr/local/bin/node --no-warnings --experimental-vm-modules /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/wrangler@3.83.0_@cloudflare+workers-types@4.20241022.0/node_modules/wrangler/wrangler-dist/cli.js dev --port 8794 --local
++ :64275	127.0.0.1	pid 76560	ppid 48008
+	exe  /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-scraper
+	argv /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:0 --external-addr=loopback=127.0.0.1:64272 --control-fd=3 - --inspector-addr=localhost:64275
++ :64275	::1	pid 76560	ppid 48008
+	exe  /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-scraper
+	argv /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:0 --external-addr=loopback=127.0.0.1:64272 --control-fd=3 - --inspector-addr=localhost:64275
++ :64278	127.0.0.1	pid 76560	ppid 48008
+	exe  /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-scraper
+	argv /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:0 --external-addr=loopback=127.0.0.1:64272 --control-fd=3 - --inspector-addr=localhost:64275
++ :64279	127.0.0.1	pid 76560	ppid 48008
+	exe  /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-scraper
+	argv /Users/ondra/Work/Wishfox/wishfox-scraper/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20241022.0/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:0 --external-addr=loopback=127.0.0.1:64272 --control-fd=3 - --inspector-addr=localhost:64275
++ :64777	127.0.0.1	pid 21980	ppid 21792
+	exe  /usr/local/bin/node
+	cwd  /Users/ondra/Work/Wishfox/wishfox-front
+	argv node /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.bin/../nuxt/bin/nuxt.mjs dev --dotenv .env.local
+  :64779	127.0.0.1	pid 25120	ppid 21980
+	exe  /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-front
+	argv /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:0 --external-addr=loopback=127.0.0.1:64777 --control-fd=3 - --debug-port=127.0.0.1:0
++ :64780	127.0.0.1	pid 25120	ppid 21980
+	exe  /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd
+	cwd  /Users/ondra/Work/Wishfox/wishfox-front
+	argv /Users/ondra/Work/Wishfox/wishfox-front/node_modules/.pnpm/@cloudflare+workerd-darwin-arm64@1.20260722.1/node_modules/@cloudflare/workerd-darwin-arm64/bin/workerd serve --binary --experimental --socket-addr=entry=127.0.0.1:0 --external-addr=loopback=127.0.0.1:64777 --control-fd=3 - --debug-port=127.0.0.1:0

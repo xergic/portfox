@@ -1,0 +1,129 @@
+import Foundation
+import PortFoxKit
+
+/// Development driver for the exact pipeline the app runs. Lets detection be
+/// built and verified without launching a GUI.
+struct CLI {
+    enum Mode {
+        case raw
+        case services
+        case json
+    }
+
+    static func run() async {
+        let arguments = Array(CommandLine.arguments.dropFirst())
+        let showAll = arguments.contains("--all")
+
+        if arguments.contains("--help") || arguments.contains("-h") {
+            printUsage()
+            return
+        }
+
+        let mode: Mode = arguments.contains("--raw") ? .raw : (arguments.contains("--json") ? .json : .services)
+
+        do {
+            switch mode {
+            case .raw:
+                try printRaw()
+            case .services, .json:
+                let repository = ServiceRepository()
+                let result = try await repository.refresh(
+                    options: ScanOptions(showAllListeners: showAll)
+                )
+                mode == .json ? printJSON(result) : printServices(result)
+            }
+        } catch {
+            FileHandle.standardError.write(Data("portfox-scan failed: \(error)\n".utf8))
+            exit(1)
+        }
+    }
+
+    static func printUsage() {
+        print("""
+        portfox-scan — resolve local development services
+
+        Usage: portfox-scan [options]
+
+          (no options)  grouped service list, the same view the popover shows
+          --raw         every listener with pid, port, executable, argv and cwd
+          --json        machine readable service list
+          --all         include listeners classified as system noise
+        """)
+    }
+
+    static func printRaw() throws {
+        let sockets = try ListenerScanner().scan()
+        let inspector = ProcessInspector()
+        var seen: Set<pid_t> = []
+
+        print("\(sockets.count) listeners\n")
+        for socket in sockets.sorted(by: { $0.port < $1.port }) {
+            let snapshot = inspector.snapshot(pid: socket.pid)
+            let marker = seen.insert(socket.pid).inserted ? " " : "+"
+            print("\(marker) :\(socket.port)\t\(socket.host)\tpid \(socket.pid)\tppid \(snapshot?.parentPID ?? 0)")
+            print("\texe  \(snapshot?.executablePath ?? "-")")
+            print("\tcwd  \(snapshot?.workingDirectory ?? "-")")
+            print("\targv \(snapshot?.command ?? "-")")
+        }
+    }
+
+    static func printServices(_ result: ScanResult) {
+        print("\(result.services.count) services from \(result.allSockets.count) listeners")
+        if !result.hidden.isEmpty { print("\(result.hidden.count) hidden as system noise") }
+        print("")
+
+        for group in result.groups {
+            print("▸ \(group.project.name)  \(group.project.displayPath)")
+            for service in group.services { printService(service, indent: "    ") }
+            print("")
+        }
+
+        if !result.standalone.isEmpty {
+            print("▸ INFRASTRUCTURE & DAEMONS")
+            for service in result.standalone { printService(service, indent: "    ") }
+            print("")
+        }
+
+        let ungrouped = result.services.filter { service in
+            !result.groups.contains { $0.services.contains(where: { $0.id == service.id }) }
+                && !result.standalone.contains(where: { $0.id == service.id })
+        }
+        if !ungrouped.isEmpty {
+            print("▸ UNGROUPED")
+            for service in ungrouped { printService(service, indent: "    ") }
+        }
+    }
+
+    static func printService(_ service: RunningService, indent: String) {
+        let confidence = Int((service.detection.confidence * 100).rounded())
+        let subtitle = service.subtitle.map { " · \($0)" } ?? ""
+        let extra = service.secondaryPorts.isEmpty ? "" : "  (+\(service.secondaryPorts.map(String.init).joined(separator: ", ")))"
+        print("\(indent):\(service.port)\t\(service.displayName) \(confidence)%\(subtitle)\(extra)")
+        print("\(indent)\tpid \(service.listenerProcess.pid) · stop \(service.rootProcess.pid) · \(service.classification.rawValue)")
+    }
+
+    static func printJSON(_ result: ScanResult) {
+        let payload = result.services.map { service in
+            [
+                "port": String(service.port),
+                "type": service.type.rawValue,
+                "name": service.displayName,
+                "confidence": String(format: "%.2f", service.detection.confidence),
+                "pid": String(service.listenerProcess.pid),
+                "stopPID": String(service.rootProcess.pid),
+                "project": service.project?.name ?? "",
+                "projectRoot": service.project?.root.path ?? "",
+                "subpath": service.subtitle ?? "",
+                "class": service.classification.rawValue,
+                "cwd": service.listenerProcess.workingDirectory ?? "",
+                "command": service.listenerProcess.command
+            ]
+        }
+        guard let data = try? JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted, .sortedKeys]) else {
+            return
+        }
+        print(String(decoding: data, as: UTF8.self))
+    }
+}
+
+await CLI.run()
