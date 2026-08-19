@@ -6,13 +6,15 @@ import SwiftUI
 /// hand-driving the menu bar.
 ///
 /// Usage: `PortFox --snapshot out.png [--hover]`, `--snapshot-dashboard out.png`,
-/// `--snapshot-prefs out.png` or `--snapshot-about out.png`.
+/// `--snapshot-prefs out.png`, `--snapshot-ignored out.png` or
+/// `--snapshot-about out.png`.
 @MainActor
 enum SnapshotRenderer {
     enum Surface: String, CaseIterable {
         case popover = "--snapshot"
         case dashboard = "--snapshot-dashboard"
         case preferences = "--snapshot-prefs"
+        case ignored = "--snapshot-ignored"
         case about = "--snapshot-about"
     }
 
@@ -39,7 +41,7 @@ enum SnapshotRenderer {
         switch request.surface {
         case .popover: state.popoverDidAppear()
         case .dashboard: state.dashboardDidAppear()
-        case .preferences, .about: break
+        case .preferences, .ignored, .about: break
         }
         await state.refresh()
 
@@ -84,6 +86,9 @@ enum SnapshotRenderer {
                 .environment(\.colorScheme, .dark)
         case .preferences:
             PreferencesSheet(scrolls: false)
+                .environment(state)
+        case .ignored:
+            PreferencesSheet(page: .ignored, scrolls: false)
                 .environment(state)
         case .about:
             AboutSheet()

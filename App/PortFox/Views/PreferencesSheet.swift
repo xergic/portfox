@@ -2,18 +2,61 @@ import PortFoxKit
 import SwiftUI
 
 struct PreferencesSheet: View {
+    /// The sheet is two screens, not one page. An ignore list grows without
+    /// bound, and every hidden service would otherwise push the settings the user
+    /// came for further down.
+    enum Page {
+        case preferences
+        case ignored
+
+        var symbol: String {
+            switch self {
+            case .preferences: "slider.horizontal.3"
+            case .ignored: "eye.slash"
+            }
+        }
+
+        var title: String {
+            switch self {
+            case .preferences: "PortFox Preferences"
+            case .ignored: "Ignored Services"
+            }
+        }
+
+        var subtitle: String {
+            switch self {
+            case .preferences: "Configure scanning, refresh and appearance"
+            case .ignored: "Hidden from every list, matched by port and project or binary"
+            }
+        }
+    }
+
+    /// How a service gets onto the ignore list, shown wherever the list is empty.
+    private static let ignoreHint = "Right-click any service and choose Ignore Service to hide it everywhere"
+
     @Environment(AppState.self) private var state
     @Environment(\.dismiss) private var dismiss
     @State private var launchAtLogin = LaunchAtLogin()
+    @State private var page: Page
+
+    @State private var ignoredHeight: CGFloat = Theme.Metrics.maximumListHeight
 
     /// `ImageRenderer` lays out in a single pass and never draws scroll content.
     var scrolls = true
+
+    init(page: Page = .preferences, scrolls: Bool = true) {
+        _page = State(initialValue: page)
+        self.scrolls = scrolls
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
             Divider().overlay(Theme.separator)
-            scrollContent
+            switch page {
+            case .preferences: scrollContent
+            case .ignored: ignoredContent
+            }
             Divider().overlay(Theme.separator)
             footer
         }
@@ -24,20 +67,24 @@ struct PreferencesSheet: View {
 
     private var header: some View {
         HStack(spacing: 10) {
+            if page == .ignored {
+                IconButton(symbol: "chevron.left", help: "Back to Preferences") { page = .preferences }
+            }
+
             RoundedRectangle(cornerRadius: Theme.Metrics.cardRadius, style: .continuous)
                 .fill(Theme.card)
                 .frame(width: 36, height: 36)
                 .overlay(
-                    Image(systemName: "slider.horizontal.3")
+                    Image(systemName: page.symbol)
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(Theme.primaryText)
                 )
 
             VStack(alignment: .leading, spacing: 1) {
-                Text("PortFox Preferences")
+                Text(page.title)
                     .font(.system(size: 15, weight: .bold))
                     .foregroundStyle(Theme.primaryText)
-                Text("Configure scanning, refresh and appearance")
+                Text(page.subtitle)
                     .font(.system(size: 11))
                     .foregroundStyle(Theme.secondaryText)
             }
@@ -136,26 +183,54 @@ struct PreferencesSheet: View {
                         .toggleStyle(.checkbox)
                 }
                 Divider().overlay(Theme.separator)
-                PreferenceRow(
+                DisclosureRow(
                     title: "Ignored services",
-                    subtitle: ignoredSubtitle
+                    subtitle: ignoredSubtitle,
+                    value: state.ignoredEntries.isEmpty ? "None" : String(state.ignoredEntries.count)
                 ) {
-                    Text(state.ignoredEntries.isEmpty ? "None" : String(state.ignoredEntries.count))
-                        .font(.mono(11, .medium))
-                        .foregroundStyle(Theme.tertiaryText)
-                }
-                ForEach(sortedIgnored) { entry in
-                    Divider().overlay(Theme.separator)
-                    IgnoredServiceRow(entry: entry) { state.stopIgnoring(entry.key) }
+                    page = .ignored
                 }
             }
         }
     }
 
+    // MARK: - Ignored services screen
+
+    private var ignoredContent: some View {
+        MeasuredScrollView(height: $ignoredHeight, scrolls: scrolls) { ignoredList }
+    }
+
+    @ViewBuilder
+    private var ignoredList: some View {
+        if state.ignoredEntries.isEmpty {
+            VStack(spacing: 6) {
+                Image(systemName: "eye")
+                    .font(.system(size: 22))
+                    .foregroundStyle(Theme.tertiaryText)
+                Text("Nothing is ignored")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(Theme.secondaryText)
+                Text(Self.ignoreHint)
+                    .font(.system(size: 11))
+                    .foregroundStyle(Theme.tertiaryText)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 40)
+        } else {
+            PreferencesCard {
+                ForEach(Array(sortedIgnored.enumerated()), id: \.element.id) { index, entry in
+                    if index > 0 {
+                        Divider().overlay(Theme.separator)
+                    }
+                    IgnoredServiceRow(entry: entry) { state.stopIgnoring(entry.key) }
+                }
+            }
+            .padding(14)
+        }
+    }
+
     private var ignoredSubtitle: String {
-        state.ignoredEntries.isEmpty
-            ? "Right-click any service and choose Ignore Service to hide it everywhere"
-            : "Hidden from every list, matched by port and project or binary"
+        state.ignoredEntries.isEmpty ? Self.ignoreHint : Page.ignored.subtitle
     }
 
     /// By port, because insertion order tells the user nothing.
@@ -192,7 +267,9 @@ struct PreferencesSheet: View {
     private var footer: some View {
         HStack {
             Spacer()
-            Button("Done") { dismiss() }
+            Button(page == .ignored ? "Back" : "Done") {
+                if page == .ignored { page = .preferences } else { dismiss() }
+            }
                 .buttonStyle(.plain)
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(Theme.primaryText)
@@ -221,6 +298,35 @@ struct PreferencesSheet: View {
         }
         .foregroundStyle(Theme.tertiaryText)
         .padding(.horizontal, 2)
+    }
+}
+
+/// A settings row that opens a screen of its own, showing what is behind it.
+private struct DisclosureRow: View {
+    let title: String
+    let subtitle: String
+    let value: String
+    let action: () -> Void
+
+    @State private var isHovering = false
+
+    var body: some View {
+        Button(action: action) {
+            PreferenceRow(title: title, subtitle: subtitle) {
+                HStack(spacing: 6) {
+                    Text(value)
+                        .font(.mono(11, .medium))
+                        .foregroundStyle(Theme.tertiaryText)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(isHovering ? Theme.primaryText : Theme.tertiaryText)
+                }
+            }
+            .background(isHovering ? Theme.cardHover : Color.clear)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovering = $0 }
     }
 }
 

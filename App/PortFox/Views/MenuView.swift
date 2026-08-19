@@ -11,16 +11,6 @@ struct MenuView: View {
     /// so snapshots drop the scroll container and render the list in full.
     var scrolls = true
 
-    /// Measured height of the service list.
-    ///
-    /// A `MenuBarExtra` window sizes itself to fit its content, and a `ScrollView`
-    /// has no intrinsic height to offer, so it collapses to nothing and the
-    /// popover shows only its header and footer. Measuring the content and
-    /// setting an explicit height is what gives the window something to size to.
-    ///
-    /// It starts at the maximum rather than zero so the very first layout pass is
-    /// already valid. A single-pass renderer never delivers the measurement, and
-    /// the live window would otherwise show one empty frame before settling.
     @State private var listHeight: CGFloat = Theme.Metrics.maximumListHeight
 
     var body: some View {
@@ -81,18 +71,8 @@ struct MenuView: View {
         .padding(.vertical, 10)
     }
 
-    @ViewBuilder
     private var list: some View {
-        if scrolls {
-            ScrollView {
-                listContent
-                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { listHeight = $0 }
-            }
-            .frame(height: min(listHeight, Theme.Metrics.maximumListHeight))
-            .scrollBounceBehavior(.basedOnSize)
-        } else {
-            listContent
-        }
+        MeasuredScrollView(height: $listHeight, scrolls: scrolls) { listContent }
     }
 
     private var listContent: some View {
