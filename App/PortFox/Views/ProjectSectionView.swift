@@ -31,43 +31,13 @@ struct ProjectSectionView: View {
                 .foregroundStyle(Theme.primaryText)
                 .lineLimit(1)
                 .fixedSize()
-            if let version = group.project.version {
-                VersionLabel(text: version)
-            }
             Text(group.project.displayPath)
                 .font(.portSubtitle)
                 .foregroundStyle(Theme.secondaryText)
                 .lineLimit(1)
                 .truncationMode(.head)
-            Spacer(minLength: 4)
-
-            // A hover button rather than a context menu: SwiftUI context menus do
-            // not open inside a MenuBarExtra window, and a visible affordance is
-            // more discoverable than a hidden right-click anyway.
-            if isHovering || forcesHover {
-                HStack(spacing: 1) {
-                    IconButton(symbol: "photo", help: "Change icon") { presentIconPicker() }
-                    if state.hasIconOverride(for: group) {
-                        IconButton(symbol: "arrow.uturn.backward", help: "Use the default icon") {
-                            state.setIcon(nil, for: group)
-                        }
-                    }
-                    IconButton(symbol: "folder", help: "Reveal in Finder") {
-                        state.reveal(group.project.root)
-                    }
-                }
-                .fixedSize()
-                .padding(.horizontal, 3)
-                .padding(.vertical, 2)
-                .background(
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        .fill(Theme.pill)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                .strokeBorder(Theme.border, lineWidth: 1)
-                        )
-                )
-            }
+                .padding(.trailing, Theme.Metrics.rowActionsWidth)
+            Spacer(minLength: 0)
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
@@ -75,6 +45,14 @@ struct ProjectSectionView: View {
             RoundedRectangle(cornerRadius: Theme.Metrics.cardRadius, style: .continuous)
                 .fill(Theme.card)
         )
+        // An overlay rather than another element in the stack. Inserting the
+        // buttons on hover would re-truncate the path and shift the row under
+        // the pointer, which reads as the row jumping.
+        .overlay(alignment: .trailing) {
+            if isHovering || forcesHover {
+                actions.padding(.trailing, 8)
+            }
+        }
         .contentShape(Rectangle())
         .onHover { hovering in
             withAnimation(.easeOut(duration: 0.12)) { isHovering = hovering }
@@ -88,6 +66,29 @@ struct ProjectSectionView: View {
                 state.setIcon(path, for: group)
             }
         }
+    }
+
+    private var actions: some View {
+        HStack(spacing: 1) {
+            IconButton(symbol: "photo", help: "Change icon") { presentIconPicker() }
+            if state.hasIconOverride(for: group) {
+                IconButton(symbol: "arrow.uturn.backward", help: "Use the default icon") {
+                    state.setIcon(nil, for: group)
+                }
+            }
+            IconButton(symbol: "folder", help: "Reveal in Finder") { state.reveal(group.project.root) }
+        }
+        .fixedSize()
+        .padding(.horizontal, 3)
+        .padding(.vertical, 2)
+        .background(
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(Theme.cardHover)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .strokeBorder(Theme.border, lineWidth: 1)
+                )
+        )
     }
 
     private var services: some View {

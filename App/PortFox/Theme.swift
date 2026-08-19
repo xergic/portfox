@@ -19,11 +19,17 @@ enum Theme {
     static let pill = Color(red: 0.137, green: 0.137, blue: 0.149)
 
     enum Metrics {
-        static let popoverWidth: CGFloat = 360
+        static let popoverWidth: CGFloat = 404
         static let maximumListHeight: CGFloat = 460
         static let cardRadius: CGFloat = 10
         static let rowRadius: CGFloat = 9
         static let serviceIcon: CGFloat = 22
+        /// Fixed so four and five digit ports align, and so the hover actions can
+        /// be positioned beside the pill without measuring it.
+        static let portPillWidth: CGFloat = 66
+        /// Space the hover actions occupy. Reserved even at rest, so revealing
+        /// them never re-truncates the text or shifts the row under the pointer.
+        static let rowActionsWidth: CGFloat = 72
         static let projectIcon: CGFloat = 22
     }
 }

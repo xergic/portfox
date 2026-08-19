@@ -15,8 +15,7 @@ struct PortPill: View {
         .font(.portPort)
         .lineLimit(1)
         .fixedSize()
-        .padding(.horizontal, 9)
-        .padding(.vertical, 4)
+        .frame(width: Theme.Metrics.portPillWidth, height: 21)
         .background(
             RoundedRectangle(cornerRadius: 7, style: .continuous)
                 .fill(Theme.pill)
@@ -42,7 +41,7 @@ struct IconButton: View {
             Image(systemName: symbol)
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(isHovering ? Theme.primaryText : tint)
-                .frame(width: 22, height: 20)
+                .frame(width: 20, height: 20)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

@@ -129,6 +129,15 @@ public struct RunningService: Identifiable, Hashable, Sendable {
         return "\(components[binIndex - 2]) \(name)"
     }
 
+    /// The folder line under a service name, with the project's own version when
+    /// there is one. It lives per service rather than on the project heading
+    /// because in a monorepo every package carries its own version.
+    public var locationLabel: String? {
+        guard let version = project?.version else { return subtitle }
+        guard let subtitle else { return "@ \(version)" }
+        return "\(subtitle) @ \(version)"
+    }
+
     public var localURL: URL? {
         guard type.isHTTP else { return nil }
         return URL(string: "http://\(primarySocket.displayHost):\(primarySocket.port)")

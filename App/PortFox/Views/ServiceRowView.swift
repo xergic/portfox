@@ -25,8 +25,8 @@ struct ServiceRowView: View {
                         VersionLabel(text: version)
                     }
                 }
-                if let subtitle = service.subtitle {
-                    Text(subtitle)
+                if let location = service.locationLabel {
+                    Text(location)
                         .font(.portSubtitle)
                         .foregroundStyle(Theme.secondaryText)
                         .lineLimit(1)
@@ -34,17 +34,22 @@ struct ServiceRowView: View {
                 }
             }
             .layoutPriority(1)
+            .padding(.trailing, Theme.Metrics.rowActionsWidth)
 
-            Spacer(minLength: 4)
+            Spacer(minLength: 0)
 
-            if showsActions {
-                HoverActionsView(service: service)
-                    .transition(.opacity)
-            }
             PortPill(port: service.port)
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 7)
+        // Overlaid beside the port pill rather than inserted into the stack, so
+        // showing the actions never re-truncates the text under the pointer.
+        .overlay(alignment: .trailing) {
+            if showsActions {
+                HoverActionsView(service: service)
+                    .padding(.trailing, Theme.Metrics.portPillWidth + 14)
+            }
+        }
         .background(
             RoundedRectangle(cornerRadius: Theme.Metrics.rowRadius, style: .continuous)
                 .fill(showsActions ? Theme.cardHover : .clear)

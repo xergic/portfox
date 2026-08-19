@@ -158,8 +158,7 @@ struct CLI {
         print("")
 
         for group in result.groups {
-            let projectVersion = group.project.version.map { " \($0)" } ?? ""
-            print("▸ \(group.project.name)\(projectVersion)  \(group.project.displayPath)")
+            print("▸ \(group.project.name)  \(group.project.displayPath)")
             for service in group.services { printService(service, indent: "    ") }
             print("")
         }
@@ -183,7 +182,7 @@ struct CLI {
     static func printService(_ service: RunningService, indent: String) {
         let confidence = Int((service.detection.confidence * 100).rounded())
         let version = service.version.map { " \($0)" } ?? ""
-        let subtitle = service.subtitle.map { " · \($0)" } ?? ""
+        let subtitle = service.locationLabel.map { " · \($0)" } ?? ""
         let extra = service.secondaryPorts.isEmpty ? "" : "  (+\(service.secondaryPorts.map(String.init).joined(separator: ", ")))"
         print("\(indent):\(service.port)\t\(service.displayName)\(version) \(confidence)%\(subtitle)\(extra)")
         print("\(indent)\tpid \(service.listenerProcess.pid) · stop \(service.rootProcess.pid) · \(service.classification.rawValue)")
