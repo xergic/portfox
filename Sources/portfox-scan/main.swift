@@ -9,6 +9,7 @@ struct CLI {
         case services
         case json
         case diagnose
+        case stop(port: Int, force: Bool)
     }
 
     static func run() async {
@@ -27,6 +28,10 @@ struct CLI {
             mode = .json
         } else if arguments.contains("--diagnose") {
             mode = .diagnose
+        } else if let index = arguments.firstIndex(of: "--stop"),
+                  index + 1 < arguments.count,
+                  let port = Int(arguments[index + 1]) {
+            mode = .stop(port: port, force: arguments.contains("--force"))
         } else {
             mode = .services
         }
@@ -37,12 +42,14 @@ struct CLI {
                 try printRaw()
             case .diagnose:
                 try printDiagnosis()
+            case .stop(let port, let force):
+                try await stopService(onPort: port, force: force)
             case .services, .json:
                 let repository = ServiceRepository()
                 let result = try await repository.refresh(
                     options: ScanOptions(showAllListeners: showAll)
                 )
-                if mode == .json {
+                if case .json = mode {
                     printJSON(result)
                 } else {
                     printServices(result)
@@ -65,6 +72,8 @@ struct CLI {
           --json        machine readable service list
           --all         include listeners classified as system noise
           --diagnose    explain how each listener was resolved and classified
+          --stop PORT   send SIGTERM to the service listening on PORT
+          --force       escalate --stop to SIGKILL, including surviving children
         """)
     }
 
@@ -81,6 +90,37 @@ struct CLI {
             print("\texe  \(snapshot?.executablePath ?? "-")")
             print("\tcwd  \(snapshot?.workingDirectory ?? "-")")
             print("\targv \(snapshot?.command ?? "-")")
+        }
+    }
+
+    static func stopService(onPort port: Int, force: Bool) async throws {
+        let repository = ServiceRepository()
+        let result = try await repository.refresh(options: ScanOptions(showAllListeners: true))
+
+        guard let service = result.services.first(where: { $0.sockets.contains { $0.port == port } }) else {
+            FileHandle.standardError.write(Data("nothing is listening on :\(port)\n".utf8))
+            exit(1)
+        }
+
+        print("\(service.displayName) on :\(service.port)")
+        print("  listener pid  \(service.listenerProcess.pid)  \(service.listenerProcess.command)")
+        print("  signalling    \(service.rootProcess.pid)  \(service.rootProcess.command)")
+
+        let controller = ProcessController()
+        let tree = await repository.processTree() ?? ProcessTree(processes: [])
+        let outcome = force
+            ? await controller.forceStop(service, tree: tree)
+            : await controller.stop(service, tree: tree)
+
+        switch outcome {
+        case .exited: print("  result        exited")
+        case .exitedLeavingChildren(let pids):
+            let list = pids.map(String.init).joined(separator: ", ")
+            print("  result        exited, but pid(s) \(list) ignored SIGTERM")
+        case .stillRunning: print("  result        still running, retry with --force")
+        case .notPermitted: print("  result        not permitted, owned by another user")
+        case .notFound: print("  result        already gone")
+        case .refused(let reason): print("  result        refused, \(reason)")
         }
     }
 

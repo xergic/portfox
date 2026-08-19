@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(AppState.self) private var state
+    @State private var launchAtLogin = LaunchAtLogin()
 
     var body: some View {
         @Bindable var state = state
@@ -19,6 +20,18 @@ struct SettingsView: View {
                 Text("Separate repositories inside one folder appear under that folder's name.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            }
+
+            Section("General") {
+                Toggle("Launch at login", isOn: Binding(
+                    get: { launchAtLogin.isEnabled },
+                    set: { launchAtLogin.set($0) }
+                ))
+                if let error = launchAtLogin.lastError {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
             }
         }
         .formStyle(.grouped)

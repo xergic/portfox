@@ -115,9 +115,14 @@ final class AppState {
         busyServiceIDs.insert(service.id)
         defer { busyServiceIDs.remove(service.id) }
 
-        switch await controller.stop(service) {
+        let tree = await repository.processTree()
+        switch await controller.stop(service, tree: tree) {
         case .exited:
             stubbornServiceIDs.remove(service.id)
+        case .exitedLeavingChildren(let pids):
+            stubbornServiceIDs.remove(service.id)
+            let list = pids.map(String.init).joined(separator: ", ")
+            lastError = "\(service.displayName) stopped. \(pids.count) child process\(pids.count == 1 ? "" : "es") ignored the stop signal: PID \(list)."
         case .stillRunning:
             stubbornServiceIDs.insert(service.id)
         case .notPermitted:
