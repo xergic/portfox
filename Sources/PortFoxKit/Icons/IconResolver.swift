@@ -61,7 +61,10 @@ public struct IconResolver: Sendable {
     private func expoIconPath(for project: ProjectSnapshot) -> String? {
         for directory in [project.serviceDirectory, project.root] {
             guard let declared = ManifestReader.expoConfig(in: directory)?.declaredIconPath else { continue }
-            let candidate = URL(fileURLWithPath: declared, relativeTo: directory).standardizedFileURL
+            // Not `URL(fileURLWithPath:relativeTo:)`. Project URLs are not always
+            // flagged as directories, and that initialiser then resolves
+            // "./assets/icon.png" against the parent instead.
+            let candidate = directory.appendingPathComponent(declared).standardizedFileURL
             if fileManager.fileExists(atPath: candidate.path) { return candidate.path }
         }
         return nil
