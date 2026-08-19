@@ -6,13 +6,14 @@ import SwiftUI
 /// hand-driving the menu bar.
 ///
 /// Usage: `PortFox --snapshot out.png [--hover]`, `--snapshot-dashboard out.png`,
-/// or `--snapshot-prefs out.png`.
+/// `--snapshot-prefs out.png` or `--snapshot-about out.png`.
 @MainActor
 enum SnapshotRenderer {
-    enum Surface: String {
+    enum Surface: String, CaseIterable {
         case popover = "--snapshot"
         case dashboard = "--snapshot-dashboard"
         case preferences = "--snapshot-prefs"
+        case about = "--snapshot-about"
     }
 
     struct Request {
@@ -22,7 +23,7 @@ enum SnapshotRenderer {
 
     static var request: Request? {
         let arguments = CommandLine.arguments
-        for surface in [Surface.popover, .dashboard, .preferences] {
+        for surface in Surface.allCases {
             guard let index = arguments.firstIndex(of: surface.rawValue), index + 1 < arguments.count else { continue }
             return Request(surface: surface, path: arguments[index + 1])
         }
@@ -38,7 +39,7 @@ enum SnapshotRenderer {
         switch request.surface {
         case .popover: state.popoverDidAppear()
         case .dashboard: state.dashboardDidAppear()
-        case .preferences: break
+        case .preferences, .about: break
         }
         await state.refresh()
 
@@ -84,6 +85,8 @@ enum SnapshotRenderer {
         case .preferences:
             PreferencesSheet(scrolls: false)
                 .environment(state)
+        case .about:
+            AboutSheet()
         }
     }
 }

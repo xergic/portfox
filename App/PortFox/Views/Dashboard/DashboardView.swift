@@ -1,8 +1,8 @@
 import PortFoxKit
 import SwiftUI
 
-/// The dashboard scene root. Owns the window chrome, the preferences sheet and the
-/// close observer. Everything renderable lives in `DashboardContent`.
+/// The dashboard scene root. Owns the window chrome, its sheets and the close
+/// observer. Everything renderable lives in `DashboardContent`.
 struct DashboardView: View {
     @Environment(AppState.self) private var state
     @State private var dashboard = DashboardState()
@@ -21,8 +21,11 @@ struct DashboardView: View {
                 guard let closing = note.object as? NSWindow, closing === window else { return }
                 state.dashboardDidDisappear()
             }
-            .sheet(item: $state.presentedSheet) { _ in
-                PreferencesSheet().environment(state)
+            .sheet(item: $state.presentedSheet) { sheet in
+                switch sheet {
+                case .preferences: PreferencesSheet().environment(state)
+                case .about: AboutSheet()
+                }
             }
             .onAppear { state.dashboardDidAppear() }
             .onChange(of: state.result.services.map(\.id)) {

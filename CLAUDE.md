@@ -16,7 +16,7 @@ make test     # swift test, the whole kit suite
 make scan     # run the pipeline headless (./.build/debug/portfox-scan)
 make lint     # SwiftLint, must stay clean
 make gen      # regenerate PortFox.xcodeproj from project.yml
-make snapshot # render popover, dashboard and preferences to snapshots/
+make snapshot # render popover, dashboard, preferences and about to snapshots/
 ```
 
 Run `make lint` and `make test` after every code change. Run `make snapshot`

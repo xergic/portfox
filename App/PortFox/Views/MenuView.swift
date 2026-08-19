@@ -172,6 +172,11 @@ struct MenuView: View {
 
             Spacer()
 
+            VersionButton {
+                state.presentedSheet = .about
+                WindowPresenter.showDashboard(openWindow)
+            }
+
             Button("Quit") { NSApplication.shared.terminate(nil) }
                 .buttonStyle(.plain)
                 .font(.system(size: 12))
@@ -180,6 +185,24 @@ struct MenuView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 9)
+    }
+}
+
+private struct VersionButton: View {
+    let action: () -> Void
+
+    @State private var isHovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Text(AppInfo.versionLabel)
+                .font(.portVersion)
+                .foregroundStyle(isHovering ? Theme.secondaryText : Theme.tertiaryText)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovering = $0 }
+        .help("About PortFox")
     }
 }
 

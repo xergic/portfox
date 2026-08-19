@@ -33,6 +33,7 @@ final class AppState {
 
     enum DashboardSheet: String, Identifiable {
         case preferences
+        case about
         var id: String { rawValue }
     }
 
