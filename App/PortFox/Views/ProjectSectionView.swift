@@ -97,7 +97,7 @@ struct ProjectSectionView: View {
                 ServiceRowView(service: service, forcedHover: forcesHover)
             }
         }
-        .padding(.leading, 14)
+        .padding(.leading, 7)
     }
 
     /// Assets are scanned when the menu item is chosen rather than on every
