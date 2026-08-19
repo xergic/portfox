@@ -10,6 +10,8 @@ public struct ProjectSnapshot: Hashable, Codable, Sendable {
     public let serviceDirectory: URL
     /// Display name, resolved by `ProjectResolver`.
     public let name: String
+    /// The project's own version, from its manifest.
+    public let version: String?
     /// `serviceDirectory` relative to `root`, nil when they are the same.
     public let subpath: String?
     /// File and directory names directly inside `serviceDirectory`.
@@ -37,6 +39,7 @@ public struct ProjectSnapshot: Hashable, Codable, Sendable {
         root: URL,
         serviceDirectory: URL,
         name: String,
+        version: String? = nil,
         subpath: String? = nil,
         files: Set<String> = [],
         rootFiles: Set<String> = [],
@@ -48,6 +51,7 @@ public struct ProjectSnapshot: Hashable, Codable, Sendable {
         self.root = root
         self.serviceDirectory = serviceDirectory
         self.name = name
+        self.version = version
         self.subpath = subpath
         self.files = files
         self.rootFiles = rootFiles
@@ -83,6 +87,7 @@ public struct ProjectSnapshot: Hashable, Codable, Sendable {
             root: root,
             serviceDirectory: serviceDirectory,
             name: name,
+            version: version,
             subpath: subpath,
             files: files,
             rootFiles: rootFiles,
@@ -100,13 +105,21 @@ public struct Project: Identifiable, Hashable, Sendable {
 
     public let root: URL
     public let name: String
+    public let version: String?
     public let iconPath: String?
     /// Set when sibling repositories were folded under a shared parent directory.
     public let isSiblingGroup: Bool
 
-    public init(root: URL, name: String, iconPath: String? = nil, isSiblingGroup: Bool = false) {
+    public init(
+        root: URL,
+        name: String,
+        version: String? = nil,
+        iconPath: String? = nil,
+        isSiblingGroup: Bool = false
+    ) {
         self.root = root
         self.name = name
+        self.version = version
         self.iconPath = iconPath
         self.isSiblingGroup = isSiblingGroup
     }

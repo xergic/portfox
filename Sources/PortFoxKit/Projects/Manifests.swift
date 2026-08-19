@@ -3,6 +3,8 @@ import Foundation
 /// Facts read out of one project manifest file.
 public struct ManifestData: Hashable, Sendable {
     public var name: String?
+    /// The project's own version, from `package.json`, `pyproject.toml` and so on.
+    public var version: String?
     /// Lowercased union of dependencies, devDependencies and peerDependencies.
     public var dependencies: Set<String>
     public var scripts: [String: String]
@@ -13,12 +15,14 @@ public struct ManifestData: Hashable, Sendable {
 
     public init(
         name: String? = nil,
+        version: String? = nil,
         dependencies: Set<String> = [],
         scripts: [String: String] = [:],
         declaresWorkspaces: Bool = false,
         declaredIconPath: String? = nil
     ) {
         self.name = name
+        self.version = version
         self.dependencies = dependencies
         self.scripts = scripts
         self.declaresWorkspaces = declaresWorkspaces
@@ -28,7 +32,7 @@ public struct ManifestData: Hashable, Sendable {
     public static let empty = ManifestData()
 
     public var isEmpty: Bool {
-        name == nil && dependencies.isEmpty && scripts.isEmpty && !declaresWorkspaces && declaredIconPath == nil
+        name == nil && version == nil && dependencies.isEmpty && scripts.isEmpty && !declaresWorkspaces && declaredIconPath == nil
     }
 
     /// Combines a nearer manifest with one further up the tree. Nearer wins on
@@ -36,6 +40,7 @@ public struct ManifestData: Hashable, Sendable {
     public func merging(parent: ManifestData) -> ManifestData {
         ManifestData(
             name: name ?? parent.name,
+            version: version ?? parent.version,
             dependencies: dependencies.union(parent.dependencies),
             scripts: scripts.merging(parent.scripts) { near, _ in near },
             declaresWorkspaces: declaresWorkspaces || parent.declaresWorkspaces,
