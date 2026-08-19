@@ -18,7 +18,7 @@ enum SnapshotRenderer {
         await state.refresh()
 
         let renderer = ImageRenderer(
-            content: MenuView(scrolls: false, forcesHover: CommandLine.arguments.contains("--hover"))
+            content: MenuView(forcesHover: CommandLine.arguments.contains("--hover"), scrolls: false)
                 .environment(state)
                 .frame(width: Theme.Metrics.popoverWidth)
                 .preferredColorScheme(.dark)

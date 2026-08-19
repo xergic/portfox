@@ -79,6 +79,12 @@ The walk up the process tree stops hard at an interactive shell, a terminal emul
 
 Children that outlive their parent are swept with the same `SIGTERM`. Anything that ignores that is reported by pid rather than escalated automatically. `SIGKILL` only ever happens when you ask for it.
 
+## Snapshots
+
+`PortFox --snapshot out.png [--hover]` renders the popover to a file. It needs no Screen Recording permission and no pointer, so the design can be iterated on directly.
+
+It renders the list without its scroll container, because `ImageRenderer` lays out in a single pass and never draws scroll content. That is also why the popover measures its own list height rather than letting the `ScrollView` size itself: inside a `MenuBarExtra` window a `ScrollView` has no intrinsic height and collapses to nothing.
+
 ## Known limitations
 
 - Only processes owned by the current user are visible. A database installed as a root daemon will not appear.

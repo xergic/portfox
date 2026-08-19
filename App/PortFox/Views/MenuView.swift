@@ -5,11 +5,23 @@ struct MenuView: View {
     @Environment(AppState.self) private var state
     @Environment(\.openSettings) private var openSettings
 
-    /// ImageRenderer cannot lay out a ScrollView, so the snapshot mode renders
-    /// the same content unscrolled.
-    var scrolls = true
-    /// Snapshot rendering forces the first row of the first group into hover.
+    /// Snapshot rendering forces the hover state, which has no pointer to trigger it.
     var forcesHover = false
+    /// ImageRenderer lays out in a single pass and never renders scroll content,
+    /// so snapshots drop the scroll container and render the list in full.
+    var scrolls = true
+
+    /// Measured height of the service list.
+    ///
+    /// A `MenuBarExtra` window sizes itself to fit its content, and a `ScrollView`
+    /// has no intrinsic height to offer, so it collapses to nothing and the
+    /// popover shows only its header and footer. Measuring the content and
+    /// setting an explicit height is what gives the window something to size to.
+    ///
+    /// It starts at the maximum rather than zero so the very first layout pass is
+    /// already valid. A single-pass renderer never delivers the measurement, and
+    /// the live window would otherwise show one empty frame before settling.
+    @State private var listHeight: CGFloat = Theme.Metrics.maximumListHeight
 
     var body: some View {
         VStack(spacing: 0) {
@@ -72,9 +84,12 @@ struct MenuView: View {
     @ViewBuilder
     private var list: some View {
         if scrolls {
-            ScrollView { listContent }
-                .frame(maxHeight: Theme.Metrics.maximumListHeight)
-                .scrollBounceBehavior(.basedOnSize)
+            ScrollView {
+                listContent
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { listHeight = $0 }
+            }
+            .frame(height: min(listHeight, Theme.Metrics.maximumListHeight))
+            .scrollBounceBehavior(.basedOnSize)
         } else {
             listContent
         }
