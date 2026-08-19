@@ -21,6 +21,7 @@ let package = Package(
         .testTarget(
             name: "PortFoxKitTests",
             dependencies: ["PortFoxKit"],
+            resources: [.copy("Fixtures")],
             swiftSettings: [.swiftLanguageMode(.v6)]
         )
     ]

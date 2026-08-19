@@ -30,7 +30,11 @@ struct CLI {
                 let result = try await repository.refresh(
                     options: ScanOptions(showAllListeners: showAll)
                 )
-                mode == .json ? printJSON(result) : printServices(result)
+                if mode == .json {
+                    printJSON(result)
+                } else {
+                    printServices(result)
+                }
             }
         } catch {
             FileHandle.standardError.write(Data("portfox-scan failed: \(error)\n".utf8))
