@@ -3,41 +3,20 @@ import SwiftUI
 
 /// Ancestry and children of the selected listener, which is what finally makes the
 /// Stop target visible.
-struct ProcessTreePane: View {
+struct ProcessTreeCard: View {
     @Environment(AppState.self) private var state
     let service: RunningService
-    var scrolls = true
 
     var body: some View {
-        content
-            .padding(16)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    }
-
-    @ViewBuilder
-    private var content: some View {
-        if scrolls {
-            ScrollView { body(for: rows) }
-                .scrollBounceBehavior(.basedOnSize)
-        } else {
-            body(for: rows)
-        }
-    }
-
-    private func body(for rows: [ProcessLine]) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            ServiceHeaderCard(service: service, projectIconPath: service.project?.iconPath)
-
-            DetailCard(title: "PROCESS ANCESTRY & CHILD WORKERS", systemImage: "arrow.triangle.branch") {
-                if rows.isEmpty {
-                    Text("The process tree is not available yet.")
-                        .font(.portSubtitle)
-                        .foregroundStyle(Theme.tertiaryText)
-                } else {
-                    VStack(alignment: .leading, spacing: 5) {
-                        ForEach(rows) { line in
-                            ProcessLineView(line: line)
-                        }
+        DetailCard(title: "PROCESS ANCESTRY & CHILD WORKERS", systemImage: "arrow.triangle.branch") {
+            if rows.isEmpty {
+                Text("The process tree is not available yet.")
+                    .font(.portSubtitle)
+                    .foregroundStyle(Theme.tertiaryText)
+            } else {
+                VStack(alignment: .leading, spacing: 5) {
+                    ForEach(rows) { line in
+                        ProcessLineView(line: line)
                     }
                 }
             }

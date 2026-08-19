@@ -32,6 +32,8 @@ struct IconButton: View {
     let symbol: String
     var tint: Color = Theme.secondaryText
     var help: String = ""
+    var symbolSize: CGFloat = 11
+    var frameSize: CGFloat = 20
     let action: () -> Void
 
     @State private var isHovering = false
@@ -39,9 +41,9 @@ struct IconButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.system(size: 11, weight: .medium))
+                .font(.system(size: symbolSize, weight: .medium))
                 .foregroundStyle(isHovering ? Theme.primaryText : tint)
-                .frame(width: 20, height: 20)
+                .frame(width: frameSize, height: frameSize)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

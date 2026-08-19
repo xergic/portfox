@@ -31,6 +31,8 @@ struct ServiceDetailPane: View {
                     inspection
                 }
             }
+
+            ProcessTreeCard(service: service)
         }
     }
 

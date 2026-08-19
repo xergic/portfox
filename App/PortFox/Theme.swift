@@ -43,6 +43,10 @@ enum Theme {
         static let projectActionsWidth: CGFloat = 92
         static let projectIcon: CGFloat = 22
 
+        /// The dashboard top bar is 52 points tall, so its buttons can be far larger
+        /// than a 20 point row action without crowding anything.
+        static let dashboardButtonSize: CGFloat = 32
+        static let dashboardSymbolSize: CGFloat = 16
         static let dashboardWidth: CGFloat = 1180
         static let dashboardHeight: CGFloat = 820
         static let sidebarWidth: CGFloat = 300

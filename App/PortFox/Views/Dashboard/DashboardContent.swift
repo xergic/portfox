@@ -29,12 +29,7 @@ struct DashboardContent: View {
     @ViewBuilder
     private var detail: some View {
         if let service = dashboard.selection(in: state.result) {
-            switch dashboard.tab {
-            case .services:
-                ServiceDetailPane(service: service, dashboard: dashboard, scrolls: scrolls)
-            case .processTree:
-                ProcessTreePane(service: service, scrolls: scrolls)
-            }
+            ServiceDetailPane(service: service, dashboard: dashboard, scrolls: scrolls)
         } else {
             emptyDetail
         }
@@ -65,11 +60,23 @@ struct DashboardContent: View {
                 .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(Theme.primaryText)
 
-            Spacer(minLength: 16)
-            tabs
+            Text(String(state.serviceCount))
+                .font(.portCount)
+                .foregroundStyle(Theme.secondaryText)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(
+                    RoundedRectangle(cornerRadius: 5, style: .continuous).fill(Theme.pill)
+                )
+
             Spacer(minLength: 16)
 
-            IconButton(symbol: "arrow.trianglehead.2.clockwise", help: "Refresh") {
+            IconButton(
+                symbol: "arrow.trianglehead.2.clockwise",
+                help: "Refresh",
+                symbolSize: Theme.Metrics.dashboardSymbolSize,
+                frameSize: Theme.Metrics.dashboardButtonSize
+            ) {
                 Task { await state.refresh() }
             }
             .rotationEffect(.degrees(state.isRefreshing ? 360 : 0))
@@ -78,7 +85,12 @@ struct DashboardContent: View {
                 value: state.isRefreshing
             )
 
-            IconButton(symbol: "slider.horizontal.3", help: "Preferences") {
+            IconButton(
+                symbol: "slider.horizontal.3",
+                help: "Preferences",
+                symbolSize: Theme.Metrics.dashboardSymbolSize,
+                frameSize: Theme.Metrics.dashboardButtonSize
+            ) {
                 state.presentedSheet = .preferences
             }
         }
@@ -86,58 +98,5 @@ struct DashboardContent: View {
         .padding(.leading, 78)
         .padding(.trailing, 14)
         .frame(height: 52)
-    }
-
-    private var tabs: some View {
-        HStack(spacing: 2) {
-            ForEach(DashboardState.Tab.allCases, id: \.self) { tab in
-                TabButton(
-                    title: tab == .services ? "Services (\(state.serviceCount))" : tab.displayName,
-                    isSelected: dashboard.tab == tab
-                ) {
-                    dashboard.tab = tab
-                }
-            }
-        }
-        .padding(2)
-        .background(
-            RoundedRectangle(cornerRadius: 9, style: .continuous)
-                .fill(Theme.pill)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        .strokeBorder(Theme.border, lineWidth: 1)
-                )
-        )
-        .fixedSize()
-    }
-}
-
-private struct TabButton: View {
-    let title: String
-    let isSelected: Bool
-    let action: () -> Void
-
-    @State private var isHovering = false
-
-    var body: some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(size: 12, weight: isSelected ? .semibold : .regular))
-                .foregroundStyle(isSelected ? Theme.primaryText : Theme.secondaryText)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 5)
-                .background(
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        .fill(background)
-                )
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .onHover { isHovering = $0 }
-    }
-
-    private var background: Color {
-        if isSelected { return Theme.cardHover }
-        return isHovering ? Theme.card : .clear
     }
 }

@@ -34,9 +34,9 @@ Every stage takes and returns plain value types, and no stage imports SwiftUI. `
 
 ## The dashboard
 
-The popover footer opens a dashboard window with two tabs, Services and Process Tree.
+The popover footer opens a dashboard window.
 
-Services shows a searchable, filterable service list on the left. The right pane shows process metadata (PID, executable, working directory, resident memory) and an HTTP inspection panel for the selected service. Process Tree shows the same selection's ancestry and child workers, one row per process, each labelled by its role:
+A searchable, filterable service list sits on the left. The right pane shows everything known about the selected service: process metadata (PID, executable, working directory, resident memory), an HTTP inspection panel, and the process ancestry with its child workers, one row per process, each labelled by its role:
 
 - Parent Shell for a boundary process (a shell, terminal or supervisor), never walked through or signalled.
 - Runner for a wrapper such as `pnpm` or `nodemon`.

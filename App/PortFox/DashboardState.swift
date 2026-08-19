@@ -7,18 +7,6 @@ import PortFoxKit
 @MainActor
 @Observable
 final class DashboardState {
-    enum Tab: String, CaseIterable {
-        case services
-        case processTree
-
-        var displayName: String {
-            switch self {
-            case .services: "Services"
-            case .processTree: "Process Tree"
-            }
-        }
-    }
-
     enum Filter: String, CaseIterable, Identifiable {
         case all
         case web
@@ -49,7 +37,6 @@ final class DashboardState {
         }
     }
 
-    var tab: Tab = .services
     var filter: Filter = .all
     var search = ""
     var selectedServiceID: String?
