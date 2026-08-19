@@ -1,9 +1,10 @@
 import PortFoxKit
 import SwiftUI
 
-/// Wide summary card at the top of a service detail pane: icon, name, socket,
-/// and the primary actions, mirroring `ServiceRowView`'s chrome and hover rules.
-struct ServiceHeaderCard: View {
+/// The banner at the top of a service detail pane: icon, name, socket, and the
+/// primary actions. Deliberately not a card, so the cards below it read as the
+/// detail and this reads as the subject.
+struct ServiceHeaderView: View {
     @Environment(AppState.self) private var state
     let service: RunningService
     var projectIconPath: String?
@@ -18,24 +19,19 @@ struct ServiceHeaderCard: View {
             Spacer(minLength: 12)
             actions
         }
-        .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: Theme.Metrics.cardRadius, style: .continuous)
-                .fill(Theme.card)
-                .overlay(
-                    RoundedRectangle(cornerRadius: Theme.Metrics.cardRadius, style: .continuous)
-                        .strokeBorder(Theme.border, lineWidth: 1)
-                )
-        )
         .opacity(state.isBusy(service) ? 0.5 : 1)
     }
 
     private var iconBadge: some View {
-        ServiceIconView(type: service.type, projectIconPath: projectIconPath, size: 40)
-            .frame(width: 56, height: 56)
+        ServiceIconView(type: service.type, projectIconPath: projectIconPath, size: 32)
+            .frame(width: 46, height: 46)
             .background(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Theme.cardHover)
+                    .fill(Theme.card)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .strokeBorder(Theme.border, lineWidth: 1)
+                    )
             )
     }
 

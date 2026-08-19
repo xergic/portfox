@@ -46,21 +46,35 @@ struct DetailCard<Content: View>: View {
 /// One label/value fact inside a `DetailCard`. Pass `badge` instead of `value`
 /// for a status-pill trailing value such as an HTTP response code.
 struct LabeledRow: View {
+    /// `spread` pushes the value to the trailing edge, which lines up a column of
+    /// short values. `inline` keeps it beside its label, which reads better for
+    /// long paths that would otherwise truncate against a distant label.
+    enum Layout {
+        case spread
+        case inline
+    }
+
     let label: String
     let value: String?
+    var layout: Layout = .spread
     var valueFont: Font = .portSubtitle
     var valueColor: Color = Theme.primaryText
     var isMonospaced = true
     var badge: StatusPill?
 
     var body: some View {
-        HStack(spacing: 0) {
-            Text(label)
-                .font(.system(size: 11))
+        HStack(alignment: .firstTextBaseline, spacing: layout == .inline ? 6 : 0) {
+            Text(layout == .inline ? "\(label):" : label)
+                .font(labelFont)
                 .foregroundStyle(Theme.secondaryText)
-            Spacer(minLength: 12)
+            if layout == .spread { Spacer(minLength: 12) }
             trailingContent
+            if layout == .inline { Spacer(minLength: 0) }
         }
+    }
+
+    private var labelFont: Font {
+        layout == .inline ? .portSubtitle : .system(size: 11)
     }
 
     private var effectiveFont: Font { isMonospaced ? valueFont.monospaced() : valueFont }

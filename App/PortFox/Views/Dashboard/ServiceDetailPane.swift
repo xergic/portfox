@@ -23,7 +23,8 @@ struct ServiceDetailPane: View {
 
     private var panels: some View {
         VStack(alignment: .leading, spacing: 16) {
-            ServiceHeaderCard(service: service, projectIconPath: service.project?.iconPath)
+            ServiceHeaderView(service: service, projectIconPath: service.project?.iconPath)
+            CardDivider()
 
             HStack(alignment: .top, spacing: 16) {
                 metadata
@@ -39,13 +40,28 @@ struct ServiceDetailPane: View {
     private var metadata: some View {
         DetailCard(title: "PROCESS METADATA", systemImage: "terminal") {
             VStack(spacing: 8) {
-                LabeledRow(label: "PID", value: String(service.listenerProcess.pid))
-                LabeledRow(label: "Executable", value: service.listenerProcess.resolvedExecutablePath)
-                LabeledRow(label: "Working directory", value: workingDirectory)
-                LabeledRow(label: "Resident memory", value: memory)
+                LabeledRow(label: "PID", value: String(service.listenerProcess.pid), layout: .inline)
+                LabeledRow(
+                    label: "Executable",
+                    value: service.listenerProcess.resolvedExecutablePath,
+                    layout: .inline,
+                    valueColor: Theme.pathExecutable
+                )
+                LabeledRow(
+                    label: "Working directory",
+                    value: workingDirectory,
+                    layout: .inline,
+                    valueColor: Theme.pathDirectory
+                )
                 if !service.secondaryPorts.isEmpty {
-                    LabeledRow(label: "Other ports", value: service.secondaryPorts.map(String.init).joined(separator: ", "))
+                    LabeledRow(
+                        label: "Other ports",
+                        value: service.secondaryPorts.map(String.init).joined(separator: ", "),
+                        layout: .inline
+                    )
                 }
+                CardDivider()
+                LabeledRow(label: "Resident memory", value: memory)
             }
         }
     }

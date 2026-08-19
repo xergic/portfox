@@ -56,20 +56,20 @@ struct DashboardContent: View {
                 .frame(width: 20, height: 20)
                 .foregroundStyle(Color(red: 0.98, green: 0.55, blue: 0.24))
 
-            Text("PortFox")
+            Text("PortFox — Services & Process Inspector")
                 .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(Theme.primaryText)
-
-            Text(String(state.serviceCount))
-                .font(.portCount)
-                .foregroundStyle(Theme.secondaryText)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(
-                    RoundedRectangle(cornerRadius: 5, style: .continuous).fill(Theme.pill)
-                )
+                .lineLimit(1)
 
             Spacer(minLength: 16)
+
+            StatusPill(text: "\(state.serviceCount) Active Services")
+
+            if let memory = totalMemory {
+                Text(memory)
+                    .font(.portSubtitle)
+                    .foregroundStyle(Theme.tertiaryText)
+            }
 
             IconButton(
                 symbol: "arrow.trianglehead.2.clockwise",
@@ -98,5 +98,11 @@ struct DashboardContent: View {
         .padding(.leading, 78)
         .padding(.trailing, 14)
         .frame(height: 52)
+    }
+
+    private var totalMemory: String? {
+        let bytes = state.result.services.compactMap(\.listenerProcess.residentMemory).reduce(0, +)
+        guard bytes > 0 else { return nil }
+        return "\(ByteFormat.short(bytes)) RAM"
     }
 }

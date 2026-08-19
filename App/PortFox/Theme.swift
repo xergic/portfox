@@ -23,6 +23,11 @@ enum Theme {
     static let roleWrapper = Color(red: 0.965, green: 0.694, blue: 0.290)
     static let roleService = accent
 
+    /// Path values in the metadata card, so the executable and the working
+    /// directory are told apart without reading their labels.
+    static let pathExecutable = roleWrapper
+    static let pathDirectory = Color(red: 0.376, green: 0.647, blue: 0.980)
+
     enum Metrics {
         static let popoverWidth: CGFloat = 404
         static let maximumListHeight: CGFloat = 460

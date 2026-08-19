@@ -152,24 +152,15 @@ struct ServiceListPane: View {
         return dashboard.services(in: state.result).filter { !placed.contains($0.id) }
     }
 
+    /// Sockets, not services. The header counts services, and a single service
+    /// often holds several listening sockets.
     private var footer: some View {
-        HStack(spacing: 8) {
-            Text("\(state.result.allSockets.count) active listeners")
-            Spacer(minLength: 8)
-            if let memory = totalMemory {
-                Text(memory)
-            }
-        }
-        .font(.system(size: 11))
-        .foregroundStyle(Theme.tertiaryText)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 9)
-    }
-
-    private var totalMemory: String? {
-        let bytes = state.result.services.compactMap(\.listenerProcess.residentMemory).reduce(0, +)
-        guard bytes > 0 else { return nil }
-        return "\(ByteFormat.short(bytes)) RAM"
+        Text("\(state.result.allSockets.count) active listeners")
+            .font(.system(size: 11))
+            .foregroundStyle(Theme.tertiaryText)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
     }
 }
 
