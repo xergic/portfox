@@ -8,6 +8,8 @@ struct MenuView: View {
     /// ImageRenderer cannot lay out a ScrollView, so the snapshot mode renders
     /// the same content unscrolled.
     var scrolls = true
+    /// Snapshot rendering forces the first row of the first group into hover.
+    var forcesHover = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -85,14 +87,14 @@ struct MenuView: View {
                 }
 
                 ForEach(state.result.groups) { group in
-                    ProjectSectionView(group: group)
+                    ProjectSectionView(group: group, forcesHover: forcesHover)
                 }
 
                 if !state.result.standalone.isEmpty {
                     VStack(alignment: .leading, spacing: 0) {
                         SectionHeader(title: "INFRASTRUCTURE & DAEMONS")
                         ForEach(state.result.standalone) { service in
-                            ServiceRowView(service: service)
+                            ServiceRowView(service: service, forcedHover: forcesHover)
                         }
                     }
                 }

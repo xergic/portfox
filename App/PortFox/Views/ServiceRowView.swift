@@ -5,6 +5,9 @@ struct ServiceRowView: View {
     @Environment(AppState.self) private var state
 
     let service: RunningService
+    /// Snapshot rendering has no pointer, so the hover state is forced there.
+    var forcedHover = false
+
     @State private var isHovering = false
 
     var body: some View {
@@ -16,6 +19,8 @@ struct ServiceRowView: View {
                     Text(service.displayName)
                         .font(.portName)
                         .foregroundStyle(Theme.primaryText)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
                     if let confidence = uncertainConfidence {
                         ConfidenceChip(confidence: confidence)
                     }
@@ -25,13 +30,14 @@ struct ServiceRowView: View {
                         .font(.portSubtitle)
                         .foregroundStyle(Theme.secondaryText)
                         .lineLimit(1)
-                        .truncationMode(.middle)
+                        .truncationMode(.tail)
                 }
             }
+            .layoutPriority(1)
 
-            Spacer(minLength: 6)
+            Spacer(minLength: 4)
 
-            if isHovering {
+            if showsActions {
                 HoverActionsView(service: service)
                     .transition(.opacity)
             }
@@ -41,10 +47,10 @@ struct ServiceRowView: View {
         .padding(.vertical, 7)
         .background(
             RoundedRectangle(cornerRadius: Theme.Metrics.rowRadius, style: .continuous)
-                .fill(isHovering ? Theme.cardHover : .clear)
+                .fill(showsActions ? Theme.cardHover : .clear)
                 .overlay(
                     RoundedRectangle(cornerRadius: Theme.Metrics.rowRadius, style: .continuous)
-                        .strokeBorder(isHovering ? Theme.border : .clear, lineWidth: 1)
+                        .strokeBorder(showsActions ? Theme.border : .clear, lineWidth: 1)
                 )
         )
         .contentShape(Rectangle())
@@ -58,6 +64,8 @@ struct ServiceRowView: View {
 
     /// A confident detection needs no explanation. An uncertain one is worth
     /// flagging, which is what the percentage chips in the design are for.
+    private var showsActions: Bool { isHovering || forcedHover }
+
     private var uncertainConfidence: Double? {
         let confidence = service.detection.confidence
         guard service.type != .unknown, confidence > 0, confidence < 0.9 else { return nil }

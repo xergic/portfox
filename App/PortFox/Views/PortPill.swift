@@ -13,6 +13,8 @@ struct PortPill: View {
                 .foregroundStyle(Theme.primaryText)
         }
         .font(.portPort)
+        .lineLimit(1)
+        .fixedSize()
         .padding(.horizontal, 9)
         .padding(.vertical, 4)
         .background(

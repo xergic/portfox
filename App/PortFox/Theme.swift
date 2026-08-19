@@ -19,7 +19,7 @@ enum Theme {
     static let pill = Color(red: 0.137, green: 0.137, blue: 0.149)
 
     enum Metrics {
-        static let popoverWidth: CGFloat = 340
+        static let popoverWidth: CGFloat = 360
         static let maximumListHeight: CGFloat = 460
         static let cardRadius: CGFloat = 10
         static let rowRadius: CGFloat = 9

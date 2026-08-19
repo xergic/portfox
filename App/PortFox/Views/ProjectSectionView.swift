@@ -3,6 +3,8 @@ import SwiftUI
 
 struct ProjectSectionView: View {
     let group: ProjectGroup
+    /// Snapshot rendering has no pointer, so it forces the hover state.
+    var forcesHover = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -31,7 +33,7 @@ struct ProjectSectionView: View {
 
             VStack(spacing: 0) {
                 ForEach(group.services) { service in
-                    ServiceRowView(service: service)
+                    ServiceRowView(service: service, forcedHover: forcesHover)
                 }
             }
             .padding(.leading, 14)
