@@ -25,9 +25,15 @@ targets:
       - path: App/PortFox
         excludes:
           - Resources/Fonts
+          - Resources/PortFox.icon
       # A folder reference, so ATSApplicationFontsPath finds Contents/Resources/Fonts.
       - path: App/PortFox/Resources/Fonts
         type: folder
+      # An Icon Composer bundle. It is a directory, so it has to be named as a
+      # single file or XcodeGen would walk into it and add its parts separately.
+      - path: App/PortFox/Resources/PortFox.icon
+        type: file
+        buildPhase: resources
     dependencies:
       - package: PortFoxKit
         product: PortFoxKit
@@ -45,7 +51,7 @@ targets:
         ENABLE_APP_SANDBOX: NO
         ENABLE_HARDENED_RUNTIME: YES
         ENABLE_USER_SCRIPT_SANDBOXING: NO
-        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_APPICON_NAME: PortFox
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         COMBINE_HIDPI_IMAGES: YES
         GENERATE_INFOPLIST_FILE: NO
