@@ -18,19 +18,34 @@ enum Theme {
 
     static let pill = Color(red: 0.137, green: 0.137, blue: 0.149)
 
+    /// What a process is doing in a service's tree, matching `ProcessRole`.
+    static let roleBoundary = Color(red: 0.694, green: 0.549, blue: 0.973)
+    static let roleWrapper = Color(red: 0.965, green: 0.694, blue: 0.290)
+    static let roleService = accent
+
     enum Metrics {
         static let popoverWidth: CGFloat = 404
         static let maximumListHeight: CGFloat = 460
         static let cardRadius: CGFloat = 10
         static let rowRadius: CGFloat = 9
         static let serviceIcon: CGFloat = 22
+        /// Beside a service name on the bottom line of a project-first cell.
+        static let serviceIconSmall: CGFloat = 13
         /// Fixed so four and five digit ports align, and so the hover actions can
         /// be positioned beside the pill without measuring it.
         static let portPillWidth: CGFloat = 66
         /// Space the hover actions occupy. Reserved even at rest, so revealing
         /// them never re-truncates the text or shifts the row under the pointer.
         static let rowActionsWidth: CGFloat = 72
+        /// The project header carries a fourth button, so it reserves more than a
+        /// service row. Raising the shared constant instead would cost every
+        /// service row twenty points of text width for nothing.
+        static let projectActionsWidth: CGFloat = 92
         static let projectIcon: CGFloat = 22
+
+        static let dashboardWidth: CGFloat = 1180
+        static let dashboardHeight: CGFloat = 820
+        static let sidebarWidth: CGFloat = 300
     }
 }
 

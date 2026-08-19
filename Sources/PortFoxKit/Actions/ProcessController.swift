@@ -123,12 +123,19 @@ public struct ProcessController: Sendable {
     /// Children that outlive their parent get the same SIGTERM the user asked
     /// for. Anything that survives that is escalated by the user, never here.
     private func sweepOrphans(_ descendants: [ProcessSnapshot]) async -> [pid_t] {
-        let orphans = descendants.filter { verify($0) == .exited }
-        guard !orphans.isEmpty else { return [] }
+        // Verified and signalled in the same step, one process at a time.
+        // Verifying the whole list first and signalling it afterwards would leave
+        // a window in which the kernel recycles a pid between the two, which is
+        // the exact failure the identity check exists to prevent.
+        var signalled: [ProcessSnapshot] = []
+        for orphan in descendants where verify(orphan) == .exited {
+            guard kill(orphan.pid, SIGTERM) == 0 else { continue }
+            signalled.append(orphan)
+        }
+        guard !signalled.isEmpty else { return [] }
 
-        for orphan in orphans { _ = kill(orphan.pid, SIGTERM) }
         try? await Task.sleep(for: gracePeriod)
-        return orphans.filter { inspector.isSameProcessAlive($0) }.map(\.pid)
+        return signalled.filter { inspector.isSameProcessAlive($0) }.map(\.pid)
     }
 
     private func outcomeForErrno() -> Outcome {

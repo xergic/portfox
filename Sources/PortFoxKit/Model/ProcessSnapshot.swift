@@ -51,6 +51,7 @@ public struct ProcessSnapshot: Identifiable, Hashable, Codable, Sendable {
     public let executablePath: String?
     public let arguments: [String]
     public let workingDirectory: String?
+    public let residentMemory: UInt64?
 
     public init(
         pid: pid_t,
@@ -59,7 +60,8 @@ public struct ProcessSnapshot: Identifiable, Hashable, Codable, Sendable {
         startTime: Date? = nil,
         executablePath: String? = nil,
         arguments: [String] = [],
-        workingDirectory: String? = nil
+        workingDirectory: String? = nil,
+        residentMemory: UInt64? = nil
     ) {
         self.pid = pid
         self.parentPID = parentPID
@@ -68,6 +70,7 @@ public struct ProcessSnapshot: Identifiable, Hashable, Codable, Sendable {
         self.executablePath = executablePath
         self.arguments = arguments
         self.workingDirectory = workingDirectory
+        self.residentMemory = residentMemory
     }
 
     /// Full command line, whitespace joined.

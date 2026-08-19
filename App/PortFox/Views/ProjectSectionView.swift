@@ -5,6 +5,10 @@ struct ProjectSectionView: View {
     @Environment(AppState.self) private var state
 
     let group: ProjectGroup
+    var layout: ServiceCellLayout = .serviceFirst
+    var showsHoverActions = true
+    var selectedServiceID: String?
+    var onSelect: ((RunningService) -> Void)?
     /// Snapshot rendering has no pointer, so it forces the hover state.
     var forcesHover = false
 
@@ -36,7 +40,7 @@ struct ProjectSectionView: View {
                 .foregroundStyle(Theme.secondaryText)
                 .lineLimit(1)
                 .truncationMode(.head)
-                .padding(.trailing, Theme.Metrics.rowActionsWidth)
+                .padding(.trailing, showsHoverActions ? Theme.Metrics.projectActionsWidth : 0)
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 10)
@@ -49,7 +53,7 @@ struct ProjectSectionView: View {
         // buttons on hover would re-truncate the path and shift the row under
         // the pointer, which reads as the row jumping.
         .overlay(alignment: .trailing) {
-            if isHovering || forcesHover {
+            if showsHoverActions, showsActions {
                 actions.padding(.trailing, 8)
             }
         }
@@ -77,6 +81,9 @@ struct ProjectSectionView: View {
                 }
             }
             IconButton(symbol: "folder", help: "Reveal in Finder") { state.reveal(group.project.root) }
+            IconButton(symbol: "stop.fill", tint: Theme.danger, help: "Stop every service in this project") {
+                Task { await state.stopAll(in: group) }
+            }
         }
         .fixedSize()
         .padding(.horizontal, 3)
@@ -94,11 +101,20 @@ struct ProjectSectionView: View {
     private var services: some View {
         VStack(spacing: 0) {
             ForEach(group.services) { service in
-                ServiceRowView(service: service, forcedHover: forcesHover)
+                ServiceRowView(
+                    service: service,
+                    layout: layout,
+                    showsHoverActions: showsHoverActions,
+                    isSelected: service.id == selectedServiceID,
+                    onTap: onSelect,
+                    forcedHover: forcesHover
+                )
             }
         }
         .padding(.leading, 7)
     }
+
+    private var showsActions: Bool { isHovering || forcesHover }
 
     /// Assets are scanned when the menu item is chosen rather than on every
     /// redraw, because the popover reappears every two seconds.

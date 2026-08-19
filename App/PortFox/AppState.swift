@@ -12,6 +12,18 @@ final class AppState {
     /// Services whose Stop was delivered but which are still alive.
     private(set) var stubbornServiceIDs: Set<String> = []
     private(set) var busyServiceIDs: Set<String> = []
+    /// The tree from the last scan. The dashboard renders it, and stopping needs
+    /// it to sweep orphans.
+    private(set) var processTree: ProcessTree?
+
+    /// Set before the dashboard is opened, so the sheet is already requested on
+    /// the window's first layout pass rather than a turn too late.
+    var presentedSheet: DashboardSheet?
+
+    enum DashboardSheet: String, Identifiable {
+        case preferences
+        var id: String { rawValue }
+    }
 
     var showAllListeners: Bool {
         didSet {
@@ -27,9 +39,32 @@ final class AppState {
         }
     }
 
+    var cellLayout: ServiceCellLayout {
+        didSet { defaults.set(cellLayout.rawValue, forKey: Key.cellLayout) }
+    }
+
+    var automaticRefresh: Bool {
+        didSet {
+            defaults.set(automaticRefresh, forKey: Key.automaticRefresh)
+            start()
+        }
+    }
+
+    var pollingSeconds: Int {
+        didSet {
+            defaults.set(pollingSeconds, forKey: Key.pollingSeconds)
+            start()
+        }
+    }
+
+    static let pollingChoices = [1, 2, 5]
+
     private enum Key {
         static let showAllListeners = "showAllListeners"
         static let groupSiblingRepositories = "groupSiblingRepositories"
+        static let cellLayout = "cellLayout"
+        static let automaticRefresh = "automaticRefresh"
+        static let pollingSeconds = "pollingSeconds"
     }
 
     private let repository = ServiceRepository()
@@ -38,20 +73,33 @@ final class AppState {
     private let iconOverrides = ProjectIconOverrides()
     private let defaults = UserDefaults.standard
 
-    /// Refreshing every two seconds only matters while the user is looking. When
-    /// the popover is closed the count badge is the only live element.
-    private let visibleInterval = Duration.seconds(2)
+    /// Refreshing on the polling interval only matters while the user is looking.
+    /// With every window closed the count badge is the only live element.
     private let hiddenInterval = Duration.seconds(15)
 
-    private var isPopoverVisible = false
+    /// A set rather than a counter, so a repeated appear or a missed disappear
+    /// cannot leave the app stuck on the fast interval forever.
+    private enum Surface: Hashable {
+        case popover
+        case dashboard
+    }
+
+    private var visibleSurfaces: Set<Surface> = []
     private var refreshTask: Task<Void, Never>?
 
     var serviceCount: Int { result.services.count }
 
     init() {
-        defaults.register(defaults: [Key.groupSiblingRepositories: true])
+        defaults.register(defaults: [
+            Key.groupSiblingRepositories: true,
+            Key.automaticRefresh: true,
+            Key.pollingSeconds: 2
+        ])
         showAllListeners = defaults.bool(forKey: Key.showAllListeners)
         groupSiblingRepositories = defaults.bool(forKey: Key.groupSiblingRepositories)
+        cellLayout = ServiceCellLayout(rawValue: defaults.string(forKey: Key.cellLayout) ?? "") ?? .serviceFirst
+        automaticRefresh = defaults.bool(forKey: Key.automaticRefresh)
+        pollingSeconds = defaults.integer(forKey: Key.pollingSeconds)
         start()
     }
 
@@ -60,21 +108,30 @@ final class AppState {
         refreshTask = Task { [weak self] in
             while !Task.isCancelled {
                 await self?.refresh()
-                guard let interval = self?.currentInterval else { return }
-                try? await Task.sleep(for: interval)
+                guard let self, automaticRefresh else { return }
+                try? await Task.sleep(for: currentInterval)
             }
         }
     }
 
-    private var currentInterval: Duration { isPopoverVisible ? visibleInterval : hiddenInterval }
+    /// Clamped, because a stored zero would turn the loop into a spin.
+    private var currentInterval: Duration {
+        guard !visibleSurfaces.isEmpty else { return hiddenInterval }
+        return .seconds(max(1, pollingSeconds))
+    }
 
-    func popoverDidAppear() {
-        isPopoverVisible = true
+    func popoverDidAppear() { surfaceDidAppear(.popover) }
+    func popoverDidDisappear() { surfaceDidDisappear(.popover) }
+    func dashboardDidAppear() { surfaceDidAppear(.dashboard) }
+    func dashboardDidDisappear() { surfaceDidDisappear(.dashboard) }
+
+    private func surfaceDidAppear(_ surface: Surface) {
+        visibleSurfaces.insert(surface)
         Task { await refresh() }
     }
 
-    func popoverDidDisappear() {
-        isPopoverVisible = false
+    private func surfaceDidDisappear(_ surface: Surface) {
+        visibleSurfaces.remove(surface)
     }
 
     func refresh() async {
@@ -88,6 +145,7 @@ final class AppState {
         )
         do {
             result = try await repository.refresh(options: options)
+            processTree = await repository.processTree()
             lastError = nil
             stubbornServiceIDs.formIntersection(Set(result.services.map(\.id)))
         } catch {
@@ -151,24 +209,69 @@ final class AppState {
         defer { busyServiceIDs.remove(service.id) }
 
         let tree = await repository.processTree()
-        switch await controller.stop(service, tree: tree) {
-        case .exited:
+        let problem = record(await controller.stop(service, tree: tree), for: service)
+        await refresh()
+        // After the refresh, never before. A successful refresh clears `lastError`,
+        // which would silently swallow the reason a stop did not work.
+        if let problem { lastError = problem }
+    }
+
+    /// Stops every service under one project heading.
+    ///
+    /// Concurrent rather than sequential, because each stop waits out a three
+    /// second grace period and four in a row would freeze the popover for twelve.
+    /// The tree is read once and shared, which is safe because `ProcessController`
+    /// re-reads each pid's identity from the kernel immediately before it signals.
+    func stopAll(in group: ProjectGroup) async {
+        let services = group.services
+        guard !services.isEmpty else { return }
+
+        busyServiceIDs.formUnion(services.map(\.id))
+        defer { busyServiceIDs.subtract(services.map(\.id)) }
+
+        let tree = await repository.processTree()
+        let outcomes = await withTaskGroup(of: StopReport.self) { work in
+            for service in services {
+                work.addTask { [controller] in
+                    StopReport(service: service, outcome: await controller.stop(service, tree: tree))
+                }
+            }
+            var reports: [StopReport] = []
+            for await report in work { reports.append(report) }
+            return reports
+        }
+
+        let problems = outcomes.compactMap { record($0.outcome, for: $0.service) }
+        await refresh()
+        if !problems.isEmpty { lastError = problems.joined(separator: " ") }
+    }
+
+    private struct StopReport: Sendable {
+        let service: RunningService
+        let outcome: ProcessController.Outcome
+    }
+
+    /// Applies one stop outcome to the stubborn set and returns a message when the
+    /// user needs to know something. `notFound` is silent on purpose, since a
+    /// service can legitimately have died in a sibling's orphan sweep.
+    private func record(_ outcome: ProcessController.Outcome, for service: RunningService) -> String? {
+        switch outcome {
+        case .exited, .notFound:
             stubbornServiceIDs.remove(service.id)
+            return nil
         case .exitedLeavingChildren(let pids):
             stubbornServiceIDs.remove(service.id)
             let list = pids.map(String.init).joined(separator: ", ")
             let plural = pids.count == 1 ? "" : "es"
-            lastError = "\(service.displayName) stopped. \(pids.count) child process\(plural) ignored the stop signal: PID \(list)."
+            return "\(service.displayName) stopped. \(pids.count) child process\(plural) ignored the stop signal: PID \(list)."
         case .stillRunning:
             stubbornServiceIDs.insert(service.id)
+            return nil
         case .notPermitted:
-            lastError = "\(service.displayName) belongs to another user, so PortFox cannot stop it."
-        case .notFound:
-            stubbornServiceIDs.remove(service.id)
+            return "\(service.displayName) belongs to another user, so PortFox cannot stop it."
         case .refused(let reason):
-            lastError = "PortFox will not signal a \(reason)."
+            return "PortFox will not signal a \(reason)."
         }
-        await refresh()
     }
 
     func forceStop(_ service: RunningService) async {
@@ -176,11 +279,13 @@ final class AppState {
         defer { busyServiceIDs.remove(service.id) }
 
         guard let tree = await repository.processTree() else { return }
+        var problem: String?
         if case .refused(let reason) = await controller.forceStop(service, tree: tree) {
-            lastError = "PortFox will not signal a \(reason)."
+            problem = "PortFox will not signal a \(reason)."
         }
         stubbornServiceIDs.remove(service.id)
         await refresh()
+        if let problem { lastError = problem }
     }
 
     func isStubborn(_ service: RunningService) -> Bool { stubbornServiceIDs.contains(service.id) }

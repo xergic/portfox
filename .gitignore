@@ -8,3 +8,4 @@ DerivedData/
 build/
 *.moved-aside
 xcuserdata/
+snapshots/

@@ -30,10 +30,16 @@ run: app ## Build and launch the menu bar app
 	@pkill -x PortFox || true
 	@open $(DERIVED)/Build/Products/$(CONFIG)/PortFox.app
 
+snapshot: app ## Render popover, dashboard and preferences snapshots to snapshots/
+	@mkdir -p snapshots
+	@$(DERIVED)/Build/Products/$(CONFIG)/PortFox.app/Contents/MacOS/PortFox --snapshot snapshots/popover.png
+	@$(DERIVED)/Build/Products/$(CONFIG)/PortFox.app/Contents/MacOS/PortFox --snapshot-dashboard snapshots/dashboard.png
+	@$(DERIVED)/Build/Products/$(CONFIG)/PortFox.app/Contents/MacOS/PortFox --snapshot-prefs snapshots/preferences.png
+
 lint: ## Run SwiftLint
 	swiftlint lint --quiet
 
 clean: ## Remove build artefacts
-	rm -rf .build $(DERIVED) $(PROJECT)
+	rm -rf .build $(DERIVED) $(PROJECT) snapshots
 
-.PHONY: help gen build test scan raw app run lint clean
+.PHONY: help gen build test scan raw app run snapshot lint clean

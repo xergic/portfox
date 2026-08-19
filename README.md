@@ -32,6 +32,29 @@ ListenerScanner → ProcessInspector → ProcessTree → ProjectResolver
 
 Every stage takes and returns plain value types, and no stage imports SwiftUI. `portfox-scan` drives the identical pipeline from the command line, so detection can be developed and verified without launching the GUI.
 
+## The dashboard
+
+The popover footer opens a dashboard window with two tabs, Services and Process Tree.
+
+Services shows a searchable, filterable service list on the left. The right pane shows process metadata (PID, executable, working directory, resident memory) and an HTTP inspection panel for the selected service. Process Tree shows the same selection's ancestry and child workers, one row per process, each labelled by its role:
+
+- Parent Shell for a boundary process (a shell, terminal or supervisor), never walked through or signalled.
+- Runner for a wrapper such as `pnpm` or `nodemon`.
+- Listener for the service itself.
+
+The row PortFox would actually signal on Stop is badged "stops here".
+
+## Settings
+
+Settings live in a sheet inside the dashboard, replacing the old Settings window. The dashboard's toolbar opens it, and so does the popover footer, which opens the window and the sheet together.
+
+- **Automatic refresh loop**: poll listening TCP sockets while a window is open. Off stops the timer entirely.
+- **Polling interval**: 1s, 2s or 5s. Disabled while automatic refresh is off.
+- **Service list layout**: Service or Project, which fact leads each row. Daemons and databases always stay service-first, since their resolved project is an accident of where they run.
+- **Show all listeners**: include background system ports such as CUPS or mDNSResponder.
+- **Group related services by project**: fold sibling repositories under their shared parent directory.
+- **Launch at login**: start PortFox automatically when you log in.
+
 ## The scan CLI
 
 ```sh
@@ -79,16 +102,31 @@ The walk up the process tree stops hard at an interactive shell, a terminal emul
 
 Children that outlive their parent are swept with the same `SIGTERM`. Anything that ignores that is reported by pid rather than escalated automatically. `SIGKILL` only ever happens when you ask for it.
 
+## HTTP inspection
+
+Inspecting a service sends one GET request to it and reads back the status, page title, `Server` header and latency. It only runs when you press Inspect. It never runs on the refresh tick, so opening the dashboard never touches a service that happens to be listening.
+
+The request is refused unless the URL's host is `localhost`, `127.0.0.1` or `::1`, and it never follows a redirect. A 3xx response shows its `Location` header instead. Together those two rules mean a dev server cannot walk the probe off the machine or trap it in a redirect loop.
+
 ## Snapshots
 
-`PortFox --snapshot out.png [--hover]` renders the popover to a file. It needs no Screen Recording permission and no pointer, so the design can be iterated on directly.
+Three flags render a surface to a file and exit, without a pointer or Screen Recording permission:
 
-It renders the list without its scroll container, because `ImageRenderer` lays out in a single pass and never draws scroll content. That is also why the popover measures its own list height rather than letting the `ScrollView` size itself: inside a `MenuBarExtra` window a `ScrollView` has no intrinsic height and collapses to nothing.
+```sh
+PortFox --snapshot out.png [--hover]        # the popover
+PortFox --snapshot-dashboard out.png        # the dashboard window
+PortFox --snapshot-prefs out.png            # the preferences sheet
+```
+
+Preferences needs its own flag rather than sharing the dashboard's, because it is a sheet, and a sheet is a separate window that never renders inside its parent.
+
+`ImageRenderer` lays out in a single pass and never draws scroll content, so every snapshot renders without its scroll container: the popover's list, the dashboard's panes, and the preferences sheet all carry the same `scrolls` escape hatch. That is also why the popover measures its own list height rather than letting the `ScrollView` size itself: inside a `MenuBarExtra` window a `ScrollView` has no intrinsic height and collapses to nothing. A `TextField` is NSTextField-backed and renders as a placeholder block under `ImageRenderer`, so the dashboard's search box draws its contents as flat text in snapshots instead.
 
 ## Known limitations
 
 - Only processes owned by the current user are visible. A database installed as a root daemon will not appear.
-- Working directory lookups fail for hardened-runtime processes. Those services still appear, without a project.
+- Working directory and resident memory lookups fail for hardened-runtime processes, along with the other libproc fields. Those services still appear, without a project or a memory reading.
+- A service whose type is `.unknown` never gets a `localURL`, so it can never be HTTP-inspected even when it obviously serves HTTP.
 - Dynamic `app.config.js` and `app.config.ts` are not evaluated, only their static JSON equivalents.
 - A service whose ports are all ephemeral is hidden by default. That is what orphaned `workerd` children look like. Turn on *Show all listeners* to see them.
 - Launch at login needs a signed build. It fails on a local ad hoc one.

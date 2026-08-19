@@ -3,7 +3,7 @@ import SwiftUI
 
 struct MenuView: View {
     @Environment(AppState.self) private var state
-    @Environment(\.openSettings) private var openSettings
+    @Environment(\.openWindow) private var openWindow
 
     /// Snapshot rendering forces the hover state, which has no pointer to trigger it.
     var forcesHover = false
@@ -102,14 +102,14 @@ struct MenuView: View {
                 }
 
                 ForEach(state.result.groups) { group in
-                    ProjectSectionView(group: group, forcesHover: forcesHover)
+                    ProjectSectionView(group: group, layout: state.cellLayout, forcesHover: forcesHover)
                 }
 
                 if !state.result.standalone.isEmpty {
                     VStack(alignment: .leading, spacing: 0) {
                         SectionHeader(title: "INFRASTRUCTURE & DAEMONS")
                         ForEach(state.result.standalone) { service in
-                            ServiceRowView(service: service, forcedHover: forcesHover)
+                            ServiceRowView(service: service, layout: state.cellLayout, forcedHover: forcesHover)
                         }
                     }
                 }
@@ -118,7 +118,7 @@ struct MenuView: View {
                     VStack(alignment: .leading, spacing: 0) {
                         SectionHeader(title: "OTHER LISTENERS")
                         ForEach(ungrouped) { service in
-                            ServiceRowView(service: service)
+                            ServiceRowView(service: service, layout: state.cellLayout)
                         }
                     }
                 }
@@ -156,19 +156,17 @@ struct MenuView: View {
     }
 
     private var footer: some View {
-        HStack(spacing: 10) {
-            Button {
-                openSettings()
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "slider.horizontal.3")
-                    Text("Settings…")
-                }
-                .font(.system(size: 12))
-                .foregroundStyle(Theme.secondaryText)
-                .contentShape(Rectangle())
+        HStack(spacing: 14) {
+            FooterButton(symbol: "macwindow", title: "Dashboard") {
+                WindowPresenter.showDashboard(openWindow)
             }
-            .buttonStyle(.plain)
+
+            FooterButton(symbol: "slider.horizontal.3", title: "Settings…") {
+                // Set before the window opens, so the sheet is already requested on
+                // its first layout pass rather than a runloop turn too late.
+                state.presentedSheet = .preferences
+                WindowPresenter.showDashboard(openWindow)
+            }
 
             Spacer()
 
@@ -183,19 +181,24 @@ struct MenuView: View {
     }
 }
 
-private struct ErrorBanner: View {
-    let message: String
+private struct FooterButton: View {
+    let symbol: String
+    let title: String
+    let action: () -> Void
+
+    @State private var isHovering = false
 
     var body: some View {
-        Text(message)
-            .font(.system(size: 11))
-            .foregroundStyle(Theme.danger)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 7)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(Theme.danger.opacity(0.12))
-            )
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: symbol)
+                Text(title)
+            }
+            .font(.system(size: 12))
+            .foregroundStyle(isHovering ? Theme.primaryText : Theme.secondaryText)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovering = $0 }
     }
 }
