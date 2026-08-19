@@ -1,7 +1,7 @@
 import Foundation
 
 /// A project heading in the popover, with the services that belong to it.
-public struct ProjectGroup: Identifiable, Sendable {
+public struct ProjectGroup: Identifiable, Sendable, Equatable {
     public var id: String { project.id }
 
     public let project: Project

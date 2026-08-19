@@ -48,8 +48,8 @@ The row PortFox would actually signal on Stop is badged "stops here".
 
 Settings live in a sheet inside the dashboard, replacing the old Settings window. The dashboard's toolbar opens it, and so does the popover footer, which opens the window and the sheet together.
 
-- **Automatic refresh loop**: poll listening TCP sockets while a window is open. Off stops the timer entirely.
-- **Polling interval**: 1s, 2s or 5s. Disabled while automatic refresh is off.
+- **Automatic refresh loop**: poll listening TCP sockets while a window is open. Off stops the timer entirely. With every window closed the loop drops to one scan a minute, which is only there to keep the menu bar count current.
+- **Polling interval**: 1s, 2s or 5s, used while a window is open. Disabled while automatic refresh is off.
 - **Service list layout**: Service or Project, which fact leads each row. Daemons and databases always stay service-first, since their resolved project is an accident of where they run.
 - **Show all listeners**: include background system ports such as CUPS or mDNSResponder.
 - **Group related services by project**: fold sibling repositories under their shared parent directory.

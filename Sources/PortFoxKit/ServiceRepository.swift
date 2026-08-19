@@ -1,6 +1,6 @@
 import Foundation
 
-public struct ScanResult: Sendable {
+public struct ScanResult: Sendable, Equatable {
     /// Everything that survived filtering, best first.
     public let services: [RunningService]
     /// Project headings for services that belong to a project.
@@ -29,7 +29,24 @@ public struct ScanResult: Sendable {
     public static let empty = ScanResult(services: [], groups: [], standalone: [], allSockets: [], hidden: [])
 }
 
-public struct ScanOptions: Sendable {
+/// One turn of the scan loop.
+///
+/// `didRebuild` is false when the listening sockets had not moved since the last
+/// call, so `result` and `tree` are the same values the caller already holds and
+/// it has nothing to apply.
+public struct ScanUpdate: Sendable {
+    public let result: ScanResult
+    public let tree: ProcessTree?
+    public let didRebuild: Bool
+
+    public init(result: ScanResult, tree: ProcessTree?, didRebuild: Bool) {
+        self.result = result
+        self.tree = tree
+        self.didRebuild = didRebuild
+    }
+}
+
+public struct ScanOptions: Sendable, Equatable {
     public var showAllListeners: Bool
     public var groupSiblingRepositories: Bool
 
@@ -66,6 +83,16 @@ public actor ServiceRepository {
     /// already reparented to launchd.
     private var lastTree: ProcessTree?
 
+    /// Inputs and output of the last full pipeline run. A tick whose sockets and
+    /// options match returns this result instead of rebuilding it.
+    private var lastRun: CompletedScan?
+
+    private struct CompletedScan {
+        let sockets: Set<ListeningSocket>
+        let options: ScanOptions
+        let result: ScanResult
+    }
+
     public init(
         scanner: ListenerScanner = ListenerScanner(),
         inspector: ProcessInspector = ProcessInspector(),
@@ -86,27 +113,68 @@ public actor ServiceRepository {
 
     public func processTree() -> ProcessTree? { lastTree }
 
-    public func refresh(options: ScanOptions = .default) async throws -> ScanResult {
+    /// Runs the pipeline and reports what the UI should show.
+    ///
+    /// The socket set is read on every call, because it is the only cheap thing
+    /// that says whether anything changed. When it matches the last run, and the
+    /// options do too, nothing downstream of `lsof` can have moved, so the cached
+    /// result comes back with `didRebuild` false and the caller can leave its own
+    /// state alone.
+    ///
+    /// `reloadingFromDisk` is the manual Refresh button. It drops every cache that
+    /// reads the filesystem, which is the only way to pick up a manifest, an icon
+    /// or an installed dependency that changed under a process that kept running.
+    public func refresh(
+        options: ScanOptions = .default,
+        reloadingFromDisk: Bool = false
+    ) async throws -> ScanUpdate {
         let sockets = try scanner.scan()
-        guard !sockets.isEmpty else { return .empty }
+        guard !sockets.isEmpty else {
+            await forgetEverything()
+            return ScanUpdate(result: .empty, tree: nil, didRebuild: true)
+        }
 
-        let tree = buildTree(listenerPIDs: Set(sockets.map(\.pid)))
+        let socketSet = Set(sockets)
+        if reloadingFromDisk {
+            await forgetEverything()
+        } else if let last = lastRun, last.sockets == socketSet, last.options == options {
+            return ScanUpdate(result: last.result, tree: lastTree, didRebuild: false)
+        }
+
+        let listenerPIDs = Set(sockets.map(\.pid))
+        let tree = buildTree(listenerPIDs: listenerPIDs)
         lastTree = tree
 
-        let services = await withVersions(assembleServices(sockets: sockets, tree: tree))
+        let services = await withVersions(
+            assembleServices(sockets: sockets, listenerPIDs: listenerPIDs, tree: tree)
+        )
         let visible = services.filter { options.showAllListeners || $0.classification != .systemNoise }
         let hidden = services.filter { !options.showAllListeners && $0.classification == .systemNoise }
 
         let (projectServices, standalone) = split(visible)
         let grouper = ProjectGrouper(groupSiblingRepositories: options.groupSiblingRepositories)
 
-        return ScanResult(
+        let result = ScanResult(
             services: visible,
             groups: grouper.group(projectServices),
             standalone: standalone,
             allSockets: sockets,
             hidden: hidden
         )
+
+        lastRun = CompletedScan(sockets: socketSet, options: options, result: result)
+        return ScanUpdate(result: result, tree: tree, didRebuild: true)
+    }
+
+    /// Resident memory for the pids the caller asked about, sampled fresh. One
+    /// `proc_pidinfo` call per pid, so the caller passes only what it will draw.
+    public func sampleResidentMemory(of pids: some Collection<pid_t>) -> [pid_t: UInt64] {
+        var sampled: [pid_t: UInt64] = [:]
+        sampled.reserveCapacity(pids.count)
+        for pid in pids {
+            if let bytes = inspector.residentMemory(pid: pid) { sampled[pid] = bytes }
+        }
+        return sampled
     }
 
     /// Versions are resolved concurrently because one of them may have to ask a
@@ -130,32 +198,33 @@ public actor ServiceRepository {
     /// Full metadata is only read for listener processes and their ancestors.
     /// Everything else gets the cheap parent link needed to walk the tree.
     private func buildTree(listenerPIDs: Set<pid_t>) -> ProcessTree {
-        var byPID: [pid_t: ProcessSnapshot] = [:]
-        for skeleton in inspector.processSkeleton() { byPID[skeleton.pid] = skeleton }
+        var tree = ProcessTree(processes: inspector.processSkeleton())
 
-        let lightweightTree = ProcessTree(processes: Array(byPID.values))
         var detailed = listenerPIDs
         for pid in listenerPIDs {
-            for ancestor in lightweightTree.ancestors(of: pid) { detailed.insert(ancestor.pid) }
+            for ancestor in tree.ancestors(of: pid) { detailed.insert(ancestor.pid) }
         }
 
         for pid in detailed {
-            guard let light = byPID[pid] else { continue }
+            guard let light = tree.process(pid) else { continue }
             let key = light.identity
             if let cached = processCache[key] {
-                byPID[pid] = cached
+                tree.replace(cached)
             } else if let full = inspector.snapshot(pid: pid) {
                 processCache[key] = full
-                byPID[pid] = full
+                tree.replace(full)
             }
         }
 
-        pruneProcessCache(livePIDs: Set(byPID.keys))
-        return ProcessTree(processes: Array(byPID.values))
+        pruneProcessCache(against: tree)
+        return tree
     }
 
-    private func assembleServices(sockets: [ListeningSocket], tree: ProcessTree) -> [RunningService] {
-        let listenerPIDs = Set(sockets.map(\.pid))
+    private func assembleServices(
+        sockets: [ListeningSocket],
+        listenerPIDs: Set<pid_t>,
+        tree: ProcessTree
+    ) -> [RunningService] {
         var socketsByRepresentative: [pid_t: [ListeningSocket]] = [:]
 
         for socket in sockets {
@@ -278,13 +347,22 @@ public actor ServiceRepository {
         return resolved
     }
 
-    private func pruneProcessCache(livePIDs: Set<pid_t>) {
+    /// The live pid set is only needed when the cache is actually over its bound,
+    /// which is rare, so it is built inside the guard rather than at every scan.
+    private func pruneProcessCache(against tree: ProcessTree) {
         guard processCache.count > 512 else { return }
-        processCache = processCache.filter { _, snapshot in livePIDs.contains(snapshot.pid) }
+        let live = Set(tree.allProcesses.map(\.pid))
+        processCache = processCache.filter { _, snapshot in live.contains(snapshot.pid) }
     }
 
-    public func invalidateCaches() {
+    /// The one place that drops cached state. Everything that resets anything goes
+    /// through here, so a new cache cannot be forgotten by one caller and cleared
+    /// by another.
+    public func forgetEverything() async {
         projectCache.removeAll()
         processCache.removeAll()
+        lastRun = nil
+        lastTree = nil
+        await versionResolver.invalidate()
     }
 }

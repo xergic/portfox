@@ -54,8 +54,7 @@ public struct ProcessInspector: Sendable {
             startTime: Date(timeIntervalSince1970: TimeInterval(bsd.pbi_start_tvsec)),
             executablePath: executablePath(pid: pid),
             arguments: arguments(pid: pid),
-            workingDirectory: workingDirectory(pid: pid),
-            residentMemory: residentMemory(pid: pid)
+            workingDirectory: workingDirectory(pid: pid)
         )
     }
 
@@ -88,10 +87,9 @@ public struct ProcessInspector: Sendable {
         return written == size ? info : nil
     }
 
-    /// Deliberately absent from `processSkeleton`. That path enumerates every
-    /// process on the machine, and one extra syscall per process there would
-    /// dominate the scan; here it costs one call for a single already-inspected pid.
-    private func residentMemory(pid: pid_t) -> UInt64? {
+    /// Resident set size. Sampled on its own rather than as part of a snapshot,
+    /// for the reason given on `ProcessSnapshot`.
+    public func residentMemory(pid: pid_t) -> UInt64? {
         var info = proc_taskinfo()
         let size = Int32(MemoryLayout<proc_taskinfo>.size)
         let written = withUnsafeMutablePointer(to: &info) {

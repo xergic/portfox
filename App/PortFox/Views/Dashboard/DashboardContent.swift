@@ -65,11 +65,7 @@ struct DashboardContent: View {
 
             StatusPill(text: "\(state.serviceCount) Active Services")
 
-            if let memory = totalMemory {
-                Text(memory)
-                    .font(.portSubtitle)
-                    .foregroundStyle(Theme.tertiaryText)
-            }
+            WatchedMemoryLabel()
 
             IconButton(
                 symbol: "arrow.trianglehead.2.clockwise",
@@ -77,7 +73,7 @@ struct DashboardContent: View {
                 symbolSize: Theme.Metrics.dashboardSymbolSize,
                 frameSize: Theme.Metrics.dashboardButtonSize
             ) {
-                Task { await state.refresh() }
+                Task { await state.refresh(.userRequested) }
             }
             .rotationEffect(.degrees(state.isRefreshing ? 360 : 0))
             .animation(
@@ -98,9 +94,4 @@ struct DashboardContent: View {
         .frame(height: 52)
     }
 
-    private var totalMemory: String? {
-        let bytes = state.result.services.compactMap(\.listenerProcess.residentMemory).reduce(0, +)
-        guard bytes > 0 else { return nil }
-        return "\(ByteFormat.short(bytes)) RAM"
-    }
 }

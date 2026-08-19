@@ -48,7 +48,7 @@ struct CLI {
                 let repository = ServiceRepository()
                 let result = try await repository.refresh(
                     options: ScanOptions(showAllListeners: showAll)
-                )
+                ).result
                 if case .json = mode {
                     printJSON(result)
                 } else {
@@ -95,7 +95,7 @@ struct CLI {
 
     static func stopService(onPort port: Int, force: Bool) async throws {
         let repository = ServiceRepository()
-        let result = try await repository.refresh(options: ScanOptions(showAllListeners: true))
+        let result = try await repository.refresh(options: ScanOptions(showAllListeners: true)).result
 
         guard let service = result.services.first(where: { $0.sockets.contains { $0.port == port } }) else {
             FileHandle.standardError.write(Data("nothing is listening on :\(port)\n".utf8))

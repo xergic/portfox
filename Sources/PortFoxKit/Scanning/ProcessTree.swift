@@ -2,7 +2,7 @@ import Foundation
 
 /// Parent and child relationships for every visible process, built once per scan.
 public struct ProcessTree: Sendable {
-    private let byPID: [pid_t: ProcessSnapshot]
+    private var byPID: [pid_t: ProcessSnapshot]
     private let childrenByPID: [pid_t: [pid_t]]
 
     public init(processes: [ProcessSnapshot]) {
@@ -16,7 +16,26 @@ public struct ProcessTree: Sendable {
         self.childrenByPID = children
     }
 
+    /// Swaps a richer snapshot in for a pid already in the tree, leaving the parent
+    /// and child links alone. The detailed read reports the same parent the
+    /// skeleton did, so rebuilding the link map would only reproduce it.
+    ///
+    /// Mutating rather than returning a copy, so the whole-machine dictionary is
+    /// updated in place instead of being reallocated per scan.
+    mutating func replace(_ process: ProcessSnapshot) {
+        guard byPID[process.pid] != nil else { return }
+        byPID[process.pid] = process
+    }
+
+    public var processCount: Int { byPID.count }
+
     public var allProcesses: [ProcessSnapshot] { Array(byPID.values) }
+
+    /// Every pid whose memory is worth sampling for `pid`: its ancestry and its
+    /// workers. This is the set the dashboard can put on screen for one service.
+    public func relatives(of pid: pid_t) -> [pid_t] {
+        [pid] + ancestors(of: pid).map(\.pid) + descendants(of: pid).map(\.pid)
+    }
 
     public func process(_ pid: pid_t) -> ProcessSnapshot? { byPID[pid] }
 

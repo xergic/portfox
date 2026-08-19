@@ -6,7 +6,19 @@ import Foundation
 /// outright, a framework's version sits in its own `package.json`, and only as a
 /// last resort is the binary asked directly.
 public actor VersionResolver {
-    private var cache: [String: String?] = [:]
+    /// Runtime version keyed by executable path.
+    private var versionByPath: [String: String?] = [:]
+
+    /// The finished answer, keyed by the listener's pid and start time. Spares the
+    /// `node_modules/<pkg>/package.json` read, which otherwise happened for every
+    /// service on every refresh tick. A running process cannot change the version
+    /// it is running.
+    private var versionByProcess: [String: String?] = [:]
+
+    /// Both caches are bounded by clearing rather than by liveness, because the
+    /// resolver cannot know which processes are still alive and a miss costs one
+    /// file read.
+    private static let cacheBound = 512
 
     /// npm package name(s) for a framework's own version, in priority order.
     /// Types without an npm package have no entry and never report a framework version.
@@ -43,6 +55,16 @@ public actor VersionResolver {
     /// found. Never blocks on an unknown binary.
     public func version(for service: RunningService) async -> String? {
         let listener = service.listenerProcess
+        if let cached = versionByProcess[listener.identity] { return cached }
+
+        let resolved = await resolveVersion(for: service)
+        if versionByProcess.count >= Self.cacheBound { versionByProcess.removeAll() }
+        versionByProcess.updateValue(resolved, forKey: listener.identity)
+        return resolved
+    }
+
+    private func resolveVersion(for service: RunningService) async -> String? {
+        let listener = service.listenerProcess
         if let framework = frameworkVersion(type: service.type, project: service.project, command: listener.command) {
             return framework
         }
@@ -77,25 +99,25 @@ public actor VersionResolver {
     /// Version of the interpreter or daemon behind `executablePath`.
     public func runtimeVersion(type: ServiceType, executablePath: String?) async -> String? {
         guard let executablePath, !executablePath.isEmpty else { return nil }
-        if let cached = cache[executablePath] { return cached }
+        if let cached = versionByPath[executablePath] { return cached }
 
         if let fromPath = Self.versionFromPath(executablePath) {
-            cache.updateValue(fromPath, forKey: executablePath)
+            versionByPath.updateValue(fromPath, forKey: executablePath)
             return fromPath
         }
 
         guard Self.runtimeSpawnTypes.contains(type) else {
-            cache.updateValue(nil, forKey: executablePath)
+            versionByPath.updateValue(nil, forKey: executablePath)
             return nil
         }
         let executableName = (executablePath as NSString).lastPathComponent
         guard Self.runtimeSpawnAllowlist.contains(executableName) else {
-            cache.updateValue(nil, forKey: executablePath)
+            versionByPath.updateValue(nil, forKey: executablePath)
             return nil
         }
 
         let result = await Self.spawnedVersion(executablePath: executablePath)
-        cache.updateValue(result, forKey: executablePath)
+        versionByPath.updateValue(result, forKey: executablePath)
         return result
     }
 
@@ -116,7 +138,8 @@ public actor VersionResolver {
     }
 
     public func invalidate() {
-        cache.removeAll()
+        versionByPath.removeAll()
+        versionByProcess.removeAll()
     }
 
     // MARK: - Framework version sources

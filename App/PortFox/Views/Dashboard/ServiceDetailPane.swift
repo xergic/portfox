@@ -62,7 +62,7 @@ struct ServiceDetailPane: View {
                     )
                 }
                 CardDivider()
-                LabeledRow(label: "Resident memory", value: memory)
+                ResidentMemoryRow(pid: service.listenerProcess.pid)
             }
         }
     }
@@ -134,10 +134,6 @@ struct ServiceDetailPane: View {
         guard let path = service.listenerProcess.workingDirectory else { return nil }
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         return path.hasPrefix(home) ? "~" + path.dropFirst(home.count) : path
-    }
-
-    private var memory: String? {
-        service.listenerProcess.residentMemory.map(ByteFormat.short)
     }
 
     private func latency(_ duration: Duration) -> String {

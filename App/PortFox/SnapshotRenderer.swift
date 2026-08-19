@@ -33,6 +33,13 @@ enum SnapshotRenderer {
     static var requestedPath: String? { request?.path }
 
     static func run(_ request: Request, state: AppState) async {
+        // The surface has to announce itself the way a real window does, or the
+        // state it renders is the state PortFox keeps while nothing is on screen.
+        switch request.surface {
+        case .popover: state.popoverDidAppear()
+        case .dashboard: state.dashboardDidAppear()
+        case .preferences: break
+        }
         await state.refresh()
 
         let renderer = ImageRenderer(content: content(for: request.surface, state: state))

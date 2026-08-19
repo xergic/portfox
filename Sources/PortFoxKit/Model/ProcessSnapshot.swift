@@ -39,6 +39,11 @@ public struct ListeningSocket: Identifiable, Hashable, Codable, Sendable {
 /// Everything PortFox knows about one process. Every field except `pid` may be
 /// missing, because hardened-runtime processes refuse some `proc_pidinfo` calls.
 /// A missing field degrades the result, it never drops the service.
+///
+/// Deliberately structural. Resident memory is not here because it changes on
+/// every sample, which would make two scans of an unchanged machine compare
+/// unequal and redraw the whole UI. It is sampled separately, by
+/// `ServiceRepository.sampleResidentMemory`.
 public struct ProcessSnapshot: Identifiable, Hashable, Codable, Sendable {
     public var id: pid_t { pid }
 
@@ -51,7 +56,6 @@ public struct ProcessSnapshot: Identifiable, Hashable, Codable, Sendable {
     public let executablePath: String?
     public let arguments: [String]
     public let workingDirectory: String?
-    public let residentMemory: UInt64?
 
     public init(
         pid: pid_t,
@@ -60,8 +64,7 @@ public struct ProcessSnapshot: Identifiable, Hashable, Codable, Sendable {
         startTime: Date? = nil,
         executablePath: String? = nil,
         arguments: [String] = [],
-        workingDirectory: String? = nil,
-        residentMemory: UInt64? = nil
+        workingDirectory: String? = nil
     ) {
         self.pid = pid
         self.parentPID = parentPID
@@ -70,7 +73,6 @@ public struct ProcessSnapshot: Identifiable, Hashable, Codable, Sendable {
         self.executablePath = executablePath
         self.arguments = arguments
         self.workingDirectory = workingDirectory
-        self.residentMemory = residentMemory
     }
 
     /// Full command line, whitespace joined.

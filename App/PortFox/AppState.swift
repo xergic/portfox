@@ -7,7 +7,6 @@ import SwiftUI
 @Observable
 final class AppState {
     private(set) var result: ScanResult = .empty
-    private(set) var isRefreshing = false
     private(set) var lastError: String?
     /// Services whose Stop was delivered but which are still alive.
     private(set) var stubbornServiceIDs: Set<String> = []
@@ -15,6 +14,11 @@ final class AppState {
     /// The tree from the last scan. The dashboard renders it, and stopping needs
     /// it to sweep orphans.
     private(set) var processTree: ProcessTree?
+    /// Resident memory by pid. Held apart from `ScanResult` so a number that moves
+    /// on every sample cannot invalidate a scan that did not move.
+    private var memoryByPID: [pid_t: UInt64] = [:]
+
+    var isRefreshing: Bool { inFlightRefresh != nil }
 
     /// Set before the dashboard is opened, so the sheet is already requested on
     /// the window's first layout pass rather than a turn too late.
@@ -28,14 +32,14 @@ final class AppState {
     var showAllListeners: Bool {
         didSet {
             defaults.set(showAllListeners, forKey: Key.showAllListeners)
-            Task { await refresh() }
+            Task { await refresh(.afterAction) }
         }
     }
 
     var groupSiblingRepositories: Bool {
         didSet {
             defaults.set(groupSiblingRepositories, forKey: Key.groupSiblingRepositories)
-            Task { await refresh() }
+            Task { await refresh(.afterAction) }
         }
     }
 
@@ -74,8 +78,9 @@ final class AppState {
     private let defaults = UserDefaults.standard
 
     /// Refreshing on the polling interval only matters while the user is looking.
-    /// With every window closed the count badge is the only live element.
-    private let hiddenInterval = Duration.seconds(15)
+    /// With every window closed the count badge is the only live element, and a
+    /// badge that is a minute stale costs nobody anything.
+    private let hiddenInterval = Duration.seconds(60)
 
     /// A set rather than a counter, so a repeated appear or a missed disappear
     /// cannot leave the app stuck on the fast interval forever.
@@ -86,6 +91,9 @@ final class AppState {
 
     private var visibleSurfaces: Set<Surface> = []
     private var refreshTask: Task<Void, Never>?
+    /// The scan currently running, so a second caller joins it instead of
+    /// walking away with whatever half-updated state it happened to find.
+    private var inFlightRefresh: Task<Void, Never>?
 
     var serviceCount: Int { result.services.count }
 
@@ -134,23 +142,83 @@ final class AppState {
         visibleSurfaces.remove(surface)
     }
 
-    func refresh() async {
-        guard !isRefreshing else { return }
-        isRefreshing = true
-        defer { isRefreshing = false }
+    /// What the caller needs from a refresh.
+    enum RefreshKind {
+        /// The polling loop. Happy with a scan that is already running, and happy
+        /// with the cached result when the listening sockets have not moved.
+        case tick
+        /// Follows a Stop. Must be a scan that began after the process was
+        /// signalled, or the service it just killed would still be on screen.
+        case afterAction
+        /// The Refresh button. Also drops every cache that reads from disk, which
+        /// is what picks up a manifest or an icon that changed under a live process.
+        case userRequested
+    }
 
+    /// Waits for the answer, always.
+    ///
+    /// A caller that arrives mid-scan joins the running one. Only a `tick` is then
+    /// finished, because everything else asked a question that the running scan
+    /// started too early to answer.
+    func refresh(_ kind: RefreshKind = .tick) async {
+        if let running = inFlightRefresh {
+            await running.value
+            if kind == .tick { return }
+        }
+
+        let task = Task { @MainActor in await self.performRefresh(kind) }
+        inFlightRefresh = task
+        await task.value
+        if inFlightRefresh == task { inFlightRefresh = nil }
+    }
+
+    private func performRefresh(_ kind: RefreshKind) async {
         let options = ScanOptions(
             showAllListeners: showAllListeners,
             groupSiblingRepositories: groupSiblingRepositories
         )
         do {
-            result = try await repository.refresh(options: options)
-            processTree = await repository.processTree()
-            lastError = nil
-            stubbornServiceIDs.formIntersection(Set(result.services.map(\.id)))
+            let update = try await repository.refresh(
+                options: options,
+                reloadingFromDisk: kind == .userRequested
+            )
+            // `@Observable` notifies on every write, equal or not, so each of these
+            // is written only when it actually moved. A blind write redraws the
+            // whole dashboard on every tick.
+            if update.didRebuild {
+                if update.result != result {
+                    result = update.result
+                    stubbornServiceIDs.formIntersection(Set(update.result.services.map(\.id)))
+                }
+                processTree = update.tree
+            }
+            await sampleMemory()
+            if lastError != nil { lastError = nil }
         } catch {
             lastError = "Could not read listening ports. \(error.localizedDescription)"
         }
+    }
+
+    // MARK: - Memory
+
+    func memory(of pid: pid_t) -> UInt64? { memoryByPID[pid] }
+
+    /// Resident memory of every visible service's listener, which is what the
+    /// dashboard header reports. Workers are excluded, so this is a floor.
+    var watchedMemoryBytes: UInt64 {
+        result.services.reduce(0) { $0 + (memoryByPID[$1.listenerProcess.pid] ?? 0) }
+    }
+
+    /// Only the dashboard shows memory, so nothing is sampled while it is closed.
+    private func sampleMemory() async {
+        guard visibleSurfaces.contains(.dashboard), let tree = processTree else {
+            if !memoryByPID.isEmpty { memoryByPID = [:] }
+            return
+        }
+
+        let pids = result.services.flatMap { tree.relatives(of: $0.listenerProcess.pid) }
+        let sampled = await repository.sampleResidentMemory(of: pids)
+        if sampled != memoryByPID { memoryByPID = sampled }
     }
 
     // MARK: - Actions
@@ -210,7 +278,7 @@ final class AppState {
 
         let tree = await repository.processTree()
         let problem = record(await controller.stop(service, tree: tree), for: service)
-        await refresh()
+        await refresh(.afterAction)
         // After the refresh, never before. A successful refresh clears `lastError`,
         // which would silently swallow the reason a stop did not work.
         if let problem { lastError = problem }
@@ -242,7 +310,7 @@ final class AppState {
         }
 
         let problems = outcomes.compactMap { record($0.outcome, for: $0.service) }
-        await refresh()
+        await refresh(.afterAction)
         if !problems.isEmpty { lastError = problems.joined(separator: " ") }
     }
 
@@ -284,7 +352,7 @@ final class AppState {
             problem = "PortFox will not signal a \(reason)."
         }
         stubbornServiceIDs.remove(service.id)
-        await refresh()
+        await refresh(.afterAction)
         if let problem { lastError = problem }
     }
 

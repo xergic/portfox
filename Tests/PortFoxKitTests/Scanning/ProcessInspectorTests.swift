@@ -6,19 +6,17 @@ import Testing
 struct ProcessInspectorTests {
     private let inspector = ProcessInspector()
 
-    @Test("snapshot of the running test process reports resident memory")
-    func snapshotReportsResidentMemory() {
-        let snapshot = inspector.snapshot(pid: getpid())
-
-        #expect((snapshot?.residentMemory ?? 0) > 0)
+    @Test("resident memory of the running test process is reported")
+    func residentMemoryIsReported() {
+        #expect((inspector.residentMemory(pid: getpid()) ?? 0) > 0)
     }
 
-    @Test("the skeleton scan leaves resident memory unset")
-    func skeletonOmitsResidentMemory() {
+    @Test("the skeleton scan carries no executable metadata")
+    func skeletonOmitsExecutableMetadata() {
         let skeleton = inspector.processSkeleton()
 
         #expect(!skeleton.isEmpty)
-        #expect(skeleton.allSatisfy { $0.residentMemory == nil })
+        #expect(skeleton.allSatisfy { $0.executablePath == nil && $0.arguments.isEmpty })
     }
 
     @Test("snapshot of a pid nothing occupies returns nil")

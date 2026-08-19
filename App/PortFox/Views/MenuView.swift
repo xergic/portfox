@@ -69,7 +69,7 @@ struct MenuView: View {
             Spacer()
 
             IconButton(symbol: "arrow.trianglehead.2.clockwise", help: "Refresh") {
-                Task { await state.refresh() }
+                Task { await state.refresh(.userRequested) }
             }
             .rotationEffect(.degrees(state.isRefreshing ? 360 : 0))
             .animation(

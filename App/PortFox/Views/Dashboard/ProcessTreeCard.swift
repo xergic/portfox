@@ -91,8 +91,6 @@ struct ProcessLine: Identifiable {
         process.executableName.isEmpty ? nil : process.executableName
     }
 
-    var memory: String? { process.residentMemory.map(ByteFormat.short) }
-
     /// Worker forks often expose neither argv nor an executable path, so the row
     /// says so rather than rendering as a bare pid with an empty line beside it.
     var commandText: String {
@@ -171,11 +169,7 @@ private struct ProcessLineView: View {
 
             Spacer(minLength: 8)
 
-            if let memory = line.memory {
-                Text(memory)
-                    .font(.portSubtitle)
-                    .foregroundStyle(Theme.tertiaryText)
-            }
+            ProcessMemoryLabel(pid: line.process.pid)
         }
     }
 
