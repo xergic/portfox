@@ -70,7 +70,7 @@ private struct MenuBarLabel: View {
                 .renderingMode(.template)
                 .resizable()
                 .scaledToFit()
-                .frame(width: 17, height: 17)
+                .frame(width: 13, height: 13)
             if serviceCount > 0 {
                 Text(String(serviceCount))
                     .font(.system(size: 11, weight: .semibold, design: .rounded))
