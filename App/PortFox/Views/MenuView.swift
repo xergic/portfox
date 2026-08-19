@@ -5,6 +5,10 @@ struct MenuView: View {
     @Environment(AppState.self) private var state
     @Environment(\.openSettings) private var openSettings
 
+    /// ImageRenderer cannot lay out a ScrollView, so the snapshot mode renders
+    /// the same content unscrolled.
+    var scrolls = true
+
     var body: some View {
         VStack(spacing: 0) {
             header
@@ -39,7 +43,7 @@ struct MenuView: View {
                 .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(Theme.primaryText)
 
-            Text("\(state.serviceCount)")
+            Text(String(state.serviceCount))
                 .font(.system(size: 11, weight: .semibold, design: .monospaced))
                 .foregroundStyle(Theme.secondaryText)
                 .padding(.horizontal, 6)
@@ -63,9 +67,19 @@ struct MenuView: View {
         .padding(.vertical, 10)
     }
 
+    @ViewBuilder
     private var list: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 10) {
+        if scrolls {
+            ScrollView { listContent }
+                .frame(maxHeight: Theme.Metrics.maximumListHeight)
+                .scrollBounceBehavior(.basedOnSize)
+        } else {
+            listContent
+        }
+    }
+
+    private var listContent: some View {
+        VStack(alignment: .leading, spacing: 10) {
                 if let error = state.lastError {
                     ErrorBanner(message: error)
                 }
@@ -92,11 +106,8 @@ struct MenuView: View {
                     }
                 }
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 10)
-        }
-        .frame(maxHeight: Theme.Metrics.maximumListHeight)
-        .scrollBounceBehavior(.basedOnSize)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 10)
     }
 
     /// Services with a project that the grouper did not place, plus anything the

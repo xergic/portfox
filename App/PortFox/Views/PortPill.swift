@@ -7,9 +7,10 @@ struct PortPill: View {
         HStack(spacing: 3) {
             Text(":")
                 .foregroundStyle(Theme.tertiaryText)
-            Text("\(port)")
+            // A port is an identifier, not a quantity. Locale grouping renders
+            // 3111 as "3 111".
+            Text(String(port))
                 .foregroundStyle(Theme.primaryText)
-                .monospacedDigit()
         }
         .font(.portPort)
         .padding(.horizontal, 9)
