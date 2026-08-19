@@ -68,6 +68,7 @@ public enum ManifestReader {
 
         return ManifestData(
             name: json["name"] as? String,
+            version: json["version"] as? String,
             dependencies: dependencies,
             scripts: json["scripts"] as? [String: String] ?? [:],
             declaresWorkspaces: declaresWorkspaces
@@ -88,6 +89,7 @@ public enum ManifestReader {
         let source = expo ?? json
         return ManifestData(
             name: source["name"] as? String,
+            version: source["version"] as? String,
             dependencies: expo != nil ? ["expo"] : [],
             declaredIconPath: source["icon"] as? String
         )
@@ -99,7 +101,9 @@ public enum ManifestReader {
         guard let text = readText(directory.appendingPathComponent("pyproject.toml")) else { return nil }
 
         let sections = tomlSections(in: text)
-        let name = tomlString(key: "name", in: sections["project"] ?? sections["tool.poetry"] ?? "")
+        let projectOrPoetrySection = sections["project"] ?? sections["tool.poetry"] ?? ""
+        let name = tomlString(key: "name", in: projectOrPoetrySection)
+        let version = tomlString(key: "version", in: projectOrPoetrySection)
 
         var dependencies: Set<String> = []
         if let projectSection = sections["project"] {
@@ -110,7 +114,7 @@ public enum ManifestReader {
         }
 
         guard name != nil || !dependencies.isEmpty else { return nil }
-        return ManifestData(name: name, dependencies: dependencies)
+        return ManifestData(name: name, version: version, dependencies: dependencies)
     }
 
     /// Reads dependency names out of `requirements.txt`.

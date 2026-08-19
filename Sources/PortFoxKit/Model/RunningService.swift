@@ -83,15 +83,38 @@ public struct RunningService: Identifiable, Hashable, Sendable {
 
     /// Monorepo subpath such as `apps/web`, or the service directory name.
     ///
-    /// A database's working directory is its data directory, often a bare UUID,
-    /// so infrastructure is labelled with its installed package instead.
+    /// A database's working directory is its data directory, often a bare UUID.
+    /// The version is already shown beside the name, so infrastructure is
+    /// labelled with where it was installed from, which is what actually
+    /// distinguishes two PostgreSQL 17 instances on different ports.
     public var subtitle: String? {
         if type.category == .database || type.category == .infrastructure {
-            return Self.packageLabel(for: listenerProcess.resolvedExecutablePath) ?? listenerProcess.executableName
+            return Self.installationLabel(for: listenerProcess.resolvedExecutablePath)
+                ?? Self.packageLabel(for: listenerProcess.resolvedExecutablePath)
+                ?? listenerProcess.executableName
         }
         if let subpath = project?.subpath, !subpath.isEmpty { return subpath }
         guard let cwd = listenerProcess.workingDirectoryURL else { return nil }
         return cwd.lastPathComponent
+    }
+
+    /// Where a daemon was installed from, when the path makes that plain.
+    static func installationLabel(for executablePath: String?) -> String? {
+        guard let path = executablePath?.lowercased() else { return nil }
+        let sources: [(marker: String, name: String)] = [
+            ("/dbngin/", "DBngin"),
+            ("/homebrew/", "Homebrew"),
+            ("/usr/local/cellar/", "Homebrew"),
+            ("/opt/local/", "MacPorts"),
+            ("/.orbstack/", "OrbStack"),
+            ("/library/postgresql", "Postgres.app"),
+            ("/applications/postgres.app/", "Postgres.app"),
+            ("/.docker/", "Docker"),
+            ("/nix/store/", "Nix"),
+            ("/.asdf/", "asdf"),
+            ("/.mise/", "mise")
+        ]
+        return sources.first { path.contains($0.marker) }?.name
     }
 
     /// Turns `/opt/homebrew/opt/postgresql@17/bin/postgres` into `postgresql@17`

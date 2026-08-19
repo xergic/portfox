@@ -52,6 +52,7 @@ public actor ServiceRepository {
     private let engine: DetectionEngine
     private let classifier: ListenerClassifier
     private let iconResolver: IconResolver
+    private let versionResolver = VersionResolver()
 
     /// Project metadata keyed by directory. Filesystem walks are the expensive
     /// part of a refresh, and project layout almost never changes between scans.
@@ -85,14 +86,14 @@ public actor ServiceRepository {
 
     public func processTree() -> ProcessTree? { lastTree }
 
-    public func refresh(options: ScanOptions = .default) throws -> ScanResult {
+    public func refresh(options: ScanOptions = .default) async throws -> ScanResult {
         let sockets = try scanner.scan()
         guard !sockets.isEmpty else { return .empty }
 
         let tree = buildTree(listenerPIDs: Set(sockets.map(\.pid)))
         lastTree = tree
 
-        let services = assembleServices(sockets: sockets, tree: tree)
+        let services = await withVersions(assembleServices(sockets: sockets, tree: tree))
         let visible = services.filter { options.showAllListeners || $0.classification != .systemNoise }
         let hidden = services.filter { !options.showAllListeners && $0.classification == .systemNoise }
 
@@ -106,6 +107,22 @@ public actor ServiceRepository {
             allSockets: sockets,
             hidden: hidden
         )
+    }
+
+    /// Versions are resolved concurrently because one of them may have to ask a
+    /// binary for its version, and a slow interpreter must not hold up the rest.
+    private func withVersions(_ services: [RunningService]) async -> [RunningService] {
+        await withTaskGroup(of: (Int, String?).self) { group in
+            for (index, service) in services.enumerated() {
+                group.addTask { [versionResolver] in
+                    (index, await versionResolver.version(for: service))
+                }
+            }
+
+            var resolved = services
+            for await (index, version) in group { resolved[index].version = version }
+            return resolved
+        }
     }
 
     // MARK: - Pipeline
