@@ -9,3 +9,4 @@ build/
 *.moved-aside
 xcuserdata/
 snapshots/
+dist/

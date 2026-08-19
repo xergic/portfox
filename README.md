@@ -19,9 +19,27 @@ make run      # build and launch the menu bar app
 make test     # run the core test suite
 make scan     # resolve services on this machine, no GUI
 make lint     # SwiftLint
+make archive  # package a universal build to hand to someone
 ```
 
 `PortFox.xcodeproj` is generated from `project.yml` and is not in version control. Run `make gen` after changing the project definition.
+
+## Packaging a build to share
+
+```sh
+make archive              # version from the latest git tag
+make archive VERSION=0.2.0
+```
+
+This writes `dist/PortFox.app` and `dist/PortFox-<version>.dmg`, both universal, and fails if either the arm64 or the x86_64 slice is missing. `dist/` is wiped on each run and is not in version control.
+
+The build is ad hoc signed, not notarized, so macOS blocks it on another machine and offers no right-click Open. Whoever receives it clears the quarantine flag once:
+
+```sh
+xattr -dr com.apple.quarantine /Applications/PortFox.app
+```
+
+Launch at login also needs a real signature, so it fails on this build. Push a `vMAJOR.MINOR.PATCH` tag instead when either matters. `.github/workflows/release.yml` signs with a Developer ID, notarizes, staples and publishes a DMG that installs with no warnings.
 
 ## Layout
 
@@ -33,7 +51,7 @@ make lint     # SwiftLint
 | `Sources/portfox-scan/` | The command line tool over the same pipeline. |
 | `App/PortFox/` | The SwiftUI app: state, views, theme, snapshot renderer. |
 | `Tests/PortFoxKitTests/` | Tests for the kit. |
-| `Tools/` | Icon fetching and app icon generation. |
+| `Tools/` | Icon fetching, app icon generation, and release packaging. |
 
 ## Architecture
 
