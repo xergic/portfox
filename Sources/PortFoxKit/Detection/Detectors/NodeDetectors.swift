@@ -16,6 +16,9 @@ public extension DetectorCatalog {
                 .veto("command mentions nuxt, which owns its own vite dev server") { $0.command.contains("nuxt") },
                 .veto("project has svelte.config, so vite dev belongs to SvelteKit") {
                     $0.project?.hasFile(prefix: "svelte.config") ?? false
+                },
+                .veto("project is a Remix or React Router framework app, which runs vite dev itself") {
+                    $0.project?.isRemixFramework ?? false
                 }
             ]
         ),
@@ -72,10 +75,15 @@ public extension DetectorCatalog {
                 .binPath("react-router", 100),
                 .binPath("remix", 100),
                 .commandContains("react-router dev", 88),
+                // The documented dev command is `remix vite:dev`, which is why
+                // Vite must lose this one rather than merely score lower.
+                .custom("vite dev running in a Remix or React Router framework app", 95, group: "command") { ctx in
+                    ctx.command.containsToken("vite") && (ctx.project?.isRemixFramework ?? false)
+                },
                 .configFile("react-router.config", 70, group: "config"),
                 .configFile("remix.config", 70, group: "config"),
-                .anyDependency(["@remix-run/dev", "react-router"], 60),
-                .defaultPort(3000)
+                .anyDependency(["@remix-run/dev", "@react-router/dev", "react-router"], 60),
+                .defaultPorts([5173, 3000])
             ]
         ),
         RuleBasedDetector(
@@ -84,6 +92,7 @@ public extension DetectorCatalog {
             signals: [
                 .binPath("ng", 100),
                 .commandContains("ng serve", 88),
+                .vetoCommandContains("storybook"),
                 .configFile("angular.json", 70),
                 .dependency("@angular/cli", 60),
                 .defaultPort(4200)
@@ -95,6 +104,11 @@ public extension DetectorCatalog {
             signals: [
                 .binPath("nest", 100),
                 .commandContains("nest start", 88),
+                .custom("a compiled entry point in a NestJS project", 60, group: "command") { ctx in
+                    guard let project = ctx.project else { return false }
+                    let isCompiledEntry = ["dist/main", "build/main"].contains { ctx.command.contains($0) }
+                    return isCompiledEntry && (project.hasFile(prefix: "nest-cli.json") || project.hasDependency("@nestjs/core"))
+                },
                 .configFile("nest-cli.json", 70),
                 .dependency("@nestjs/core", 60),
                 .defaultPort(3000)
@@ -117,10 +131,11 @@ public extension DetectorCatalog {
             signals: [
                 .binPath("expo", 100),
                 .commandContains("expo start", 88),
+                .treeCommandContains("expo start", 86),
                 .configFile("app.json", 70, group: "config"),
                 .configFile("app.config", 70, group: "config"),
                 .dependency("expo", 60),
-                .defaultPorts([8081, 19000, 19006])
+                .defaultPorts([8081, 19000])
             ]
         ),
         RuleBasedDetector(

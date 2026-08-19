@@ -27,8 +27,13 @@ public extension DetectorCatalog {
                 .commandContains("manage.py", 85),
                 .configFile("manage.py", 70),
                 .dependency("django", 60),
-                .custom("gunicorn command line and manifest depends on django", 40, group: "command") { ctx in
-                    ctx.command.contains("gunicorn") && (ctx.project?.hasDependency("django") ?? false)
+                .custom("gunicorn or uvicorn command line and manifest depends on django", 60, group: "command") { ctx in
+                    // Django's own deployment docs use both servers, so neither
+                    // may be reported as the bare server it is running under.
+                    let servers = ["gunicorn", "uvicorn", "daphne", "hypercorn"]
+                    guard servers.contains(where: { ctx.command.containsToken($0) }) else { return false }
+                    return (ctx.project?.hasDependency("django") ?? false)
+                        || (ctx.project?.hasFile(prefix: "manage.py") ?? false)
                 }
             ]
         ),

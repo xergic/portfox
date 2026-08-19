@@ -68,6 +68,14 @@ public struct ProjectSnapshot: Hashable, Codable, Sendable {
         dependencies.contains(name.lowercased())
     }
 
+    /// True for a Remix or React Router framework app, as opposed to a plain
+    /// Vite app that merely uses react-router for client side routing. The
+    /// framework packages run their own Vite dev server.
+    public var isRemixFramework: Bool {
+        hasDependency("@remix-run/dev") || hasDependency("@react-router/dev")
+            || hasFile(prefix: "remix.config") || hasFile(prefix: "react-router.config")
+    }
+
     /// Icons are resolved after the project itself, so the snapshot is rebuilt
     /// with the result rather than resolved twice.
     public func withIcon(path: String?) -> ProjectSnapshot {

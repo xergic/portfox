@@ -218,18 +218,15 @@ public actor ServiceRepository {
     static func primarySocket(from sockets: [ListeningSocket], type: ServiceType) -> ListeningSocket {
         precondition(!sockets.isEmpty, "a service is only built from at least one socket")
 
+        // A default port ranks by its position in the type's list rather than by
+        // its number, so Mailpit shows its web UI on 8025 and not SMTP on 1025.
         func rank(_ socket: ListeningSocket) -> (Int, Int) {
-            let tier: Int
-            if type.defaultPorts.contains(socket.port) {
-                tier = 0
-            } else if demotedPorts.contains(socket.port) {
-                tier = 3
-            } else if socket.port >= ephemeralPortFloor {
-                tier = 2
-            } else {
-                tier = 1
+            if let preference = type.defaultPorts.firstIndex(of: socket.port) {
+                return (0, preference)
             }
-            return (tier, socket.port)
+            if demotedPorts.contains(socket.port) { return (3, socket.port) }
+            if socket.port >= ephemeralPortFloor { return (2, socket.port) }
+            return (1, socket.port)
         }
 
         return sockets.min { rank($0) < rank($1) } ?? sockets[0]

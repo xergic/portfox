@@ -33,6 +33,6 @@ public struct DetectionContext: Sendable {
     /// Matches against this process's command line and every related process's.
     public func anyCommandContains(_ needle: String) -> Bool {
         let needle = needle.lowercased()
-        return command.contains(needle) || relatedCommands.contains { $0.contains(needle) }
+        return command.containsToken(needle) || relatedCommands.contains { $0.containsToken(needle) }
     }
 }

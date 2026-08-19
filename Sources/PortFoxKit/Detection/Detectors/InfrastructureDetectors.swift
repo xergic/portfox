@@ -11,7 +11,6 @@ public extension DetectorCatalog {
             threshold: standardThreshold,
             signals: [
                 .executableNamed("postgres", 100),
-                .executableNamed("postgresql", 100),
                 .defaultPort(5432)
             ]
         ),
@@ -82,6 +81,11 @@ public extension DetectorCatalog {
                 // other Erlang app, so identity comes from the command line instead.
                 .executableNamed("rabbitmq-server", 95),
                 .commandContains("rabbitmq-server", 90),
+                .custom("an Erlang VM bound to a RabbitMQ port", 90, group: "command") { ctx in
+                    // A live node runs as beam.smp, which is shared with every
+                    // other Erlang application, so the port has to carry it.
+                    ctx.executableName == "beam.smp" && ctx.ports.contains { [5672, 15672, 25672].contains($0) }
+                },
                 .defaultPorts([5672, 15672])
             ]
         )

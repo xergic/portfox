@@ -40,13 +40,13 @@ public extension Signal {
         let tool = tool.lowercased()
         return Signal("command contains node_modules/.bin/\(tool)", weight: weight, group: group) { ctx in
             let needles = ["node_modules/.bin/\(tool)", "/bin/\(tool)", "/\(tool)/bin/", "/\(tool).mjs", "/\(tool).js"]
-            return needles.contains { ctx.command.contains($0) || ctx.executablePath.contains($0) }
+            return needles.contains { ctx.command.containsToken($0) || ctx.executablePath.containsToken($0) }
         }
     }
 
     static func commandContains(_ needle: String, _ weight: Int, group: String? = "command") -> Signal {
         Signal("command contains \"\(needle)\"", weight: weight, group: group) { ctx in
-            ctx.command.contains(needle.lowercased())
+            ctx.command.containsToken(needle.lowercased())
         }
     }
 
@@ -68,7 +68,7 @@ public extension Signal {
     static func executableNameContains(_ needle: String, _ weight: Int, group: String? = "command") -> Signal {
         let needle = needle.lowercased()
         return Signal("executable name contains \"\(needle)\"", weight: weight, group: group) { ctx in
-            ctx.executableName.contains(needle)
+            ctx.executableName.containsToken(needle)
         }
     }
 
@@ -113,7 +113,7 @@ public extension Signal {
     }
 
     static func vetoCommandContains(_ needle: String) -> Signal {
-        .veto("command contains \"\(needle)\"") { $0.command.contains(needle.lowercased()) }
+        .veto("command contains \"\(needle)\"") { $0.command.containsToken(needle.lowercased()) }
     }
 
     static func custom(

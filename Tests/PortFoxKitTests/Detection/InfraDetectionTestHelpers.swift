@@ -9,7 +9,8 @@ enum DetectionFixture {
         executablePath: String? = nil,
         projectFiles: Set<String> = [],
         dependencies: Set<String> = [],
-        ports: [Int] = []
+        ports: [Int] = [],
+        relatedCommands: [String] = []
     ) -> DetectionContext {
         let process = ProcessSnapshot(
             pid: 4242,
@@ -26,7 +27,12 @@ enum DetectionFixture {
             rootFiles: projectFiles,
             dependencies: dependencies
         )
-        return DetectionContext(process: process, project: project, ports: ports)
+        return DetectionContext(
+            process: process,
+            project: project,
+            ports: ports,
+            relatedCommands: relatedCommands
+        )
     }
 
     static func context(
@@ -34,14 +40,16 @@ enum DetectionFixture {
         executablePath: String? = nil,
         projectFiles: Set<String> = [],
         dependencies: Set<String> = [],
-        ports: [Int] = []
+        ports: [Int] = [],
+        relatedCommands: [String] = []
     ) -> DetectionContext {
         context(
             argv: command.split(separator: " ", omittingEmptySubsequences: true).map(String.init),
             executablePath: executablePath,
             projectFiles: projectFiles,
             dependencies: dependencies,
-            ports: ports
+            ports: ports,
+            relatedCommands: relatedCommands
         )
     }
 }

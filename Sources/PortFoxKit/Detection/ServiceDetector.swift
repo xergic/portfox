@@ -52,7 +52,7 @@ public struct RuleBasedDetector: ServiceDetector {
         }
 
         if let requiredGroup, signals.contains(where: { $0.group == requiredGroup && !$0.isVeto }) {
-            guard bestPerGroup[requiredGroup] != nil else { return nil }
+            guard let best = bestPerGroup[requiredGroup], best > 0 else { return nil }
         }
 
         let score = ungroupedScore + bestPerGroup.values.reduce(0, +)

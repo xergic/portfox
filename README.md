@@ -65,6 +65,10 @@ RuleBasedDetector(type: .nextJS, threshold: standardThreshold, signals: [
 
 Signals sharing a `group` are alternatives, so only the strongest match scores and the group counts once toward confidence. Command-ish helpers default to the `command` group, port helpers to `port`.
 
+Command matching is word-boundary aware. A command line is mostly filesystem paths, so plain substring search labels `ngrok` as Angular (`/bin/ng`) and `vitepress` as Vite. `String.containsToken` requires a non-word character on each side of the match.
+
+`defaultPorts` is ordered by usefulness, not numerically. When a service binds several of its own defaults, the first one wins the port pill, so Mailpit shows its web UI on 8025 rather than SMTP on 1025.
+
 Every detector must produce at least one match in its `requiredGroup`, which defaults to `command`. Project evidence alone never identifies a service. Without that rule, `adb` running inside an Expo project was reported as Expo.
 
 ## How stopping works

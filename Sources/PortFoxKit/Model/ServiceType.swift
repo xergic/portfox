@@ -106,8 +106,10 @@ public enum ServiceType: String, CaseIterable, Codable, Sendable {
         }
     }
 
-    /// Ports the service conventionally binds. Used as a weak detection signal and,
-    /// more importantly, to pick the primary port when one service holds several.
+    /// Ports the service conventionally binds, most useful first. Order matters:
+    /// when a service holds several of its own default ports, the first one wins
+    /// the port pill. Mailpit binds 8025 for its web UI and 1025 for SMTP, and
+    /// the web UI is what a user wants to open.
     public var defaultPorts: [Int] {
         switch self {
         case .vite: [5173, 4173]
@@ -115,11 +117,11 @@ public enum ServiceType: String, CaseIterable, Codable, Sendable {
         case .nuxt: [3000]
         case .astro: [4321]
         case .svelteKit: [5173]
-        case .remix: [3000]
+        case .remix: [5173, 3000]
         case .angular: [4200]
         case .nestJS: [3000]
         case .storybook: [6006]
-        case .expo: [8081, 19000, 19006]
+        case .expo: [8081, 19000]
         case .metro: [8081]
         case .node: [3000, 4000, 8000, 8080]
         case .bun: [3000]
@@ -135,9 +137,9 @@ public enum ServiceType: String, CaseIterable, Codable, Sendable {
         case .redis: [6379]
         case .meilisearch: [7700]
         case .elasticsearch: [9200]
-        case .minio: [9000, 9001]
+        case .minio: [9001, 9000]
         case .mailpit: [8025, 1025]
-        case .rabbitmq: [5672, 15672]
+        case .rabbitmq: [15672, 5672]
         case .unknown: []
         }
     }
