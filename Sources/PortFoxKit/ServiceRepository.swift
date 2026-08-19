@@ -114,9 +114,7 @@ public actor ServiceRepository {
     /// Everything else gets the cheap parent link needed to walk the tree.
     private func buildTree(listenerPIDs: Set<pid_t>) -> ProcessTree {
         var byPID: [pid_t: ProcessSnapshot] = [:]
-        for pid in inspector.allPIDs() {
-            if let light = inspector.lightweightSnapshot(pid: pid) { byPID[pid] = light }
-        }
+        for skeleton in inspector.processSkeleton() { byPID[skeleton.pid] = skeleton }
 
         let lightweightTree = ProcessTree(processes: Array(byPID.values))
         var detailed = listenerPIDs
@@ -160,7 +158,7 @@ public actor ServiceRepository {
     /// A listener whose ancestor is also a listener in the same directory is part
     /// of that ancestor's service, not a service of its own. This is what folds
     /// `workerd` into the `wrangler` process that spawned it.
-    static func representative(for pid: pid_t, listenerPIDs: Set<pid_t>, tree: ProcessTree) -> pid_t {
+    public static func representative(for pid: pid_t, listenerPIDs: Set<pid_t>, tree: ProcessTree) -> pid_t {
         guard let start = tree.process(pid) else { return pid }
         var best = pid
 
@@ -178,7 +176,7 @@ public actor ServiceRepository {
         guard let listener = tree.process(representative) else { return nil }
 
         let project = listener.workingDirectoryURL.flatMap { cachedProject(for: $0) }
-        let ports = sockets.map(\.port).sorted()
+        let ports = Set(sockets.map(\.port)).sorted()
         let related = (tree.ancestors(of: representative, limit: 4) + tree.descendants(of: representative, limit: 12))
             .map(\.command)
             .filter { !$0.isEmpty }
@@ -195,7 +193,7 @@ public actor ServiceRepository {
             sockets: sockets.sorted { $0.port < $1.port },
             primarySocket: primary,
             detection: detection,
-            classification: classifier.classify(process: listener, detection: detection, project: project),
+            classification: classifier.classify(process: listener, detection: detection, project: project, ports: ports),
             project: project
         )
     }
@@ -230,7 +228,10 @@ public actor ServiceRepository {
         var standalone: [RunningService] = []
         for service in services {
             let isInfrastructure = service.type.category == .database || service.type.category == .infrastructure
-            if service.project != nil && !isInfrastructure {
+            // A bare directory is not a project. Grouping under it produces
+            // headings like "ondra ~" for anything started from the home folder.
+            let hasProject = service.project.map { $0.rootKind != .directory } ?? false
+            if hasProject && !isInfrastructure {
                 project.append(service)
             } else {
                 standalone.append(service)

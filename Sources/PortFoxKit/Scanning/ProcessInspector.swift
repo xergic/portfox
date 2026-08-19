@@ -9,16 +9,40 @@ import Foundation
 public struct ProcessInspector: Sendable {
     public init() {}
 
-    /// Every pid visible to this user, used to build the process tree.
-    public func allPIDs() -> [pid_t] {
-        let count = proc_listallpids(nil, 0)
-        guard count > 0 else { return [] }
-        // Ask for headroom, processes can appear between the two calls.
-        var buffer = [pid_t](repeating: 0, count: Int(count) + 64)
-        let byteCount = proc_listallpids(&buffer, Int32(buffer.count * MemoryLayout<pid_t>.size))
-        guard byteCount > 0 else { return [] }
-        let found = Int(byteCount) / MemoryLayout<pid_t>.size
-        return Array(buffer.prefix(found)).filter { $0 > 0 }
+    /// Skeleton of every process on the machine: pid, parent, owner and start
+    /// time, in one syscall.
+    ///
+    /// `proc_listallpids` is not used because it under-reports badly. On this
+    /// machine it returned 159 of 641 processes, which silently orphaned most
+    /// listeners. `sysctl(KERN_PROC_ALL)` is what `ps` itself uses.
+    ///
+    /// Executable path, argv and cwd are deliberately absent. They cost three
+    /// syscalls each and are only needed for listeners and their ancestors.
+    public func processSkeleton() -> [ProcessSnapshot] {
+        var mib: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0]
+        var size = 0
+        guard sysctl(&mib, 4, nil, &size, nil, 0) == 0, size > 0 else { return [] }
+
+        let stride = MemoryLayout<kinfo_proc>.stride
+        // Processes can be created between sizing and reading, so ask for headroom.
+        var entries = [kinfo_proc](repeating: kinfo_proc(), count: size / stride + 64)
+        var readSize = entries.count * stride
+        let status = entries.withUnsafeMutableBytes { pointer in
+            sysctl(&mib, 4, pointer.baseAddress, &readSize, nil, 0)
+        }
+        guard status == 0 else { return [] }
+
+        return entries.prefix(readSize / stride).compactMap { entry in
+            let pid = entry.kp_proc.p_pid
+            guard pid > 0 else { return nil }
+            let started = entry.kp_proc.p_un.__p_starttime
+            return ProcessSnapshot(
+                pid: pid,
+                parentPID: entry.kp_eproc.e_ppid,
+                uid: entry.kp_eproc.e_ucred.cr_uid,
+                startTime: Date(timeIntervalSince1970: TimeInterval(started.tv_sec))
+            )
+        }
     }
 
     public func snapshot(pid: pid_t) -> ProcessSnapshot? {
@@ -31,21 +55,6 @@ public struct ProcessInspector: Sendable {
             executablePath: executablePath(pid: pid),
             arguments: arguments(pid: pid),
             workingDirectory: workingDirectory(pid: pid)
-        )
-    }
-
-    /// Cheap variant for tree building. Skips argv and cwd, which are the
-    /// expensive lookups, and only reads the parent link.
-    public func lightweightSnapshot(pid: pid_t) -> ProcessSnapshot? {
-        guard let bsd = bsdInfo(pid: pid) else { return nil }
-        return ProcessSnapshot(
-            pid: pid,
-            parentPID: pid_t(bsd.pbi_ppid),
-            uid: bsd.pbi_uid,
-            startTime: Date(timeIntervalSince1970: TimeInterval(bsd.pbi_start_tvsec)),
-            executablePath: executablePath(pid: pid),
-            arguments: [],
-            workingDirectory: nil
         )
     }
 

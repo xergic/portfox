@@ -14,7 +14,7 @@ public extension DetectorCatalog {
                 // FastAPI is almost always served by uvicorn, so a project that
                 // depends on fastapi outweighs the plain uvicorn detector even when
                 // "fastapi" never appears on the command line itself.
-                .custom("uvicorn command line and manifest depends on fastapi", 60) { ctx in
+                .custom("uvicorn command line and manifest depends on fastapi", 60, group: "command") { ctx in
                     ctx.command.contains("uvicorn") && (ctx.project?.hasDependency("fastapi") ?? false)
                 }
             ]
@@ -27,7 +27,7 @@ public extension DetectorCatalog {
                 .commandContains("manage.py", 85),
                 .configFile("manage.py", 70),
                 .dependency("django", 60),
-                .custom("gunicorn command line and manifest depends on django", 40) { ctx in
+                .custom("gunicorn command line and manifest depends on django", 40, group: "command") { ctx in
                     ctx.command.contains("gunicorn") && (ctx.project?.hasDependency("django") ?? false)
                 }
             ]

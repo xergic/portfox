@@ -66,16 +66,39 @@ public struct RunningService: Identifiable, Hashable, Sendable {
     public var port: Int { primarySocket.port }
     public var displayName: String { detection.type.displayName }
 
-    /// Extra ports beyond the primary, ascending. Shown as a secondary hint.
+    /// Extra ports beyond the primary, ascending. A service usually binds the
+    /// same port on IPv4 and IPv6, so ports are deduplicated. Ephemeral ports are
+    /// dropped, they are internal plumbing the user never types.
     public var secondaryPorts: [Int] {
-        sockets.map(\.port).filter { $0 != primarySocket.port }.sorted()
+        Set(sockets.map(\.port))
+            .subtracting([primarySocket.port])
+            .filter { $0 < ListenerClassifier.ephemeralPortFloor }
+            .sorted()
     }
 
     /// Monorepo subpath such as `apps/web`, or the service directory name.
+    ///
+    /// A database's working directory is its data directory, often a bare UUID,
+    /// so infrastructure is labelled with its installed package instead.
     public var subtitle: String? {
+        if type.category == .database || type.category == .infrastructure {
+            return Self.packageLabel(for: listenerProcess.resolvedExecutablePath) ?? listenerProcess.executableName
+        }
         if let subpath = project?.subpath, !subpath.isEmpty { return subpath }
         guard let cwd = listenerProcess.workingDirectoryURL else { return nil }
         return cwd.lastPathComponent
+    }
+
+    /// Turns `/opt/homebrew/opt/postgresql@17/bin/postgres` into `postgresql@17`
+    /// and `/Users/Shared/DBngin/postgresql/17.0/bin/postgres` into `postgresql 17.0`.
+    static func packageLabel(for executablePath: String?) -> String? {
+        guard let executablePath else { return nil }
+        let components = executablePath.split(separator: "/").map(String.init)
+        guard let binIndex = components.lastIndex(of: "bin"), binIndex > 0 else { return nil }
+
+        let name = components[binIndex - 1]
+        guard let first = name.first, first.isNumber, binIndex > 1 else { return name }
+        return "\(components[binIndex - 2]) \(name)"
     }
 
     public var localURL: URL? {

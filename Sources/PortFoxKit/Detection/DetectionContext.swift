@@ -26,7 +26,7 @@ public struct DetectionContext: Sendable {
         self.ports = ports
         self.relatedCommands = relatedCommands.map { $0.lowercased() }
         self.command = process.command.lowercased()
-        self.executablePath = (process.executablePath ?? "").lowercased()
+        self.executablePath = (process.resolvedExecutablePath ?? "").lowercased()
         self.executableName = process.executableName.lowercased()
     }
 

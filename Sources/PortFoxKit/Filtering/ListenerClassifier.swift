@@ -25,11 +25,19 @@ public struct ListenerClassifier: Sendable {
         "/system/", "/usr/libexec/", "/usr/sbin/", "/usr/bin/", "/sbin/", "/bin/", "/library/apple/"
     ]
 
+    /// macOS allocates ephemeral source ports from here up.
+    public static let ephemeralPortFloor = 49152
+
     public func classify(
         process: ProcessSnapshot,
         detection: DetectionResult,
-        project: ProjectSnapshot?
+        project: ProjectSnapshot?,
+        ports: [Int]
     ) -> ServiceClass {
+        // Nothing a developer opens lives only on an ephemeral port. This is what
+        // orphaned `workerd` children look like after their wrangler parent dies.
+        if !ports.isEmpty, ports.allSatisfy({ $0 >= Self.ephemeralPortFloor }) { return .systemNoise }
+
         if detection.type != .unknown {
             switch detection.type.category {
             case .database, .infrastructure: return .infrastructure

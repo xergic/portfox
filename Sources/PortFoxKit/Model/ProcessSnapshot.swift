@@ -73,6 +73,15 @@ public struct ProcessSnapshot: Identifiable, Hashable, Codable, Sendable {
     /// Full command line, whitespace joined.
     public var command: String { arguments.joined(separator: " ") }
 
+    /// `proc_pidpath` returns nothing when the binary's vnode is gone, which
+    /// happens routinely after a Homebrew upgrade. argv[0] is then the best
+    /// available path.
+    public var resolvedExecutablePath: String? {
+        if let executablePath, !executablePath.isEmpty { return executablePath }
+        guard let first = arguments.first, first.hasPrefix("/") else { return nil }
+        return first
+    }
+
     /// Last path component of the executable, or the first argv entry.
     public var executableName: String {
         if let executablePath, !executablePath.isEmpty {

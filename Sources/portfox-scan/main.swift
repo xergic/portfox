@@ -8,6 +8,7 @@ struct CLI {
         case raw
         case services
         case json
+        case diagnose
     }
 
     static func run() async {
@@ -19,12 +20,23 @@ struct CLI {
             return
         }
 
-        let mode: Mode = arguments.contains("--raw") ? .raw : (arguments.contains("--json") ? .json : .services)
+        let mode: Mode
+        if arguments.contains("--raw") {
+            mode = .raw
+        } else if arguments.contains("--json") {
+            mode = .json
+        } else if arguments.contains("--diagnose") {
+            mode = .diagnose
+        } else {
+            mode = .services
+        }
 
         do {
             switch mode {
             case .raw:
                 try printRaw()
+            case .diagnose:
+                try printDiagnosis()
             case .services, .json:
                 let repository = ServiceRepository()
                 let result = try await repository.refresh(
@@ -52,6 +64,7 @@ struct CLI {
           --raw         every listener with pid, port, executable, argv and cwd
           --json        machine readable service list
           --all         include listeners classified as system noise
+          --diagnose    explain how each listener was resolved and classified
         """)
     }
 
@@ -68,6 +81,34 @@ struct CLI {
             print("\texe  \(snapshot?.executablePath ?? "-")")
             print("\tcwd  \(snapshot?.workingDirectory ?? "-")")
             print("\targv \(snapshot?.command ?? "-")")
+        }
+    }
+
+    static func printDiagnosis() throws {
+        let sockets = try ListenerScanner().scan()
+        let inspector = ProcessInspector()
+        let snapshots = inspector.processSkeleton()
+        let lightweightTree = ProcessTree(processes: snapshots)
+        let listenerPIDs = Set(sockets.map(\.pid))
+
+        print("sockets            \(sockets.count)")
+        print("listener pids      \(listenerPIDs.count)")
+        print("pids on machine    \(snapshots.count)")
+        print("listeners missing  \(listenerPIDs.filter { lightweightTree.process($0) == nil }.count)")
+
+        var byRepresentative: [pid_t: [Int]] = [:]
+        for socket in sockets {
+            let representative = ServiceRepository.representative(
+                for: socket.pid, listenerPIDs: listenerPIDs, tree: lightweightTree
+            )
+            byRepresentative[representative, default: []].append(socket.port)
+        }
+        print("representatives    \(byRepresentative.count)\n")
+
+        for (representative, ports) in byRepresentative.sorted(by: { $0.value.min()! < $1.value.min()! }) {
+            let snapshot = inspector.snapshot(pid: representative)
+            let name = snapshot?.executableName ?? "?"
+            print("pid \(representative)\t\(name)\tports \(ports.sorted().map(String.init).joined(separator: ", "))")
         }
     }
 
