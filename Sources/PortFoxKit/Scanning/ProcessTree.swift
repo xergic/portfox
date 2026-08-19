@@ -56,11 +56,16 @@ public struct ProcessTree: Sendable {
     /// The process a Stop action should signal.
     ///
     /// Walks up from the listener while each parent is a task runner that only
-    /// exists to launch the child, such as `pnpm dev` or `sh -c`. Walking up means
-    /// the runner does not survive its child. The walk stops hard at an
+    /// exists to launch the child, such as `pnpm dev` or `sh -c`. Walking up
+    /// means the runner does not survive its child. The walk stops hard at an
     /// interactive shell, a terminal emulator or `launchd`, so a Stop can never
     /// reach the user's own shell session.
-    public func logicalRoot(of pid: pid_t) -> ProcessSnapshot? {
+    ///
+    /// `serviceRoots` guards the other direction. A multiplexing runner such as
+    /// `concurrently`, `turbo` or `make -j` is a wrapper by name but owns several
+    /// unrelated services, so stopping one would take down the others. The walk
+    /// refuses to enter any parent that owns more than one service.
+    public func logicalRoot(of pid: pid_t, serviceRoots: Set<pid_t> = []) -> ProcessSnapshot? {
         guard let start = byPID[pid] else { return nil }
         var best = start
         var seen: Set<pid_t> = [pid]
@@ -72,12 +77,21 @@ public struct ProcessTree: Sendable {
             guard parent.pid > 1,
                   parent.uid == start.uid,
                   ProcessRole.of(parent) == .wrapper,
-                  sharesDirectorySubtree(parent: parent, child: best)
+                  sharesDirectorySubtree(parent: parent, child: best),
+                  !ownsSeveralServices(parent, serviceRoots: serviceRoots, current: pid)
             else { break }
 
             best = parent
         }
         return best
+    }
+
+    private func ownsSeveralServices(_ parent: ProcessSnapshot, serviceRoots: Set<pid_t>, current: pid_t) -> Bool {
+        guard !serviceRoots.isEmpty else { return false }
+        let owned = descendants(of: parent.pid)
+            .map(\.pid)
+            .filter { serviceRoots.contains($0) && $0 != current }
+        return !owned.isEmpty
     }
 
     /// A wrapper only counts when it is working in the same place as its child.
@@ -149,7 +163,7 @@ public enum ProcessRole: Sendable, Equatable {
     }
 
     private static func isTerminalOrEditor(_ process: ProcessSnapshot) -> Bool {
-        guard let path = process.executablePath?.lowercased() else { return false }
+        guard let path = process.resolvedExecutablePath?.lowercased() else { return false }
         // Anything living inside an application bundle or shipped by the system is
         // a session owner, not a task runner.
         return path.contains(".app/contents/") || path.hasPrefix("/system/") || path.hasPrefix("/usr/libexec/")

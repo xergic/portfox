@@ -58,8 +58,22 @@ public struct ProcessInspector: Sendable {
         )
     }
 
-    public func isAlive(pid: pid_t) -> Bool {
-        kill(pid, 0) == 0 || errno == EPERM
+    /// Identity of whatever currently occupies `pid`, or nil when nothing does.
+    ///
+    /// `kill(pid, 0)` only proves a pid is occupied, not that it is occupied by
+    /// the same process. That distinction is the whole defence against signalling
+    /// a recycled pid.
+    public func currentIdentity(pid: pid_t) -> String? {
+        guard let bsd = bsdInfo(pid: pid) else { return nil }
+        return ProcessSnapshot.identity(
+            pid: pid,
+            startTime: Date(timeIntervalSince1970: TimeInterval(bsd.pbi_start_tvsec))
+        )
+    }
+
+    /// True when `pid` still hosts the exact process the snapshot describes.
+    public func isSameProcessAlive(_ snapshot: ProcessSnapshot) -> Bool {
+        currentIdentity(pid: snapshot.pid) == snapshot.identity
     }
 
     // MARK: - Individual lookups

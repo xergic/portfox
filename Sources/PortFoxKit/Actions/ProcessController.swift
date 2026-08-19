@@ -3,9 +3,16 @@ import Foundation
 
 /// Stops services.
 ///
-/// Signals are only ever sent to a single pid, never to a process group. A dev
-/// server started from a terminal shares its group with the user's shell, so
-/// `killpg` would take the shell down with it.
+/// Two rules govern everything here.
+///
+/// Signals go to a single pid, never to a process group. A dev server started
+/// from a terminal shares its group with the user's shell, so `killpg` would
+/// take the shell down with it.
+///
+/// Every signal is preceded by a fresh identity read. A snapshot taken during a
+/// scan can be seconds old, and in that window the kernel can hand the same pid
+/// to an entirely different process. `kill(pid, 0)` proves only that a pid is
+/// occupied, so occupancy is never treated as proof of identity.
 public struct ProcessController: Sendable {
     public enum Outcome: Equatable, Sendable {
         /// The process is gone, and so is everything it started.
@@ -18,6 +25,7 @@ public struct ProcessController: Sendable {
         case stillRunning
         /// Owned by another user, or otherwise not ours to signal.
         case notPermitted
+        /// Already gone, or the pid now hosts a different process.
         case notFound
         /// Refused by PortFox itself because signalling it would be unsafe.
         case refused(reason: String)
@@ -41,67 +49,56 @@ public struct ProcessController: Sendable {
     /// period for it to exit.
     ///
     /// The descendant list is captured before the signal, because children
-    /// reparent to launchd the moment their parent dies and are then
-    /// unreachable through the tree.
+    /// reparent to launchd the moment their parent dies and are then unreachable
+    /// through the tree.
     public func stop(_ service: RunningService, tree: ProcessTree? = nil) async -> Outcome {
         let target = service.rootProcess
-        if case .refused(let reason) = safetyCheck(target) { return .refused(reason: reason) }
+        let verdict = verify(target)
+        guard verdict == .exited else { return verdict }
 
-        let descendants = tree?.descendants(of: target.pid).filter { safetyCheck($0) == .exited } ?? []
+        let descendants = tree?.descendants(of: target.pid) ?? []
         guard kill(target.pid, SIGTERM) == 0 else { return outcomeForErrno() }
 
-        let deadline = ContinuousClock.now + gracePeriod
-        var rootExited = false
-        while ContinuousClock.now < deadline {
-            try? await Task.sleep(for: pollInterval)
-            if !inspector.isAlive(pid: target.pid) {
-                rootExited = true
-                break
-            }
-        }
-
-        guard rootExited || !inspector.isAlive(pid: target.pid) else { return .stillRunning }
-
-        return .exitedLeavingChildren(pids: await sweepOrphans(of: descendants))
-            .normalised
-    }
-
-    /// Children that outlive their parent get the same SIGTERM the user asked
-    /// for. Anything that survives that is escalated by the user, never here.
-    private func sweepOrphans(of descendants: [ProcessSnapshot]) async -> [pid_t] {
-        let orphans = descendants.filter { inspector.isAlive(pid: $0.pid) }
-        guard !orphans.isEmpty else { return [] }
-
-        for orphan in orphans { _ = kill(orphan.pid, SIGTERM) }
-        try? await Task.sleep(for: gracePeriod)
-        return orphans.map(\.pid).filter { inspector.isAlive(pid: $0) }
+        guard await waitForExit(of: target) else { return .stillRunning }
+        return Outcome.exitedLeavingChildren(pids: await sweepOrphans(descendants)).normalised
     }
 
     /// Sends SIGKILL to the logical root and to any descendant that outlives it.
     /// Only offered after a SIGTERM has already failed.
     public func forceStop(_ service: RunningService, tree: ProcessTree) async -> Outcome {
         let target = service.rootProcess
-        if case .refused(let reason) = safetyCheck(target) { return .refused(reason: reason) }
+        let verdict = verify(target)
+        guard verdict == .exited else { return verdict }
 
         let descendants = tree.descendants(of: target.pid)
-            .filter { safetyCheck($0) == .exited }
+        let rootSignalled = kill(target.pid, SIGKILL) == 0
+        try? await Task.sleep(for: pollInterval)
 
         // A failure to signal the root is not a reason to leave its orphaned
         // children behind, so the descendant sweep runs either way.
-        let rootSignalled = kill(target.pid, SIGKILL) == 0
-        try? await Task.sleep(for: pollInterval)
-        for child in descendants where inspector.isAlive(pid: child.pid) {
+        for child in descendants where verify(child) == .exited {
             _ = kill(child.pid, SIGKILL)
         }
 
         try? await Task.sleep(for: pollInterval)
-        if inspector.isAlive(pid: target.pid) { return rootSignalled ? .stillRunning : .notPermitted }
+        if inspector.isSameProcessAlive(target) { return rootSignalled ? .stillRunning : .notPermitted }
         return .exited
     }
 
-    /// Everything PortFox refuses to signal. Returns `.exited` when the process is
-    /// safe to signal, which reads oddly but keeps this a single comparison at the
-    /// call sites above.
+    // MARK: - Safety
+
+    /// Confirms the pid still hosts the process the snapshot describes, then
+    /// applies the safety rules to the freshly read process rather than the
+    /// stale one. Returns `.exited` when it is safe to signal.
+    func verify(_ snapshot: ProcessSnapshot) -> Outcome {
+        guard let current = inspector.snapshot(pid: snapshot.pid) else { return .notFound }
+        guard current.identity == snapshot.identity else { return .notFound }
+        return safetyCheck(current)
+    }
+
+    /// Everything PortFox refuses to signal. Returns `.exited` when the process
+    /// is safe to signal, which reads oddly but keeps the call sites to a single
+    /// comparison.
     func safetyCheck(_ process: ProcessSnapshot) -> Outcome {
         guard process.pid > 1 else { return .refused(reason: "system process") }
         guard process.pid != getpid() else { return .refused(reason: "PortFox itself") }
@@ -110,6 +107,28 @@ public struct ProcessController: Sendable {
             return .refused(reason: "shell or terminal session")
         }
         return .exited
+    }
+
+    // MARK: - Waiting
+
+    private func waitForExit(of target: ProcessSnapshot) async -> Bool {
+        let deadline = ContinuousClock.now + gracePeriod
+        while ContinuousClock.now < deadline {
+            try? await Task.sleep(for: pollInterval)
+            if !inspector.isSameProcessAlive(target) { return true }
+        }
+        return !inspector.isSameProcessAlive(target)
+    }
+
+    /// Children that outlive their parent get the same SIGTERM the user asked
+    /// for. Anything that survives that is escalated by the user, never here.
+    private func sweepOrphans(_ descendants: [ProcessSnapshot]) async -> [pid_t] {
+        let orphans = descendants.filter { verify($0) == .exited }
+        guard !orphans.isEmpty else { return [] }
+
+        for orphan in orphans { _ = kill(orphan.pid, SIGTERM) }
+        try? await Task.sleep(for: gracePeriod)
+        return orphans.filter { inspector.isSameProcessAlive($0) }.map(\.pid)
     }
 
     private func outcomeForErrno() -> Outcome {

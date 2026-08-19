@@ -122,7 +122,8 @@ final class AppState {
         case .exitedLeavingChildren(let pids):
             stubbornServiceIDs.remove(service.id)
             let list = pids.map(String.init).joined(separator: ", ")
-            lastError = "\(service.displayName) stopped. \(pids.count) child process\(pids.count == 1 ? "" : "es") ignored the stop signal: PID \(list)."
+            let plural = pids.count == 1 ? "" : "es"
+            lastError = "\(service.displayName) stopped. \(pids.count) child process\(plural) ignored the stop signal: PID \(list)."
         case .stillRunning:
             stubbornServiceIDs.insert(service.id)
         case .notPermitted:

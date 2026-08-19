@@ -146,8 +146,9 @@ public actor ServiceRepository {
             socketsByRepresentative[representative, default: []].append(socket)
         }
 
+        let serviceRoots = Set(socketsByRepresentative.keys)
         return socketsByRepresentative.compactMap { representative, owned in
-            build(representative: representative, sockets: owned, tree: tree)
+            build(representative: representative, sockets: owned, tree: tree, serviceRoots: serviceRoots)
         }
         .sorted { lhs, rhs in
             if lhs.classification != rhs.classification { return lhs.classification < rhs.classification }
@@ -158,21 +159,32 @@ public actor ServiceRepository {
     /// A listener whose ancestor is also a listener in the same directory is part
     /// of that ancestor's service, not a service of its own. This is what folds
     /// `workerd` into the `wrangler` process that spawned it.
+    ///
+    /// Two rules keep this from over-merging. The walk stops at a shell, terminal
+    /// or application bundle, so a dev server is never absorbed into the editor
+    /// that happens to sit above it. And both working directories must be known
+    /// and equal, because an unknown directory is not evidence of anything.
     public static func representative(for pid: pid_t, listenerPIDs: Set<pid_t>, tree: ProcessTree) -> pid_t {
-        guard let start = tree.process(pid) else { return pid }
+        guard let start = tree.process(pid), let directory = start.workingDirectory else { return pid }
         var best = pid
 
         for ancestor in tree.ancestors(of: pid) {
-            guard listenerPIDs.contains(ancestor.pid), ancestor.uid == start.uid else { continue }
-            let sameDirectory = ancestor.workingDirectory == nil
-                || start.workingDirectory == nil
-                || ancestor.workingDirectory == start.workingDirectory
-            if sameDirectory { best = ancestor.pid }
+            guard ProcessRole.of(ancestor) != .boundary else { break }
+            guard listenerPIDs.contains(ancestor.pid),
+                  ancestor.uid == start.uid,
+                  ancestor.workingDirectory == directory
+            else { continue }
+            best = ancestor.pid
         }
         return best
     }
 
-    private func build(representative: pid_t, sockets: [ListeningSocket], tree: ProcessTree) -> RunningService? {
+    private func build(
+        representative: pid_t,
+        sockets: [ListeningSocket],
+        tree: ProcessTree,
+        serviceRoots: Set<pid_t>
+    ) -> RunningService? {
         guard let listener = tree.process(representative) else { return nil }
 
         let project = listener.workingDirectoryURL.flatMap { cachedProject(for: $0) }
@@ -183,7 +195,7 @@ public actor ServiceRepository {
 
         let context = DetectionContext(process: listener, project: project, ports: ports, relatedCommands: related)
         let detection = engine.detect(context)
-        let root = tree.logicalRoot(of: representative) ?? listener
+        let root = tree.logicalRoot(of: representative, serviceRoots: serviceRoots) ?? listener
         let primary = Self.primarySocket(from: sockets, type: detection.type)
 
         return RunningService(

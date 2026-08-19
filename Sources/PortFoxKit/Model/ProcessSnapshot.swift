@@ -95,8 +95,11 @@ public struct ProcessSnapshot: Identifiable, Hashable, Codable, Sendable {
         workingDirectory.map { URL(fileURLWithPath: $0, isDirectory: true) }
     }
 
-    /// Identity that survives a refresh but not a pid recycle.
-    public var identity: String {
-        "\(pid)-\(startTime?.timeIntervalSince1970.rounded() ?? 0)"
+    /// Identity that survives a refresh but not a pid recycle. Compared against
+    /// a fresh kernel read immediately before any signal is sent.
+    public var identity: String { Self.identity(pid: pid, startTime: startTime) }
+
+    public static func identity(pid: pid_t, startTime: Date?) -> String {
+        "\(pid)-\(Int(startTime?.timeIntervalSince1970 ?? 0))"
     }
 }
