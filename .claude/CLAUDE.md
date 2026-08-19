@@ -17,6 +17,7 @@ make scan     # run the pipeline headless (./.build/debug/portfox-scan)
 make lint     # SwiftLint, must stay clean
 make gen      # regenerate PortFox.xcodeproj from project.yml
 make snapshot # render popover, dashboard, preferences and about to snapshots/
+make archive  # universal ad hoc signed Release app and DMG into dist/
 ```
 
 Run `make lint` and `make test` after every code change. Run `make snapshot`
@@ -25,7 +26,7 @@ after a UI change and look at the PNGs.
 `PortFox.xcodeproj` is generated and git-ignored. Never edit it. Change
 `project.yml` and run `make gen`.
 
-`snapshots/` is git-ignored. Do not commit PNGs.
+`snapshots/` and `dist/` are git-ignored. Do not commit PNGs or build output.
 
 ## Layout
 
@@ -36,7 +37,7 @@ after a UI change and look at the PNGs.
 | `App/PortFox/` | SwiftUI shell: `AppState`, `DashboardState`, views, theme. |
 | `Tests/PortFoxKitTests/` | Tests for the kit only. The app target has none. |
 | `.github/` | CI on every push, the signed release pipeline on a tag. |
-| `Tools/` | `fetch-icons.py` (simple-icons), `make-appicon.swift`, `make-dmg.sh`. |
+| `Tools/` | `fetch-icons.py` (simple-icons), `make-appicon.swift`, `make-dmg.sh`, `archive.sh`. |
 
 ## Architecture
 
@@ -138,6 +139,23 @@ which is why the workflow fails the job when a slice is missing.
 
 **Both the app and the DMG get notarized and stapled.** A ticket stapled to the
 DMG alone leaves the copied app waiting on an online check at first launch.
+
+### A local build to hand to someone
+
+`make archive` (or `Tools/archive.sh 0.2.0`) runs the same archive invocation
+without a Developer ID, and writes `dist/PortFox.app` and `dist/PortFox-<v>.dmg`.
+It fails the run when either architecture slice is missing, exactly as CI does.
+
+Version defaults to the latest git tag, build number to `git rev-list --count
+HEAD`. Locally there is no run number to borrow, and the commit count is the
+cheapest value that only ever goes up, which is what `CFBundleVersion` needs.
+
+The script skips `-exportArchive` and copies the app out of the archive instead.
+Export wants a team and an export plist, and `project.yml` signs ad hoc.
+
+The result is not notarized, so macOS 15 blocks it and offers no right-click
+Open. The recipient runs `xattr -dr com.apple.quarantine`. Tag a release when
+that is not acceptable.
 
 ## Git
 
