@@ -196,7 +196,7 @@ private struct FilterChip: View {
                 .padding(.vertical, 3)
                 .background(
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(isSelected ? Theme.primaryText : (isHovering ? Theme.cardHover : Theme.card))
+                        .fill(isSelected ? Theme.accent : (isHovering ? Theme.cardHover : Theme.card))
                 )
                 .contentShape(Rectangle())
         }

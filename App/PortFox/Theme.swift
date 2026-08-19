@@ -13,7 +13,12 @@ enum Theme {
     static let secondaryText = Color(red: 0.541, green: 0.541, blue: 0.576)
     static let tertiaryText = Color(red: 0.396, green: 0.396, blue: 0.427)
 
-    static let accent = Color(red: 0.133, green: 0.773, blue: 0.369)
+    /// Interactive chrome only: a primary button, a selected row, a chosen
+    /// segment. The same orange as the menu bar fox, so the accent is the brand.
+    static let accent = Color(red: 0.980, green: 0.549, blue: 0.239)
+    /// "This is healthy", never chrome. Kept green after the accent turned
+    /// orange, because an orange 200 OK reads as a warning.
+    static let success = Color(red: 0.133, green: 0.773, blue: 0.369)
     static let danger = Color(red: 0.937, green: 0.267, blue: 0.267)
 
     static let pill = Color(red: 0.137, green: 0.137, blue: 0.149)
@@ -21,7 +26,7 @@ enum Theme {
     /// What a process is doing in a service's tree, matching `ProcessRole`.
     static let roleBoundary = Color(red: 0.694, green: 0.549, blue: 0.973)
     static let roleWrapper = Color(red: 0.965, green: 0.694, blue: 0.290)
-    static let roleService = accent
+    static let roleService = success
 
     /// Path values in the metadata card, so the executable and the working
     /// directory are told apart without reading their labels.

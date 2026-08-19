@@ -148,7 +148,7 @@ struct ServiceDetailPane: View {
 
     private func statusTint(_ code: Int) -> Color {
         switch code {
-        case 200..<300: Theme.accent
+        case 200..<300: Theme.success
         case 300..<400: Theme.roleWrapper
         default: Theme.danger
         }

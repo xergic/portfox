@@ -51,7 +51,7 @@ struct MenuView: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 19, height: 19)
-                .foregroundStyle(Color(red: 0.98, green: 0.55, blue: 0.24))
+                .foregroundStyle(Theme.accent)
 
             Text("PortFox")
                 .font(.system(size: 15, weight: .bold))
