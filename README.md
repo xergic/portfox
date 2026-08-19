@@ -34,7 +34,6 @@ make lint     # SwiftLint
 | `App/PortFox/` | The SwiftUI app: state, views, theme, snapshot renderer. |
 | `Tests/PortFoxKitTests/` | Tests for the kit. |
 | `Tools/` | Icon fetching and app icon generation. |
-| `docs/` | The original MVP specification, kept for history. |
 
 ## Architecture
 

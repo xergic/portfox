@@ -35,8 +35,8 @@ after a UI change and look at the PNGs.
 | `Sources/portfox-scan/` | CLI over the same pipeline. |
 | `App/PortFox/` | SwiftUI shell: `AppState`, `DashboardState`, views, theme. |
 | `Tests/PortFoxKitTests/` | Tests for the kit only. The app target has none. |
-| `Tools/` | `fetch-icons.py` (simple-icons), `make-appicon.swift`. |
-| `docs/` | The original MVP spec. Historical, not a source of truth. |
+| `.github/` | CI on every push, the signed release pipeline on a tag. |
+| `Tools/` | `fetch-icons.py` (simple-icons), `make-appicon.swift`, `make-dmg.sh`. |
 
 ## Architecture
 
@@ -121,6 +121,23 @@ dashboard's search box draws flat text under a snapshot.
 
 The popover measures its own list height. Inside a `MenuBarExtra` window a
 `ScrollView` has no intrinsic height and collapses to nothing.
+
+## Releases
+
+Push a `vMAJOR.MINOR.PATCH` tag. `.github/workflows/release.yml` archives,
+signs with Developer ID, notarizes, staples, builds the DMG and publishes it.
+
+`MARKETING_VERSION` comes from the tag and `CURRENT_PROJECT_VERSION` from the
+run number, so `project.yml` stays at its placeholder and nobody edits a version
+by hand.
+
+**A release build must archive, never build.** `xcodebuild build` resolves the
+destination to the runner's own arch and silently ships arm64 only. Only
+`archive -destination 'generic/platform=macOS'` produces the universal binary,
+which is why the workflow fails the job when a slice is missing.
+
+**Both the app and the DMG get notarized and stapled.** A ticket stapled to the
+DMG alone leaves the copied app waiting on an online check at first launch.
 
 ## Git
 
