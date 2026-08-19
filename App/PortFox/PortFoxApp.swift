@@ -69,7 +69,7 @@ private struct MenuBarLabel: View {
     /// status bar's own image size, so the only lever on the glyph is the image.
     private static let glyph: NSImage = {
         let image = NSImage(resource: .menuBarFox).copy() as? NSImage ?? NSImage()
-        image.size = NSSize(width: 10, height: 10)
+        image.size = NSSize(width: 15, height: 15)
         image.isTemplate = true
         return image
     }()
