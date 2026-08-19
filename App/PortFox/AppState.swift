@@ -6,7 +6,14 @@ import SwiftUI
 @MainActor
 @Observable
 final class AppState {
+    /// Everything the scan found, before the ignore list. Private: a view drawing
+    /// from it would make ignoring cosmetic in one place and real in another.
+    private var rawResult: ScanResult = .empty
+    /// What every surface draws.
     private(set) var result: ScanResult = .empty
+    /// The ignored services that happen to be running, grouped the same way, so
+    /// the dashboard's Ignored chip renders through the existing sections.
+    private(set) var ignoredResult: ScanResult = .empty
     private(set) var lastError: String?
     /// Services whose Stop was delivered but which are still alive.
     private(set) var stubbornServiceIDs: Set<String> = []
@@ -75,6 +82,7 @@ final class AppState {
     private let controller = ProcessController()
     private let assetScanner = ProjectAssetScanner()
     private let iconOverrides = ProjectIconOverrides()
+    private let ignoredServices = IgnoredServices()
     private let defaults = UserDefaults.standard
 
     /// Refreshing on the polling interval only matters while the user is looking.
@@ -186,8 +194,12 @@ final class AppState {
             // is written only when it actually moved. A blind write redraws the
             // whole dashboard on every tick.
             if update.didRebuild {
-                if update.result != result {
-                    result = update.result
+                // Against `rawResult`, never `result`. A fresh scan compared to the
+                // filtered value would differ forever once anything is ignored,
+                // and the whole point of this branch is to skip a redraw.
+                if update.result != rawResult {
+                    rawResult = update.result
+                    applyIgnores()
                     stubbornServiceIDs.formIntersection(Set(update.result.services.map(\.id)))
                 }
                 processTree = update.tree
@@ -216,9 +228,64 @@ final class AppState {
             return
         }
 
-        let pids = result.services.flatMap { tree.relatives(of: $0.listenerProcess.pid) }
+        // Ignored services are sampled too, so one selected under the Ignored chip
+        // still reports resident memory in its detail pane. They stay out of
+        // `watchedMemoryBytes`, which is the number the user asked to be rid of.
+        let watched = result.services + ignoredResult.services
+        // A set, because relatives include ancestors and two services under one
+        // shell would otherwise be asked about the same pid twice.
+        let pids = Set(watched.flatMap { tree.relatives(of: $0.listenerProcess.pid) })
         let sampled = await repository.sampleResidentMemory(of: pids)
         if sampled != memoryByPID { memoryByPID = sampled }
+    }
+
+    // MARK: - Ignored services
+
+    var ignoredEntries: [IgnoredService] { ignoredServices.entries }
+    /// Anything on the list, running or not. The Preferences inventory.
+    var hasIgnoredServices: Bool { !ignoredServices.isEmpty }
+    /// Only the ones actually listening. What the dashboard chip can show.
+    var hasRunningIgnoredServices: Bool { !ignoredResult.services.isEmpty }
+
+    /// Why the list is empty, when nothing is running. Shared by the popover and
+    /// the dashboard so the two never explain the same state differently.
+    var emptyStateMessage: String {
+        hasIgnoredServices ? "Every running service is ignored" : "No development services running"
+    }
+    func isIgnored(_ service: RunningService) -> Bool { ignoredServices.contains(service) }
+    func canIgnore(_ service: RunningService) -> Bool { ignoredServices.canIgnore(service) }
+
+    func ignore(_ service: RunningService) {
+        ignoredServices.ignore(service)
+        applyIgnores()
+    }
+
+    func stopIgnoring(_ service: RunningService) {
+        ignoredServices.stopIgnoring(service)
+        applyIgnores()
+    }
+
+    func stopIgnoring(_ key: IgnoreKey) {
+        ignoredServices.remove(key)
+        applyIgnores()
+    }
+
+    /// Splits the last scan into what the user sees and what they hid.
+    ///
+    /// Called on every scan and on every ignore change, which is what makes
+    /// ignoring redraw at once rather than waiting for the next tick. No rescan
+    /// is needed because `rawResult` already holds the unfiltered truth.
+    ///
+    /// Membership is resolved once into a set of ids. Asking the store directly in
+    /// both passes would standardise every service's path twice a tick.
+    private func applyIgnores() {
+        let ignoredIDs = Set(rawResult.services.filter(ignoredServices.contains).map(\.id))
+
+        let visible = rawResult.keeping { !ignoredIDs.contains($0.id) }
+        if visible != result { result = visible }
+
+        let hidden = rawResult.keeping { ignoredIDs.contains($0.id) }
+        if hidden != ignoredResult { ignoredResult = hidden }
     }
 
     // MARK: - Actions

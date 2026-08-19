@@ -29,6 +29,36 @@ public struct ScanResult: Sendable, Equatable {
     public static let empty = ScanResult(services: [], groups: [], standalone: [], allSockets: [], hidden: [])
 }
 
+extension ScanResult {
+    /// The same result narrowed to the services that pass `isIncluded`, with the
+    /// project headings and the standalone list rebuilt so neither can reference
+    /// a service that is no longer in `services`.
+    ///
+    /// `allSockets` and `hidden` carry through untouched. They describe the
+    /// machine, not the view, which is why the sidebar footer keeps counting
+    /// every listener the same way it already counts the filtered-out ones.
+    ///
+    /// Returns `self` when nothing was removed, without having allocated. The
+    /// no-op is the common case, and it runs on every redraw of the sidebar.
+    public func keeping(_ isIncluded: (RunningService) -> Bool) -> ScanResult {
+        guard let firstDropped = services.firstIndex(where: { !isIncluded($0) }) else { return self }
+
+        var kept = Array(services[..<firstDropped])
+        kept.append(contentsOf: services[services.index(after: firstDropped)...].filter(isIncluded))
+
+        let allowed = Set(kept.map(\.id))
+        return ScanResult(
+            services: kept,
+            groups: groups
+                .map { ProjectGroup(project: $0.project, services: $0.services.filter { allowed.contains($0.id) }) }
+                .filter { !$0.services.isEmpty },
+            standalone: standalone.filter { allowed.contains($0.id) },
+            allSockets: allSockets,
+            hidden: hidden
+        )
+    }
+}
+
 /// One turn of the scan loop.
 ///
 /// `didRebuild` is false when the listening sockets had not moved since the last

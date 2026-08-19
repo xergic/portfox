@@ -141,7 +141,9 @@ struct MenuView: View {
             Image(systemName: "moon.zzz")
                 .font(.system(size: 22))
                 .foregroundStyle(Theme.tertiaryText)
-            Text("No development services running")
+            // "Nothing running" would be a lie when the user hid it all, and it
+            // reads as a broken scanner rather than a filter doing its job.
+            Text(state.emptyStateMessage)
                 .font(.system(size: 12))
                 .foregroundStyle(Theme.secondaryText)
             if let error = state.lastError {

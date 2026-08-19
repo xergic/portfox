@@ -188,6 +188,14 @@ private struct ServiceContextMenu: View {
         if state.isStubborn(service) {
             Button("Force Stop") { Task { await state.forceStop(service) } }
         }
+        if state.canIgnore(service) {
+            Divider()
+            if state.isIgnored(service) {
+                Button("Stop Ignoring") { state.stopIgnoring(service) }
+            } else {
+                Button("Ignore Service") { state.ignore(service) }
+            }
+        }
         Divider()
         Text("PID \(service.listenerProcess.pid) · stops \(service.rootProcess.pid)")
     }

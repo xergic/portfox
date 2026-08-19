@@ -36,12 +36,21 @@ struct TempTree {
 func makeService(
     port: Int,
     project: ProjectSnapshot?,
-    pid: pid_t = 1
+    pid: pid_t = 1,
+    executable: String? = nil,
+    arguments: [String] = [],
+    id: String? = nil
 ) -> RunningService {
-    let process = ProcessSnapshot(pid: pid, parentPID: 1, uid: 501)
+    let process = ProcessSnapshot(
+        pid: pid,
+        parentPID: 1,
+        uid: 501,
+        executablePath: executable,
+        arguments: arguments
+    )
     let socket = ListeningSocket(pid: pid, port: port, host: "127.0.0.1", family: .ipv4)
     return RunningService(
-        id: "\(pid)",
+        id: id ?? "\(pid)",
         listenerProcess: process,
         rootProcess: process,
         sockets: [socket],

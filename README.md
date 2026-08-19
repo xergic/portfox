@@ -53,6 +53,7 @@ Settings live in a sheet inside the dashboard, replacing the old Settings window
 - **Service list layout**: Service or Project, which fact leads each row. Daemons and databases always stay service-first, since their resolved project is an accident of where they run.
 - **Show all listeners**: include background system ports such as CUPS or mDNSResponder.
 - **Group related services by project**: fold sibling repositories under their shared parent directory.
+- **Ignored services**: the list of services you have hidden, each with a remove button. Right-click any service and choose *Ignore Service* to add one. Ignored services leave the popover, the dashboard, the menu bar count and the memory total. An ignored service that is running can also be un-ignored from the *Ignored* chip in the dashboard sidebar.
 - **Launch at login**: start PortFox automatically when you log in.
 
 ## The scan CLI
@@ -128,6 +129,8 @@ Preferences needs its own flag rather than sharing the dashboard's, because it i
 - Working directory and resident memory lookups fail for hardened-runtime processes, along with the other libproc fields. Those services still appear, without a project or a memory reading.
 - A service whose type is `.unknown` never gets a `localURL`, so it can never be HTTP-inspected even when it obviously serves HTTP.
 - Dynamic `app.config.js` and `app.config.ts` are not evaluated, only their static JSON equivalents.
+- Ignoring is a preference of the menu bar app, so `portfox-scan` still lists and can still stop an ignored service. That is deliberate: the CLI reports the machine, not your filters.
+- An ignore is matched by port plus project directory, or port plus executable path for a service with no project. Move a project or change its port and the ignore no longer applies.
 - A service whose ports are all ephemeral is hidden by default. That is what orphaned `workerd` children look like. Turn on *Show all listeners* to see them.
 - Launch at login needs a signed build. It fails on a local ad hoc one.
 

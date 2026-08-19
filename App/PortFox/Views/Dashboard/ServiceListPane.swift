@@ -5,6 +5,9 @@ import SwiftUI
 /// rows, with selection standing in for hover.
 struct ServiceListPane: View {
     @Environment(AppState.self) private var state
+    /// The result to draw. Not read off `AppState` directly, because the Ignored
+    /// chip renders `ignoredResult` through this same pane.
+    let result: ScanResult
     @Bindable var dashboard: DashboardState
 
     var scrolls = true
@@ -71,9 +74,17 @@ struct ServiceListPane: View {
         .padding(.bottom, 10)
     }
 
-    /// The system chip only makes sense once noise is being scanned at all.
+    /// The system chip only makes sense once noise is being scanned at all, and
+    /// the ignored chip only once something ignored is actually running. Entries
+    /// whose process is stopped are a Preferences concern.
     private var availableFilters: [DashboardState.Filter] {
-        DashboardState.Filter.allCases.filter { $0 != .system || state.showAllListeners }
+        DashboardState.Filter.allCases.filter { filter in
+            switch filter {
+            case .system: state.showAllListeners
+            case .ignored: state.hasRunningIgnoredServices
+            default: true
+            }
+        }
     }
 
     @ViewBuilder
@@ -89,37 +100,42 @@ struct ServiceListPane: View {
     }
 
     private var listContent: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        // Narrowed once. Every section below reads off these, because each call to
+        // `dashboard.filtered` is a full pass over the services.
+        let visible = dashboard.filtered(result)
+        let selectedID = dashboard.selection(among: visible.services)?.id
+
+        return VStack(alignment: .leading, spacing: 10) {
             if let error = state.lastError {
                 ErrorBanner(message: error)
             }
 
-            ForEach(dashboard.groups(in: state.result)) { group in
+            ForEach(visible.groups) { group in
                 ProjectSectionView(
                     group: group,
                     layout: state.cellLayout,
                     showsHoverActions: false,
-                    selectedServiceID: dashboard.selection(in: state.result)?.id,
+                    selectedServiceID: selectedID,
                     onSelect: select,
                     forcesHover: forcesHover
                 )
             }
 
-            let standalone = dashboard.standalone(in: state.result)
-            if !standalone.isEmpty {
+            if !visible.standalone.isEmpty {
                 VStack(alignment: .leading, spacing: 0) {
                     SectionHeader(title: "INFRASTRUCTURE & DAEMONS")
-                    ForEach(standalone) { service in
-                        row(service)
+                    ForEach(visible.standalone) { service in
+                        row(service, selectedID: selectedID)
                     }
                 }
             }
 
+            let ungrouped = ungrouped(in: visible)
             if !ungrouped.isEmpty {
                 VStack(alignment: .leading, spacing: 0) {
                     SectionHeader(title: "OTHER LISTENERS")
                     ForEach(ungrouped) { service in
-                        row(service)
+                        row(service, selectedID: selectedID)
                     }
                 }
             }
@@ -127,12 +143,12 @@ struct ServiceListPane: View {
         .padding(10)
     }
 
-    private func row(_ service: RunningService) -> some View {
+    private func row(_ service: RunningService, selectedID: String?) -> some View {
         ServiceRowView(
             service: service,
             layout: state.cellLayout,
             showsHoverActions: false,
-            isSelected: service.id == dashboard.selection(in: state.result)?.id,
+            isSelected: service.id == selectedID,
             onTap: select,
             forcedHover: forcesHover
         )
@@ -144,18 +160,18 @@ struct ServiceListPane: View {
 
     /// Services the grouper did not place. Showing them beats silently dropping a
     /// running server.
-    private var ungrouped: [RunningService] {
+    private func ungrouped(in visible: ScanResult) -> [RunningService] {
         let placed = Set(
-            dashboard.groups(in: state.result).flatMap { $0.services.map(\.id) }
-                + dashboard.standalone(in: state.result).map(\.id)
+            visible.groups.flatMap { $0.services.map(\.id) } + visible.standalone.map(\.id)
         )
-        return dashboard.services(in: state.result).filter { !placed.contains($0.id) }
+        return visible.services.filter { !placed.contains($0.id) }
     }
 
     /// Sockets, not services. The header counts services, and a single service
-    /// often holds several listening sockets.
+    /// often holds several listening sockets. `keeping` carries `allSockets`
+    /// through untouched, so a narrowed result still counts every listener.
     private var footer: some View {
-        Text("\(state.result.allSockets.count) active listeners")
+        Text("\(result.allSockets.count) active listeners")
             .font(.system(size: 11))
             .foregroundStyle(Theme.tertiaryText)
             .frame(maxWidth: .infinity, alignment: .leading)

@@ -13,6 +13,7 @@ final class DashboardState {
         case api
         case database
         case system
+        case ignored
 
         var id: String { rawValue }
 
@@ -23,6 +24,7 @@ final class DashboardState {
             case .api: "API"
             case .database: "DB"
             case .system: "System"
+            case .ignored: "Ignored"
             }
         }
 
@@ -33,6 +35,10 @@ final class DashboardState {
             case .api: service.type.category == .api || service.type.category == .tooling
             case .database: service.type.category == .database || service.type.category == .infrastructure
             case .system: service.classification == .systemNoise
+            // Not a predicate. The Ignored chip swaps the whole result the pane
+            // renders for `AppState.ignoredResult`, so everything reaching here
+            // is already ignored and only the search box still applies.
+            case .ignored: true
             }
         }
     }
@@ -52,34 +58,35 @@ final class DashboardState {
     private let probe = HTTPProbe()
 
     func selection(in result: ScanResult) -> RunningService? {
-        let visible = services(in: result)
-        if let selectedServiceID, let match = visible.first(where: { $0.id == selectedServiceID }) {
+        selection(among: services(in: result))
+    }
+
+    /// For callers that have already narrowed the result and must not pay for a
+    /// second pass to find out what is selected.
+    func selection(among services: [RunningService]) -> RunningService? {
+        if let selectedServiceID, let match = services.first(where: { $0.id == selectedServiceID }) {
             return match
         }
-        return visible.first
+        return services.first
+    }
+
+    /// The result narrowed by the chip and the search box, with its project
+    /// headings rebuilt so none of them names a service the filter dropped.
+    func filtered(_ result: ScanResult) -> ScanResult {
+        // Normalised once per pass, not once per service.
+        let needle = search.trimmingCharacters(in: .whitespaces).lowercased()
+        return result.keeping { filter.accepts($0) && matches(needle, $0) }
     }
 
     /// Everything the sidebar shows, after the chip and the search box.
-    func services(in result: ScanResult) -> [RunningService] {
-        result.services
-            .filter { filter.accepts($0) }
-            .filter { matches(search, $0) }
-    }
+    func services(in result: ScanResult) -> [RunningService] { filtered(result).services }
 
-    func groups(in result: ScanResult) -> [ProjectGroup] {
-        let allowed = Set(services(in: result).map(\.id))
-        return result.groups
-            .map { ProjectGroup(project: $0.project, services: $0.services.filter { allowed.contains($0.id) }) }
-            .filter { !$0.services.isEmpty }
-    }
+    func groups(in result: ScanResult) -> [ProjectGroup] { filtered(result).groups }
 
-    func standalone(in result: ScanResult) -> [RunningService] {
-        let allowed = Set(services(in: result).map(\.id))
-        return result.standalone.filter { allowed.contains($0.id) }
-    }
+    func standalone(in result: ScanResult) -> [RunningService] { filtered(result).standalone }
 
-    private func matches(_ query: String, _ service: RunningService) -> Bool {
-        let needle = query.trimmingCharacters(in: .whitespaces).lowercased()
+    /// `needle` is already trimmed and lowercased by `filtered`.
+    private func matches(_ needle: String, _ service: RunningService) -> Bool {
         guard !needle.isEmpty else { return true }
 
         let haystack = [

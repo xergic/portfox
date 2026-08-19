@@ -18,17 +18,29 @@ struct DashboardContent: View {
             Divider().overlay(Theme.separator)
 
             HStack(spacing: 0) {
-                ServiceListPane(dashboard: dashboard, scrolls: scrolls, forcesHover: forcesHover)
+                ServiceListPane(result: source, dashboard: dashboard, scrolls: scrolls, forcesHover: forcesHover)
                     .frame(width: Theme.Metrics.sidebarWidth)
                 Divider().overlay(Theme.separator)
                 detail
             }
         }
+        // The chip is hidden once nothing ignored is running, so leaving the
+        // filter selected would strand the sidebar on a filter it cannot show.
+        // Watches the same condition the chip does, not the stored entry count,
+        // which stays non-empty after the last ignored service exits.
+        .onChange(of: state.hasRunningIgnoredServices) { _, hasAny in
+            if !hasAny, dashboard.filter == .ignored { dashboard.filter = .all }
+        }
+    }
+
+    /// The Ignored chip renders a different result, not a different view.
+    private var source: ScanResult {
+        dashboard.filter == .ignored ? state.ignoredResult : state.result
     }
 
     @ViewBuilder
     private var detail: some View {
-        if let service = dashboard.selection(in: state.result) {
+        if let service = dashboard.selection(in: source) {
             ServiceDetailPane(service: service, dashboard: dashboard, scrolls: scrolls)
         } else {
             emptyDetail
@@ -40,11 +52,19 @@ struct DashboardContent: View {
             Image(systemName: "moon.zzz")
                 .font(.system(size: 28))
                 .foregroundStyle(Theme.tertiaryText)
-            Text(state.result.services.isEmpty ? "No development services running" : "Nothing matches this filter")
+            Text(emptyDetailMessage)
                 .font(.system(size: 13))
                 .foregroundStyle(Theme.secondaryText)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var emptyDetailMessage: String {
+        guard source.services.isEmpty else { return "Nothing matches this filter" }
+        guard dashboard.filter != .ignored else {
+            return "No ignored service is running. Manage the full list in Preferences."
+        }
+        return state.emptyStateMessage
     }
 
     private var topBar: some View {

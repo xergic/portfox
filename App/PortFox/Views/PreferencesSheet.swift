@@ -1,3 +1,4 @@
+import PortFoxKit
 import SwiftUI
 
 struct PreferencesSheet: View {
@@ -134,8 +135,32 @@ struct PreferencesSheet: View {
                         .labelsHidden()
                         .toggleStyle(.checkbox)
                 }
+                Divider().overlay(Theme.separator)
+                PreferenceRow(
+                    title: "Ignored services",
+                    subtitle: ignoredSubtitle
+                ) {
+                    Text(state.ignoredEntries.isEmpty ? "None" : String(state.ignoredEntries.count))
+                        .font(.mono(11, .medium))
+                        .foregroundStyle(Theme.tertiaryText)
+                }
+                ForEach(sortedIgnored) { entry in
+                    Divider().overlay(Theme.separator)
+                    IgnoredServiceRow(entry: entry) { state.stopIgnoring(entry.key) }
+                }
             }
         }
+    }
+
+    private var ignoredSubtitle: String {
+        state.ignoredEntries.isEmpty
+            ? "Right-click any service and choose Ignore Service to hide it everywhere"
+            : "Hidden from every list, matched by port and project or binary"
+    }
+
+    /// By port, because insertion order tells the user nothing.
+    private var sortedIgnored: [IgnoredService] {
+        state.ignoredEntries.sorted { ($0.port, $0.name) < ($1.port, $1.name) }
     }
 
     private var generalSection: some View {
@@ -199,6 +224,21 @@ struct PreferencesSheet: View {
     }
 }
 
+/// The stored name and detail, not a live lookup. This row has to read correctly
+/// while nothing is running on that port.
+private struct IgnoredServiceRow: View {
+    let entry: IgnoredService
+    let onRemove: () -> Void
+
+    var body: some View {
+        PreferenceRow(title: entry.name, subtitle: entry.detail) {
+            PortPill(port: entry.port)
+        } control: {
+            IconButton(symbol: "xmark", help: "Stop ignoring \(entry.name)", action: onRemove)
+        }
+    }
+}
+
 private struct PreferencesCard<Content: View>: View {
     @ViewBuilder let content: () -> Content
 
@@ -211,13 +251,15 @@ private struct PreferencesCard<Content: View>: View {
     }
 }
 
-private struct PreferenceRow<Control: View>: View {
+private struct PreferenceRow<Leading: View, Control: View>: View {
     let title: String
     var subtitle: String?
+    @ViewBuilder var leading: () -> Leading
     @ViewBuilder let control: () -> Control
 
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
+            leading()
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.system(size: 12, weight: .medium))
@@ -226,6 +268,8 @@ private struct PreferenceRow<Control: View>: View {
                     Text(subtitle)
                         .font(.system(size: 10))
                         .foregroundStyle(Theme.secondaryText)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
                 }
             }
             Spacer(minLength: 12)
@@ -233,6 +277,12 @@ private struct PreferenceRow<Control: View>: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
+    }
+}
+
+extension PreferenceRow where Leading == EmptyView {
+    init(title: String, subtitle: String? = nil, @ViewBuilder control: @escaping () -> Control) {
+        self.init(title: title, subtitle: subtitle, leading: { EmptyView() }, control: control)
     }
 }
 
