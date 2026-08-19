@@ -43,14 +43,24 @@ struct ServiceHeaderView: View {
             if let version = service.version {
                 VersionLabel(text: version)
             }
-            if let project = service.project {
-                projectPill(name: project.name)
-            }
+            attributionPill
         }
     }
 
-    private func projectPill(name: String) -> some View {
-        Text("Project: \(name)")
+    /// A daemon has no project worth naming, so it is labelled with where it was
+    /// installed from. DBngin's Postgres would otherwise headline with its data
+    /// directory, a bare UUID.
+    @ViewBuilder
+    private var attributionPill: some View {
+        if service.projectIdentifiesService, let project = service.project {
+            pill(text: "Project: \(project.name)")
+        } else if let source = service.installationSource {
+            pill(text: source)
+        }
+    }
+
+    private func pill(text: String) -> some View {
+        Text(text)
             .font(.mono(10))
             .foregroundStyle(Theme.secondaryText)
             .padding(.horizontal, 6)

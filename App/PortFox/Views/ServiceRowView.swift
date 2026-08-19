@@ -132,16 +132,8 @@ struct ServiceRowView: View {
         service.project?.name ?? service.displayName
     }
 
-    /// A daemon never leads with a project, because whatever was resolved is an
-    /// accident of where it happens to run. DBngin's Postgres would headline with
-    /// its data directory, a bare UUID, and Homebrew's with `homebrew`, since the
-    /// Homebrew prefix is itself a git repository.
     private var effectiveLayout: ServiceCellLayout {
-        guard let project = service.project, project.rootKind != .directory else { return .serviceFirst }
-        switch service.type.category {
-        case .database, .infrastructure, .unknown: return .serviceFirst
-        case .web, .api, .tooling: return layout
-        }
+        service.projectIdentifiesService ? layout : .serviceFirst
     }
 
     private var showsActions: Bool { showsHoverActions && (isHovering || forcedHover) }

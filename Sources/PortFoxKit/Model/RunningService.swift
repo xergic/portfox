@@ -98,6 +98,26 @@ public struct RunningService: Identifiable, Hashable, Sendable {
         return cwd.lastPathComponent
     }
 
+    /// Whether the resolved project actually names this service.
+    ///
+    /// A daemon's project is an accident of where it happens to run: DBngin's
+    /// Postgres resolves to its data directory, a bare UUID, and Homebrew's to the
+    /// Homebrew prefix, which is itself a git repository. Anything that reads a
+    /// project as an identity has to ask this first.
+    public var projectIdentifiesService: Bool {
+        guard let project, project.rootKind != .directory else { return false }
+        switch type.category {
+        case .database, .infrastructure, .unknown: return false
+        case .web, .api, .tooling: return true
+        }
+    }
+
+    /// Where this service was installed from, when its path makes that plain.
+    /// What identifies a daemon, in place of the project it does not have.
+    public var installationSource: String? {
+        Self.installationLabel(for: listenerProcess.resolvedExecutablePath)
+    }
+
     /// Where a daemon was installed from, when the path makes that plain.
     static func installationLabel(for executablePath: String?) -> String? {
         guard let path = executablePath?.lowercased() else { return nil }

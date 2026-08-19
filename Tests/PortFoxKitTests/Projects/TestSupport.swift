@@ -39,7 +39,8 @@ func makeService(
     pid: pid_t = 1,
     executable: String? = nil,
     arguments: [String] = [],
-    id: String? = nil
+    id: String? = nil,
+    detection: DetectionResult = .unknown()
 ) -> RunningService {
     let process = ProcessSnapshot(
         pid: pid,
@@ -55,12 +56,17 @@ func makeService(
         rootProcess: process,
         sockets: [socket],
         primarySocket: socket,
-        detection: .unknown(),
+        detection: detection,
         classification: .developmentService,
         project: project
     )
 }
 
-func makeSnapshot(root: URL, name: String, iconPath: String? = nil) -> ProjectSnapshot {
-    ProjectSnapshot(root: root, serviceDirectory: root, name: name, iconPath: iconPath)
+func makeSnapshot(
+    root: URL,
+    name: String,
+    iconPath: String? = nil,
+    rootKind: ProjectSnapshot.RootKind = .directory
+) -> ProjectSnapshot {
+    ProjectSnapshot(root: root, serviceDirectory: root, name: name, rootKind: rootKind, iconPath: iconPath)
 }
