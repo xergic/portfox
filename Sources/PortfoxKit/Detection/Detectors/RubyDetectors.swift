@@ -1,5 +1,10 @@
 import Foundation
 
+private extension DetectionContext {
+    static let rackServers = ["puma", "rackup", "unicorn", "falcon", "thin", "webrick"]
+    static let rubyEditorTooling = ["solargraph", "ruby-lsp", "rdbg", "debase"]
+}
+
 public extension DetectorCatalog {
     /// Rails hands its socket to Puma, which rewrites its own argv via
     /// `setproctitle` to `puma 6.4.2 (tcp://0.0.0.0:3000) [app]`. Every trace of
@@ -61,11 +66,9 @@ public extension DetectorCatalog {
                     ctx.executablePath.hasPrefix("/usr/bin/")
                 },
                 .veto("a language server or debug adapter listens, but is not a service") { ctx in
-                    ["solargraph", "ruby-lsp", "rdbg", "debase"].contains(where: ctx.command.containsToken)
+                    DetectionContext.rubyEditorTooling.contains(where: ctx.command.containsToken)
                 },
-                .veto("Ruby bundled inside an app bundle, the IDE-JRE hazard the runtime spec warns about") { ctx in
-                    ctx.executablePath.contains(".app/contents/")
-                },
+                .vetoAppBundle(),
                 .veto("fluentd, a log forwarder daemon rather than a project's own dev server") { ctx in
                     ctx.command.containsToken("fluentd")
                 },

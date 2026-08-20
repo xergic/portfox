@@ -179,22 +179,16 @@ public enum ServiceType: String, CaseIterable, Codable, Sendable {
 
     public var category: ServiceCategory {
         switch self {
-        case .vite, .nextJS, .nuxt, .astro, .svelteKit, .remix, .angular, .storybook:
+        case .vite, .nextJS, .nuxt, .astro, .svelteKit, .remix, .angular, .storybook,
+             .tomcat, .rails, .laravel, .symfony, .streamlit, .nginx, .caddy:
             .web
-        case .nestJS, .fastAPI, .django, .flask, .uvicorn, .wrangler:
-            .api
-        case .expo, .metro:
-            .tooling
-        case .node, .bun, .deno, .python:
-            .api
-        case .springBoot, .quarkus, .micronaut, .ktor, .java:
-            .api
-        case .tomcat, .rails, .laravel, .symfony, .streamlit, .nginx, .caddy:
-            .web
-        case .aspNet, .dotnet, .puma, .sinatra, .ruby, .php, .go, .rust, .gunicorn,
+        case .nestJS, .fastAPI, .django, .flask, .uvicorn, .wrangler,
+             .node, .bun, .deno, .python,
+             .springBoot, .quarkus, .micronaut, .ktor, .java,
+             .aspNet, .dotnet, .puma, .sinatra, .ruby, .php, .go, .rust, .gunicorn,
              .ollama, .pocketbase:
             .api
-        case .jupyter, .flower, .ngrok, .grafana, .prometheus, .prismaStudio:
+        case .expo, .metro, .jupyter, .flower, .ngrok, .grafana, .prometheus, .prismaStudio:
             .tooling
         case .postgres, .mysql, .mongodb, .redis, .elasticsearch, .meilisearch,
              .memcached, .valkey, .clickhouse, .typesense, .qdrant:
@@ -292,10 +286,10 @@ public enum ServiceType: String, CaseIterable, Codable, Sendable {
 
     /// True when opening `http://host:port` in a browser is meaningful.
     public var isHTTP: Bool {
-        if Self.webInterfaces.contains(self) { return true }
         switch category {
-        case .web, .api, .tooling: return true
-        case .database, .infrastructure, .unknown: return false
+        case .web, .api, .tooling: true
+        case .database, .infrastructure: Self.webInterfaces.contains(self)
+        case .unknown: false
         }
     }
 

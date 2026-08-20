@@ -1,5 +1,17 @@
 import Foundation
 
+private extension DetectionContext {
+    /// MSBuild and the Roslyn compiler server keep a socket open between builds.
+    var isDotNetBuildTooling: Bool {
+        Self.buildToolingMarkers.contains(where: command.contains)
+    }
+
+    static let buildToolingMarkers = ["msbuild", "vbcscompiler", "build-server"]
+    static let editorToolingMarkers = [
+        "testhost", "omnisharp", "microsoft.codeanalysis.languageserver", "devenv"
+    ]
+}
+
 public extension DetectorCatalog {
     /// .NET services. `dotnet run` builds and then execs the *apphost*, a binary
     /// named after the project with no extension at `bin/Debug/net8.0/MyApi`, so
@@ -28,9 +40,7 @@ public extension DetectorCatalog {
                     60
                 ),
                 .defaultPorts([5000, 5001]),
-                .veto("MSBuild and the Roslyn compiler server are build infrastructure") { ctx in
-                    ["msbuild", "vbcscompiler", "build-server"].contains(where: ctx.command.contains)
-                }
+                .veto("MSBuild and the Roslyn compiler server are build infrastructure") { $0.isDotNetBuildTooling }
             ]
         ),
         RuleBasedDetector(
@@ -40,18 +50,11 @@ public extension DetectorCatalog {
                 .executableNamed("dotnet", 30),
                 .custom("a .NET build output binary", 30, group: "command") { $0.isDotNetBuildOutput },
                 .defaultPorts([5000, 5001]),
-                .veto("MSBuild and the Roslyn compiler server are build infrastructure") { ctx in
-                    ["msbuild", "vbcscompiler", "build-server"].contains(where: ctx.command.contains)
-                },
+                .veto("MSBuild and the Roslyn compiler server are build infrastructure") { $0.isDotNetBuildTooling },
                 .veto("a test host or an editor language server is not a dev server") { ctx in
-                    ["testhost", "omnisharp", "microsoft.codeanalysis.languageserver", "devenv"]
-                        .contains(where: ctx.command.contains)
+                    DetectionContext.editorToolingMarkers.contains(where: ctx.command.contains)
                 },
-                // Detection outranks the classifier's bundle rule, so Rider's
-                // bundled backend would otherwise be promoted to a dev service.
-                .veto("a .NET runtime inside an application bundle belongs to that app") { ctx in
-                    ctx.executablePath.contains(".app/contents/")
-                }
+                .vetoAppBundle()
             ]
         )
     ]

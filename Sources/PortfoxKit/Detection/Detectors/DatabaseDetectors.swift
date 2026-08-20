@@ -68,8 +68,8 @@ public extension DetectorCatalog {
             type: .valkey,
             threshold: standardThreshold,
             signals: [
-                // Shares 6379 with Redis, which it forked from. Only the
-                // executable name tells them apart, so the port carries nothing.
+                // Shares 6379 with Redis, which it forked from, so the port only
+                // ever corroborates and the executable name has to decide.
                 .executableNamed("valkey-server", 100),
                 .defaultPort(6379)
             ]

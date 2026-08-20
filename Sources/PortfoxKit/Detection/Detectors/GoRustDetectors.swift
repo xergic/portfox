@@ -1,5 +1,9 @@
 import Foundation
 
+private extension DetectionContext {
+    static let cargoOutputPaths = ["/target/debug/", "/target/release/"]
+}
+
 public extension DetectorCatalog {
     /// Go and Rust. A compiled binary is named after its module or crate and
     /// carries no runtime evidence at all, so both rows key on build output
@@ -27,7 +31,7 @@ public extension DetectorCatalog {
                 // unrelated helper the dev server happened to spawn, such as a
                 // headless Chrome on its remote debugging port.
                 .custom("launched by go run", 80, group: "command") { ctx in
-                    ctx.anyCommandContains("go run") && !ctx.executablePath.contains(".app/contents/")
+                    ctx.anyCommandContains("go run") && !ctx.isInsideAppBundle
                 },
                 // Air rebuilds into ./tmp/main and runs it; the binary listens.
                 .custom("air live reload is running this binary", 80, group: "command") { ctx in
@@ -50,12 +54,13 @@ public extension DetectorCatalog {
                 // stray build tree from being claimed as Rust.
                 .custom("a Cargo build output binary", 90, group: "command") { ctx in
                     guard let project = ctx.project, project.hasFile(prefix: "cargo.toml") else { return false }
-                    let outputs = ["/target/debug/", "/target/release/"]
-                    guard outputs.contains(where: ctx.executablePath.contains) else { return false }
+                    guard DetectionContext.cargoOutputPaths.contains(where: ctx.executablePath.contains) else {
+                        return false
+                    }
                     // `target/debug/deps/` holds test harnesses and benchmarks,
                     // which spin up mock servers that are not the user's service.
                     return !ctx.executablePath.contains("/deps/")
-                        && !ctx.executablePath.contains(".app/contents/")
+                        && !ctx.isInsideAppBundle
                 },
                 .defaultPorts([8000, 3000]),
                 .veto("a jar under target/ is a Maven build, not a Cargo one") { $0.command.contains(".jar") }

@@ -1,5 +1,11 @@
 import Foundation
 
+private extension DetectionContext {
+    /// Django's own deployment docs use all four, so none may be reported as the
+    /// bare server it happens to be running under.
+    static let wsgiServers = ["gunicorn", "uvicorn", "daphne", "hypercorn"]
+}
+
 public extension DetectorCatalog {
     /// Python web frameworks and their servers. `.uvicorn` and `.python` are low
     /// specificity fallbacks: their signal sets stay small and their thresholds low
@@ -30,7 +36,7 @@ public extension DetectorCatalog {
                 .custom("gunicorn or uvicorn command line and manifest depends on django", 60, group: "command") { ctx in
                     // Django's own deployment docs use both servers, so neither
                     // may be reported as the bare server it is running under.
-                    let servers = ["gunicorn", "uvicorn", "daphne", "hypercorn"]
+                    let servers = DetectionContext.wsgiServers
                     guard servers.contains(where: { ctx.command.containsToken($0) }) else { return false }
                     return (ctx.project?.hasDependency("django") ?? false)
                         || (ctx.project?.hasFile(prefix: "manage.py") ?? false)

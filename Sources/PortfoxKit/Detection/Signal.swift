@@ -38,10 +38,19 @@ public extension Signal {
     /// path segment ending in `/<tool>`. The strongest available signal.
     static func binPath(_ tool: String, _ weight: Int, group: String? = "command") -> Signal {
         let tool = tool.lowercased()
+        // Built once when the catalogue is assembled, not per process. This is
+        // the most-used helper in the DSL and it runs on every refresh tick.
+        let needles = ["node_modules/.bin/\(tool)", "/bin/\(tool)", "/\(tool)/bin/", "/\(tool).mjs", "/\(tool).js"]
         return Signal("command contains node_modules/.bin/\(tool)", weight: weight, group: group) { ctx in
-            let needles = ["node_modules/.bin/\(tool)", "/bin/\(tool)", "/\(tool)/bin/", "/\(tool).mjs", "/\(tool).js"]
-            return needles.contains { ctx.command.containsToken($0) || ctx.executablePath.containsToken($0) }
+            needles.contains { ctx.command.containsToken($0) || ctx.executablePath.containsToken($0) }
         }
+    }
+
+    /// A process inside an application bundle belongs to that app, whatever its
+    /// runtime. Detection is consulted before `ListenerClassifier`'s own bundle
+    /// rule, so a generic runtime detector has to refuse these itself.
+    static func vetoAppBundle() -> Signal {
+        .veto("an executable inside an application bundle belongs to that app") { $0.isInsideAppBundle }
     }
 
     static func commandContains(_ needle: String, _ weight: Int, group: String? = "command") -> Signal {

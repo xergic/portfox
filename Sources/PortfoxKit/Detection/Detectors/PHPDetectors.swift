@@ -46,9 +46,7 @@ public extension DetectorCatalog {
                 .veto("an FPM pool serves a webserver, not a project directly") {
                     $0.command.contains("php-fpm")
                 },
-                .veto("executable runs from inside an app bundle's own tooling, not a served project") {
-                    $0.executablePath.contains(".app/contents/")
-                }
+                .vetoAppBundle()
             ]
         )
     ]

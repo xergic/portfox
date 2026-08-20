@@ -1,5 +1,52 @@
 import Foundation
 
+private extension DetectionContext {
+    /// JVM processes that listen on a port but are never the user's service:
+    /// build daemons, test forks, debug transports and editor language servers.
+    ///
+    /// Gated on `isJVM` so a Postgres or Node listener costs one string compare
+    /// rather than twenty. Vetoes are evaluated for every process against every
+    /// detector, so an ungated scan here is paid by the whole catalogue.
+    ///
+    /// This is a denylist over an unbounded set, so it will need entries added.
+    /// What actually carries the weight is `ListenerClassifier`'s ephemeral-port
+    /// rule, which hides anything bound only above 49152 before detection is even
+    /// consulted. This list is for the tooling that picks a low fixed port.
+    var isJVMTooling: Bool {
+        guard isJVM else { return false }
+        if Self.toolingMarkers.contains(where: command.contains) { return true }
+        // A debug or management transport is the only listener these open.
+        return command.contains("-agentlib:jdwp") || command.contains("com.sun.management.jmxremote")
+    }
+
+    static let toolingMarkers = [
+        // Gradle
+        "org.gradle.launcher.daemon", "org.gradle.process.internal.worker", "gradleworkermain",
+        // Maven, and its test forks
+        "org.apache.maven.surefire.booter", "org.codehaus.plexus.classworlds.launcher",
+        // Kotlin, Scala, sbt
+        "kotlin-daemon", "org.jetbrains.kotlin.daemon", "scala.tools.nsc",
+        "xsbt.boot.boot", "sbt.forkmain", "bloop",
+        // JetBrains
+        "com.intellij", "org.jetbrains.jps", "idea_rt", "nailgun",
+        // Eclipse and the VS Code Java extensions
+        "org.eclipse.equinox.launcher", "org.eclipse.jdt.ls", "com.microsoft.java.debug",
+        // Test runners
+        "junitplatform.consolelauncher", "org.testng.remote",
+        // Bazel
+        "com.google.devtools.build"
+    ]
+
+    static let springArtefactPaths = ["/target/", "/build/libs/", "/build/classes/"]
+}
+
+private extension Signal {
+    /// Declared once, applied to every JVM row. A veto only disqualifies the
+    /// detector that declares it, so the repetition at the call sites is
+    /// required even though the value is not.
+    static let jvmTooling = Signal.veto("a JVM build daemon, test fork or language server") { $0.isJVMTooling }
+}
+
 public extension DetectorCatalog {
     /// JVM services. Every one of them runs as the same `java` executable, so
     /// identity has to come from the classpath.
@@ -33,8 +80,9 @@ public extension DetectorCatalog {
                 // only evidence that survives packaging.
                 .custom("java -jar of a build artefact in a Spring Boot project", 90, group: "command") { ctx in
                     guard ctx.isJVM, let project = ctx.project else { return false }
-                    let artefacts = ["/target/", "/build/libs/", "/build/classes/"]
-                    guard artefacts.contains(where: ctx.command.contains) else { return false }
+                    guard DetectionContext.springArtefactPaths.contains(where: ctx.command.contains) else {
+                        return false
+                    }
                     return project.hasDependency("spring-boot-starter-web")
                         || project.hasDependency("spring-boot-starter-webflux")
                         || project.hasDependency("org.springframework.boot")
@@ -114,9 +162,7 @@ public extension DetectorCatalog {
                 .veto("a JVM build daemon, test fork or language server") { $0.isJVMTooling },
                 // Detection outranks the classifier's bundle rule, so without this
                 // an IDE's own bundled JRE would be promoted to a dev service.
-                .veto("a JVM inside an application bundle belongs to that app") { ctx in
-                    ctx.executablePath.contains(".app/contents/") || ctx.command.contains(".app/contents/")
-                }
+                .vetoAppBundle()
             ]
         )
     ]

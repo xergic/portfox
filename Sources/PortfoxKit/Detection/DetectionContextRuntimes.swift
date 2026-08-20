@@ -45,38 +45,13 @@ public extension DetectionContext {
         return executablePath.hasPrefix(prefix)
     }
 
-    /// JVM processes that listen on a port but are never the user's service:
-    /// build daemons, test forks, debug transports and editor language servers.
+    /// Menu bar apps, editors and Electron helpers all listen on local ports for
+    /// their own reasons, and their executable always lives inside a bundle.
     ///
-    /// Every JVM detector has to apply this, not just the generic `java` row. A
-    /// veto only disqualifies the detector that declares it, so without this a
-    /// Surefire fork whose test classpath happens to contain `spring-boot-test`
-    /// would be reported as a running Spring Boot application.
-    ///
-    /// This is a denylist over an unbounded set, so it will need entries added.
-    /// What actually carries the weight is `ListenerClassifier`'s ephemeral-port
-    /// rule, which hides anything bound only above 49152 before detection is even
-    /// consulted. This list is for the tooling that picks a low fixed port.
-    var isJVMTooling: Bool {
-        let markers = [
-            // Gradle
-            "org.gradle.launcher.daemon", "org.gradle.process.internal.worker", "gradleworkermain",
-            // Maven, and its test forks
-            "org.apache.maven.surefire.booter", "org.codehaus.plexus.classworlds.launcher",
-            // Kotlin, Scala, sbt
-            "kotlin-daemon", "org.jetbrains.kotlin.daemon", "scala.tools.nsc",
-            "xsbt.boot.boot", "sbt.forkmain", "bloop",
-            // JetBrains
-            "com.intellij", "org.jetbrains.jps", "idea_rt", "nailgun",
-            // Eclipse and the VS Code Java extensions
-            "org.eclipse.equinox.launcher", "org.eclipse.jdt.ls", "com.microsoft.java.debug",
-            // Test runners
-            "junitplatform.consolelauncher", "org.testng.remote",
-            // Bazel
-            "com.google.devtools.build"
-        ]
-        if markers.contains(where: command.contains) { return true }
-        // A debug or management transport is the only listener these open.
-        return command.contains("-agentlib:jdwp") || command.contains("com.sun.management.jmxremote")
+    /// `ListenerClassifier` has the same rule, but it consults detection first,
+    /// so a detector that matches one of these promotes it before the classifier
+    /// ever gets to look. Generic runtime rows have to refuse them here instead.
+    var isInsideAppBundle: Bool {
+        executablePath.contains(".app/contents/")
     }
 }

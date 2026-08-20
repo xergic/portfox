@@ -6,6 +6,7 @@ used here only to identify the software each service is running.
 
 Run from the repository root:  python3 Tools/fetch-icons.py
 """
+import copy
 import json
 import pathlib
 import re
@@ -162,6 +163,9 @@ def main() -> int:
     # updated, and a skipped icon keeps whatever was fetched last time, so one
     # dead slug can never delete a working logo.
     failures: list[tuple[str, str]] = []
+    # Several services share one mark: aspNet borrows .NET's and uvicorn used to
+    # borrow Gunicorn's. Keyed by slug, so a shared mark is fetched once.
+    fetched: dict[str, str] = {}
 
     for service, (slug, title) in ICONS.items():
         hex_colour = by_slug.get(slug) or by_title.get(title)
@@ -169,11 +173,13 @@ def main() -> int:
             failures.append((service, f"no colour for slug {slug!r} or title {title!r}"))
             continue
 
-        try:
-            svg = fetch(RAW.format(slug)).decode()
-        except urllib.error.HTTPError as error:
-            failures.append((service, f"{slug}.svg: HTTP {error.code}"))
-            continue
+        if slug not in fetched:
+            try:
+                fetched[slug] = fetch(RAW.format(slug)).decode()
+            except urllib.error.HTTPError as error:
+                failures.append((service, f"{slug}.svg: HTTP {error.code}"))
+                continue
+        svg = fetched[slug]
 
         fill = "FFFFFF" if lightness(hex_colour) < LIGHTNESS_FLOOR else hex_colour
         write_imageset(service, slug, svg.replace("<path", f'<path fill="#{fill}"', 1))

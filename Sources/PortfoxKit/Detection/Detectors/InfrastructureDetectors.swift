@@ -1,5 +1,10 @@
 import Foundation
 
+private extension DetectionContext {
+    static let containerForwarders = ["orbstack", "/colima/", "limactl"]
+    static let rabbitPorts = [5672, 15672, 25672]
+}
+
 public extension DetectorCatalog {
     /// Local daemons, queues, proxies and developer tooling. None of these needs
     /// project context: the executable name alone identifies them.
@@ -31,7 +36,7 @@ public extension DetectorCatalog {
                 .custom("an Erlang VM bound to a RabbitMQ port", 90, group: "command") { ctx in
                     // A live node runs as beam.smp, which is shared with every
                     // other Erlang application, so the port has to carry it.
-                    ctx.executableName == "beam.smp" && ctx.ports.contains { [5672, 15672, 25672].contains($0) }
+                    ctx.executableName == "beam.smp" && ctx.ports.contains { DetectionContext.rabbitPorts.contains($0) }
                 },
                 .defaultPorts([5672, 15672])
             ]
@@ -167,7 +172,7 @@ public extension DetectorCatalog {
                 .executableNamed("docker-proxy", 100),
                 .executableNamed("vpnkit", 95),
                 .custom("an OrbStack, Colima or Lima port forwarder", 95, group: "command") { ctx in
-                    ["orbstack", "/colima/", "limactl"].contains(where: ctx.executablePath.contains)
+                    DetectionContext.containerForwarders.contains(where: ctx.executablePath.contains)
                 }
             ]
         )
