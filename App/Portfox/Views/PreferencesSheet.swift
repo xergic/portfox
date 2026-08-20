@@ -148,6 +148,15 @@ struct PreferencesSheet: View {
             PreferencesCard {
                 @Bindable var state = state
                 PreferenceRow(
+                    title: "Show count in menu bar",
+                    subtitle: "Draw the number of active services next to the icon"
+                ) {
+                    Toggle("", isOn: $state.showsMenuBarCount)
+                        .labelsHidden()
+                        .toggleStyle(.checkbox)
+                }
+                Divider().overlay(Theme.separator)
+                PreferenceRow(
                     title: "Service list layout",
                     subtitle: "Lead each row with the service, or with the project it belongs to"
                 ) {
@@ -170,6 +179,15 @@ struct PreferencesSheet: View {
                     subtitle: "Include background system ports such as CUPS or mDNSResponder"
                 ) {
                     Toggle("", isOn: $state.showAllListeners)
+                        .labelsHidden()
+                        .toggleStyle(.checkbox)
+                }
+                Divider().overlay(Theme.separator)
+                PreferenceRow(
+                    title: "Hide infrastructure and daemons",
+                    subtitle: "Leave out databases, daemons and anything without a project, and drop them from the counts"
+                ) {
+                    Toggle("", isOn: $state.hidesDaemons)
                         .labelsHidden()
                         .toggleStyle(.checkbox)
                 }

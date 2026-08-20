@@ -31,6 +31,10 @@ struct DashboardContent: View {
         .onChange(of: state.hasRunningIgnoredServices) { _, hasAny in
             if !hasAny, dashboard.filter == .ignored { dashboard.filter = .all }
         }
+        // Same reason, for the chip that hiding daemons removes.
+        .onChange(of: state.hidesDaemons) { _, hides in
+            if hides, dashboard.filter == .database { dashboard.filter = .all }
+        }
     }
 
     /// The Ignored chip renders a different result, not a different view.

@@ -55,6 +55,20 @@ final class AppState {
         didSet { defaults.set(cellLayout.rawValue, forKey: Key.cellLayout) }
     }
 
+    var showsMenuBarCount: Bool {
+        didSet { defaults.set(showsMenuBarCount, forKey: Key.showsMenuBarCount) }
+    }
+
+    /// Hides the standalone bucket, which is what the daemons section renders.
+    /// A projection, not a scan option, so it reprojects instead of rescanning
+    /// and `portfox-scan` keeps reporting the machine as it is.
+    var hidesDaemons: Bool {
+        didSet {
+            defaults.set(hidesDaemons, forKey: Key.hidesDaemons)
+            applyFilters()
+        }
+    }
+
     var automaticRefresh: Bool {
         didSet {
             defaults.set(automaticRefresh, forKey: Key.automaticRefresh)
@@ -77,6 +91,8 @@ final class AppState {
         static let cellLayout = "cellLayout"
         static let automaticRefresh = "automaticRefresh"
         static let pollingSeconds = "pollingSeconds"
+        static let showsMenuBarCount = "showsMenuBarCount"
+        static let hidesDaemons = "hidesDaemons"
     }
 
     private let repository = ServiceRepository()
@@ -110,13 +126,16 @@ final class AppState {
         defaults.register(defaults: [
             Key.groupSiblingRepositories: true,
             Key.automaticRefresh: true,
-            Key.pollingSeconds: 2
+            Key.pollingSeconds: 2,
+            Key.showsMenuBarCount: true
         ])
         showAllListeners = defaults.bool(forKey: Key.showAllListeners)
         groupSiblingRepositories = defaults.bool(forKey: Key.groupSiblingRepositories)
         cellLayout = ServiceCellLayout(rawValue: defaults.string(forKey: Key.cellLayout) ?? "") ?? .serviceFirst
         automaticRefresh = defaults.bool(forKey: Key.automaticRefresh)
         pollingSeconds = defaults.integer(forKey: Key.pollingSeconds)
+        showsMenuBarCount = defaults.bool(forKey: Key.showsMenuBarCount)
+        hidesDaemons = defaults.bool(forKey: Key.hidesDaemons)
         start()
     }
 
@@ -200,7 +219,7 @@ final class AppState {
                 // and the whole point of this branch is to skip a redraw.
                 if update.result != rawResult {
                     rawResult = update.result
-                    applyIgnores()
+                    applyFilters()
                     stubbornServiceIDs.formIntersection(Set(update.result.services.map(\.id)))
                 }
                 processTree = update.tree
@@ -258,33 +277,42 @@ final class AppState {
 
     func ignore(_ service: RunningService) {
         ignoredServices.ignore(service)
-        applyIgnores()
+        applyFilters()
     }
 
     func stopIgnoring(_ service: RunningService) {
         ignoredServices.stopIgnoring(service)
-        applyIgnores()
+        applyFilters()
     }
 
     func stopIgnoring(_ key: IgnoreKey) {
         ignoredServices.remove(key)
-        applyIgnores()
+        applyFilters()
     }
 
     /// Splits the last scan into what the user sees and what they hid.
     ///
-    /// Called on every scan and on every ignore change, which is what makes
-    /// ignoring redraw at once rather than waiting for the next tick. No rescan
-    /// is needed because `rawResult` already holds the unfiltered truth.
+    /// Called on every scan and on every filter change, which is what makes both
+    /// ignoring and hiding daemons redraw at once rather than waiting for the
+    /// next tick. No rescan is needed because `rawResult` already holds the
+    /// unfiltered truth.
     ///
     /// Membership is resolved once into a set of ids. Asking the store directly in
     /// both passes would standardise every service's path twice a tick.
-    private func applyIgnores() {
+    ///
+    /// The daemon ids come from `rawResult.standalone`, never `result.standalone`.
+    /// `keeping` rebuilds the standalone list from whatever survived, so reading
+    /// it off the already-filtered projection would be self-referential.
+    private func applyFilters() {
         let ignoredIDs = Set(rawResult.services.filter(ignoredServices.contains).map(\.id))
+        var hiddenIDs = ignoredIDs
+        if hidesDaemons { hiddenIDs.formUnion(rawResult.standalone.map(\.id)) }
 
-        let visible = rawResult.keeping { !ignoredIDs.contains($0.id) }
+        let visible = rawResult.keeping { !hiddenIDs.contains($0.id) }
         if visible != result { result = visible }
 
+        // Ignored-only, so a daemon that is also ignored stays listed on the
+        // Ignored screen and the user can still un-ignore it.
         let hidden = rawResult.keeping { ignoredIDs.contains($0.id) }
         if hidden != ignoredResult { ignoredResult = hidden }
     }

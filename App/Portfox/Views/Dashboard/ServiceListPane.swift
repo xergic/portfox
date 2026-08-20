@@ -76,12 +76,14 @@ struct ServiceListPane: View {
 
     /// The system chip only makes sense once noise is being scanned at all, and
     /// the ignored chip only once something ignored is actually running. Entries
-    /// whose process is stopped are a Preferences concern.
+    /// whose process is stopped are a Preferences concern. The database chip
+    /// matches the standalone bucket, which hiding daemons empties.
     private var availableFilters: [DashboardState.Filter] {
         DashboardState.Filter.allCases.filter { filter in
             switch filter {
             case .system: state.showAllListeners
             case .ignored: state.hasRunningIgnoredServices
+            case .database: !state.hidesDaemons
             default: true
             }
         }

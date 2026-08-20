@@ -11,7 +11,7 @@ struct PortfoxApp: App {
             MenuView()
                 .environment(state)
         } label: {
-            MenuBarLabel(serviceCount: state.serviceCount)
+            MenuBarLabel(serviceCount: state.serviceCount, showsCount: state.showsMenuBarCount)
         }
         .menuBarExtraStyle(.window)
         .onChange(of: delegate.isReady, initial: true) {
@@ -63,6 +63,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
 private struct MenuBarLabel: View {
     let serviceCount: Int
+    let showsCount: Bool
 
     /// A sized template `NSImage`, not `Image(.menuBarFox).frame(...)`. Inside a
     /// `MenuBarExtra` label SwiftUI ignores the frame and draws the asset at the
@@ -77,7 +78,7 @@ private struct MenuBarLabel: View {
     var body: some View {
         HStack(spacing: 3) {
             Image(nsImage: Self.glyph)
-            if serviceCount > 0 {
+            if showsCount, serviceCount > 0 {
                 Text(String(serviceCount))
                     .font(.system(size: 11, weight: .semibold, design: .rounded))
             }
