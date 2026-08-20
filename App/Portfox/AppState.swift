@@ -269,8 +269,15 @@ final class AppState {
 
     /// Why the list is empty, when nothing is running. Shared by the popover and
     /// the dashboard so the two never explain the same state differently.
+    ///
+    /// The daemon filter is checked first because it is the one that can empty a
+    /// machine whose only listeners are a database and a queue, and blaming that
+    /// on the ignore list would send the user to the wrong preference.
     var emptyStateMessage: String {
-        hasIgnoredServices ? "Every running service is ignored" : "No development services running"
+        if hidesDaemons, !rawResult.standalone.isEmpty {
+            return "Only infrastructure and daemons are running, and those are hidden"
+        }
+        return hasIgnoredServices ? "Every running service is ignored" : "No development services running"
     }
     func isIgnored(_ service: RunningService) -> Bool { ignoredServices.contains(service) }
     func canIgnore(_ service: RunningService) -> Bool { ignoredServices.canIgnore(service) }
