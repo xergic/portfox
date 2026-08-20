@@ -128,10 +128,129 @@ public enum ManifestReader {
         return ManifestData(dependencies: Set(dependencies))
     }
 
+    /// Reads the project identifier and declared coordinates from `pom.xml`.
+    public static func pomXML(in directory: URL) -> ManifestData? {
+        guard let text = readText(directory.appendingPathComponent("pom.xml")) else { return nil }
+
+        let artifactIDs = regexMatches(#"<artifactId>\s*([^<]+?)\s*</artifactId>"#, in: text)
+        let groupIDs = regexMatches(#"<groupId>\s*([^<]+?)\s*</groupId>"#, in: text)
+        let dependencies = Set((artifactIDs + groupIDs).map { $0.lowercased() })
+        guard !dependencies.isEmpty else { return nil }
+        return ManifestData(name: artifactIDs.first, dependencies: dependencies)
+    }
+
+    /// Reads Gradle dependencies, plugins and the root project name without evaluating build scripts.
+    public static func gradleBuild(in directory: URL) -> ManifestData? {
+        let buildFiles = ["build.gradle", "build.gradle.kts"]
+        let settingsFiles = ["settings.gradle", "settings.gradle.kts"]
+        let buildText = buildFiles.compactMap { readText(directory.appendingPathComponent($0)) }.joined(separator: "\n")
+        let settingsText = settingsFiles.compactMap { readText(directory.appendingPathComponent($0)) }.joined(separator: "\n")
+        guard !buildText.isEmpty || !settingsText.isEmpty else { return nil }
+
+        var dependencies: Set<String> = []
+        for coordinate in regexMatches(#"[\"']([A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+)(?::[^\"']+)?[\"']"#, in: buildText) {
+            let parts = coordinate.split(separator: ":", maxSplits: 1).map(String.init)
+            guard parts.count == 2 else { continue }
+            dependencies.formUnion([parts[0].lowercased(), parts[1].lowercased(), coordinate.lowercased()])
+        }
+        dependencies.formUnion(regexMatches(#"\bid\s*\(\s*[\"']([^\"']+)[\"']\s*\)"#, in: buildText).map { $0.lowercased() })
+
+        let name = regexMatches(#"\brootProject\.name\s*=\s*[\"']([^\"']+)[\"']"#, in: settingsText).first
+        return ManifestData(name: name, dependencies: dependencies)
+    }
+
+    /// Reads gem names from `Gemfile`.
+    public static func gemfile(in directory: URL) -> ManifestData? {
+        guard let text = readText(directory.appendingPathComponent("Gemfile")) else { return nil }
+        let dependencies = Set(regexMatches(#"\bgem\s+[\"']([^\"']+)[\"']"#, in: text).map { $0.lowercased() })
+        return dependencies.isEmpty ? nil : ManifestData(dependencies: dependencies)
+    }
+
+    /// Reads Composer package names from its dependency sections.
+    public static func composerJSON(in directory: URL) -> ManifestData? {
+        guard let json = readJSONObject(directory.appendingPathComponent("composer.json")) else { return nil }
+
+        var dependencies: Set<String> = []
+        for key in ["require", "require-dev"] {
+            for package in dependencyNames(in: json[key]) {
+                dependencies.insert(package)
+                if let vendor = package.split(separator: "/", maxSplits: 1).first, !vendor.isEmpty {
+                    dependencies.insert(vendor.lowercased())
+                }
+            }
+        }
+        let name = json["name"] as? String
+        guard name != nil || !dependencies.isEmpty else { return nil }
+        return ManifestData(name: name, dependencies: dependencies)
+    }
+
+    /// Reads NuGet references from project files in `directory`.
+    public static func csproj(in directory: URL, entries: Set<String>? = nil) -> ManifestData? {
+        let names = entries ?? directoryEntries(at: directory)
+        let projectFiles = names.filter { $0.hasSuffix(".csproj") || $0.hasSuffix(".fsproj") }
+        guard !projectFiles.isEmpty else { return nil }
+
+        var dependencies: Set<String> = []
+        for file in projectFiles {
+            guard let text = readText(directory.appendingPathComponent(file)) else { continue }
+            let packageReferences = regexMatches(
+                #"<PackageReference\b[^>]*\bInclude\s*=\s*[\"']([^\"']+)[\"']"#,
+                in: text
+            )
+            dependencies.formUnion(packageReferences.map { $0.lowercased() })
+            if text.range(of: #"<Project\b[^>]*\bSdk\s*=\s*[\"']Microsoft\.NET\.Sdk\.Web[\"']"#, options: .regularExpression) != nil {
+                dependencies.insert("microsoft.net.sdk.web")
+            }
+        }
+        return ManifestData(dependencies: dependencies)
+    }
+
+    /// Reads package metadata and dependency keys from `Cargo.toml`.
+    public static func cargoTOML(in directory: URL) -> ManifestData? {
+        guard let text = readText(directory.appendingPathComponent("Cargo.toml")) else { return nil }
+        let sections = tomlSections(in: text)
+        let package = sections["package"] ?? ""
+        let name = tomlString(key: "name", in: package)
+        let version = tomlString(key: "version", in: package)
+        let dependencies = sections["dependencies"].map { tomlTableKeys(in: $0) } ?? []
+        guard name != nil || version != nil || !dependencies.isEmpty else { return nil }
+        return ManifestData(name: name, version: version, dependencies: dependencies)
+    }
+
+    /// Reads the module path from `go.mod`.
+    public static func goMod(in directory: URL) -> ManifestData? {
+        guard let text = readText(directory.appendingPathComponent("go.mod")) else { return nil }
+        guard let module = regexMatches(#"(?m)^\s*module\s+([^\s]+)"#, in: text).first else { return nil }
+        return ManifestData(name: module.split(separator: "/").last.map(String.init))
+    }
+
+    /// Reads project metadata and import-map keys from Deno configuration.
+    public static func denoJSON(in directory: URL) -> ManifestData? {
+        let candidates = ["deno.json", "deno.jsonc"]
+        guard let json = candidates.lazy.compactMap({ readJSONObject(directory.appendingPathComponent($0)) }).first else { return nil }
+        let dependencies = dependencyNames(in: json["imports"])
+        let name = json["name"] as? String
+        let version = json["version"] as? String
+        guard name != nil || version != nil || !dependencies.isEmpty else { return nil }
+        return ManifestData(name: name, version: version, dependencies: dependencies)
+    }
+
     /// Every manifest recognised in `directory`, merged.
     public static func read(in directory: URL) -> ManifestData {
-        let readers = [packageJSON, expoConfig, pyproject, requirementsTxt]
-        return readers.compactMap { $0(directory) }.reduce(ManifestData.empty) { $0.merging(parent: $1) }
+        read(in: directory, entries: nil)
+    }
+
+    /// Every manifest recognised in `directory`, merged using known directory entries when available.
+    public static func read(in directory: URL, entries: Set<String>? = nil) -> ManifestData {
+        let readers = [
+            packageJSON, expoConfig, pyproject, requirementsTxt, pomXML, gradleBuild,
+            gemfile, composerJSON, cargoTOML, goMod, denoJSON
+        ]
+        var manifest = readers.compactMap { $0(directory) }.reduce(ManifestData.empty) { $0.merging(parent: $1) }
+        if let csproj = csproj(in: directory, entries: entries) {
+            manifest = manifest.merging(parent: csproj)
+        }
+        return manifest
     }
 
     // MARK: - JSON helpers
@@ -146,11 +265,25 @@ public enum ManifestReader {
         return Set(dict.keys.map { $0.lowercased() })
     }
 
+    private static func directoryEntries(at directory: URL) -> Set<String> {
+        guard let names = try? FileManager.default.contentsOfDirectory(atPath: directory.path) else { return [] }
+        return Set(names)
+    }
+
     // MARK: - Text helpers
 
     private static func readText(_ url: URL) -> String? {
         guard let data = FileManager.default.contents(atPath: url.path) else { return nil }
         return String(data: data, encoding: .utf8)
+    }
+
+    private static func regexMatches(_ pattern: String, in text: String) -> [String] {
+        guard let expression = try? NSRegularExpression(pattern: pattern) else { return [] }
+        let range = NSRange(text.startIndex..., in: text)
+        return expression.matches(in: text, range: range).compactMap { match in
+            guard match.numberOfRanges > 1, let capturedRange = Range(match.range(at: 1), in: text) else { return nil }
+            return String(text[capturedRange]).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
     }
 
     private static func requirementName(_ rawLine: String) -> String? {

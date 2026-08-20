@@ -63,6 +63,47 @@ public extension DetectorCatalog {
                 .executableNamed("python3", 60),
                 .defaultPort(8000)
             ]
+        ),
+        RuleBasedDetector(
+            type: .gunicorn,
+            threshold: 80,
+            signals: [
+                // Gunicorn rewrites its argv to `gunicorn: master [myapp]`.
+                .executableNamed("gunicorn", 100),
+                .commandContains("gunicorn", 85),
+                .defaultPort(8000)
+            ]
+        ),
+        RuleBasedDetector(
+            type: .streamlit,
+            threshold: standardThreshold,
+            signals: [
+                .binPath("streamlit", 100),
+                .commandContains("streamlit run", 92),
+                .commandContains("streamlit", 85),
+                .dependency("streamlit", 60),
+                .defaultPort(8501)
+            ]
+        ),
+        RuleBasedDetector(
+            type: .jupyter,
+            threshold: standardThreshold,
+            signals: [
+                .executableNameContains("jupyter", 100),
+                .commandContains("jupyter", 88),
+                .commandContains("jupyterlab", 88),
+                .anyDependency(["jupyterlab", "notebook", "jupyter"], 60),
+                .defaultPorts([8888, 8889])
+            ]
+        ),
+        RuleBasedDetector(
+            type: .flower,
+            threshold: standardThreshold,
+            signals: [
+                .binPath("flower", 100),
+                .commandContains("flower", 88),
+                .defaultPort(5555)
+            ]
         )
     ]
 }

@@ -16,8 +16,11 @@ public struct ProjectResolver: ProjectResolving {
     ]
     /// Files that mark a project of any language.
     public static let manifestFiles = [
-        "package.json", "pyproject.toml", "Cargo.toml", "go.mod", "composer.json", "Gemfile", "requirements.txt"
+        "package.json", "pyproject.toml", "Cargo.toml", "go.mod", "composer.json", "Gemfile", "requirements.txt",
+        "pom.xml", "build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts", "deno.json", "deno.jsonc"
     ]
+    /// .NET project files are named after their project instead of using a fixed manifest name.
+    public static let manifestSuffixes = [".csproj", ".fsproj", ".sln"]
     private static let genericNames: Set<String> = ["api", "web", "app", "server", "client", "src"]
 
     private let maximumDepth: Int
@@ -37,7 +40,7 @@ public struct ProjectResolver: ProjectResolving {
 
         let workspaceRoot = chain.reversed().first { isWorkspaceRoot($0, entries: entries) }
         let gitRoot = chain.reversed().first { (entries[$0] ?? []).contains(".git") }
-        let manifestRoot = chain.first { dir in (entries[dir] ?? []).contains { Self.manifestFiles.contains($0) } }
+        let manifestRoot = chain.first { dir in (entries[dir] ?? []).contains(where: Self.isManifest) }
 
         let root: URL
         let rootKind: ProjectSnapshot.RootKind
@@ -55,8 +58,8 @@ public struct ProjectResolver: ProjectResolving {
             rootKind = .directory
         }
 
-        let serviceManifest = ManifestReader.read(in: directory)
-        let rootManifest = root.path == directory.path ? serviceManifest : ManifestReader.read(in: root)
+        let serviceManifest = ManifestReader.read(in: directory, entries: entries[directory])
+        let rootManifest = root.path == directory.path ? serviceManifest : ManifestReader.read(in: root, entries: entries[root])
         let combinedManifest = serviceManifest.merging(parent: rootManifest)
 
         return ProjectSnapshot(
@@ -96,8 +99,13 @@ public struct ProjectResolver: ProjectResolving {
         return Set(names)
     }
 
+    private static func isManifest(_ name: String) -> Bool {
+        manifestFiles.contains(name) || manifestSuffixes.contains { name.hasSuffix($0) }
+    }
+
     private func isWorkspaceRoot(_ directory: URL, entries: [URL: Set<String>]) -> Bool {
         let names = entries[directory] ?? []
+        // Manifest files stay out of workspace markers so an inner build file cannot outrank an enclosing Git root.
         if names.contains(where: Self.workspaceMarkers.contains) { return true }
         guard names.contains("package.json") else { return false }
         return ManifestReader.packageJSON(in: directory)?.declaresWorkspaces == true

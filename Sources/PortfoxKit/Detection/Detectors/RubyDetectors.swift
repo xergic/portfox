@@ -50,12 +50,18 @@ public extension DetectorCatalog {
                 .defaultPorts([3000, 4567, 9292]),
                 // macOS ships /usr/bin/ruby, and classifier rule 2 promotes any
                 // detected type past rule 3's systemNoise check for that prefix.
-                // A directory rootKind is the fixture default for a script with
-                // no real manifest, so only genuine project evidence (a git,
-                // workspace or manifest root) rescues a /usr/bin/ruby process.
-                .veto("system Ruby at /usr/bin, outside a project with real manifest evidence") { ctx in
+                //
+                // Unconditional, deliberately. Gating this on the project having
+                // no real root let a language server escape: `/usr/bin/ruby
+                // .../solargraph socket --port 7658` run inside a Rails checkout
+                // resolves a `.git` root and would have been promoted. Nobody
+                // serves a project from the system interpreter, so there is
+                // nothing to rescue.
+                .veto("the OS-shipped interpreter never serves a user's project") { ctx in
                     ctx.executablePath.hasPrefix("/usr/bin/")
-                        && (ctx.project == nil || ctx.project?.rootKind == .directory)
+                },
+                .veto("a language server or debug adapter listens, but is not a service") { ctx in
+                    ["solargraph", "ruby-lsp", "rdbg", "debase"].contains(where: ctx.command.containsToken)
                 },
                 .veto("Ruby bundled inside an app bundle, the IDE-JRE hazard the runtime spec warns about") { ctx in
                     ctx.executablePath.contains(".app/contents/")

@@ -55,6 +55,49 @@ public extension DetectorCatalog {
                 .commandContains("/elasticsearch", 90),
                 .defaultPort(9200)
             ]
+        ),
+        RuleBasedDetector(
+            type: .memcached,
+            threshold: standardThreshold,
+            signals: [
+                .executableNamed("memcached", 100),
+                .defaultPort(11211)
+            ]
+        ),
+        RuleBasedDetector(
+            type: .valkey,
+            threshold: standardThreshold,
+            signals: [
+                // Shares 6379 with Redis, which it forked from. Only the
+                // executable name tells them apart, so the port carries nothing.
+                .executableNamed("valkey-server", 100),
+                .defaultPort(6379)
+            ]
+        ),
+        RuleBasedDetector(
+            type: .clickhouse,
+            threshold: standardThreshold,
+            signals: [
+                .executableNamed("clickhouse-server", 100),
+                .executableNamed("clickhouse", 90),
+                .defaultPorts([8123, 9000])
+            ]
+        ),
+        RuleBasedDetector(
+            type: .typesense,
+            threshold: standardThreshold,
+            signals: [
+                .executableNameContains("typesense-server", 100),
+                .defaultPort(8108)
+            ]
+        ),
+        RuleBasedDetector(
+            type: .qdrant,
+            threshold: standardThreshold,
+            signals: [
+                .executableNamed("qdrant", 100),
+                .defaultPorts([6333, 6334])
+            ]
         )
     ]
 }

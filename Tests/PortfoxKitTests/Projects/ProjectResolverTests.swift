@@ -63,6 +63,56 @@ struct ProjectResolverTests {
         #expect(snapshot?.rootKind == .manifest)
     }
 
+    @Test("recognises a Maven manifest")
+    func pomXMLIsManifest() {
+        let tree = TempTree()
+        defer { tree.cleanUp() }
+        tree.write("<project><artifactId>service</artifactId></project>", at: "pom.xml")
+
+        let snapshot = ProjectResolver().resolve(serviceDirectory: tree.root)
+
+        #expect(snapshot?.rootKind == .manifest)
+    }
+
+    @Test("recognises .NET project-file manifest suffixes")
+    func csprojIsManifest() {
+        let tree = TempTree()
+        defer { tree.cleanUp() }
+        tree.write("<Project />", at: "MyApi.csproj")
+
+        let snapshot = ProjectResolver().resolve(serviceDirectory: tree.root)
+
+        #expect(snapshot?.rootKind == .manifest)
+    }
+
+    @Test("a Git root beats a nested Maven manifest")
+    func gitRootBeatsNestedPomXML() {
+        let tree = TempTree()
+        defer { tree.cleanUp() }
+        tree.write("", at: ".git/HEAD")
+        let service = tree.makeDirectory("backend")
+        tree.write("<project><artifactId>backend</artifactId></project>", at: "backend/pom.xml")
+
+        let snapshot = ProjectResolver().resolve(serviceDirectory: service)
+
+        #expect(snapshot?.root.path == tree.root.path)
+        #expect(snapshot?.rootKind == .git)
+    }
+
+    @Test("Gradle settings files do not become workspace roots")
+    func settingsGradleDoesNotBeatGitRoot() {
+        let tree = TempTree()
+        defer { tree.cleanUp() }
+        tree.write("", at: ".git/HEAD")
+        let service = tree.makeDirectory("backend")
+        tree.write("rootProject.name = \"backend\"", at: "backend/settings.gradle")
+
+        let snapshot = ProjectResolver().resolve(serviceDirectory: service)
+
+        #expect(snapshot?.root.path == tree.root.path)
+        #expect(snapshot?.rootKind == .git)
+    }
+
     @Test("falls back to the service directory itself when nothing is found")
     func bareDirectoryFallback() {
         let tree = TempTree()
