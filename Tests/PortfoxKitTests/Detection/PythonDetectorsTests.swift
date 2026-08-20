@@ -99,4 +99,69 @@ struct PythonDetectorsTests {
 
         #expect(engine.detect(context).type == .python)
     }
+
+    @Test("gunicorn serving a Django project reports Django, not the server")
+    func gunicornUnderDjango() {
+        // Django 60 (its gunicorn custom signal) + 60 (dependency) = 120, against
+        // gunicorn's 100 (exe name) + 10 (port) = 110.
+        let context = DetectionFixture.context(
+            argv: ["gunicorn:", "master", "[shop.wsgi]"],
+            executablePath: "/proj/.venv/bin/gunicorn",
+            dependencies: ["django", "gunicorn"],
+            ports: [8000]
+        )
+        let type = engine.detect(context).type
+
+        #expect(type == .django)
+        #expect(type != .gunicorn)
+    }
+
+    @Test("gunicorn with no framework behind it reports gunicorn")
+    func bareGunicorn() {
+        let context = DetectionFixture.context(
+            argv: ["gunicorn:", "master", "[app.wsgi]"],
+            executablePath: "/proj/.venv/bin/gunicorn",
+            dependencies: ["gunicorn"],
+            ports: [8000]
+        )
+
+        #expect(engine.detect(context).type == .gunicorn)
+    }
+
+    @Test("uvicorn serving FastAPI still reports FastAPI")
+    func uvicornUnderFastAPIDoesNotRegress() {
+        let context = DetectionFixture.context(
+            command: "uvicorn app.main:app --port 8000",
+            executablePath: "/proj/.venv/bin/uvicorn",
+            dependencies: ["fastapi", "uvicorn"],
+            ports: [8000]
+        )
+
+        #expect(engine.detect(context).type == .fastAPI)
+    }
+
+    @Test("streamlit run is Streamlit")
+    func streamlitRun() {
+        let context = DetectionFixture.context(
+            command: "/proj/.venv/bin/streamlit run dashboard.py",
+            executablePath: "/proj/.venv/bin/python3",
+            dependencies: ["streamlit"],
+            ports: [8501]
+        )
+
+        #expect(engine.detect(context).type == .streamlit)
+    }
+
+    @Test("jupyter-lab is Jupyter, not generic python")
+    func jupyterLab() {
+        let context = DetectionFixture.context(
+            command: "/proj/.venv/bin/jupyter-lab --port 8888",
+            executablePath: "/proj/.venv/bin/jupyter-lab",
+            ports: [8888]
+        )
+        let type = engine.detect(context).type
+
+        #expect(type == .jupyter)
+        #expect(type != .python)
+    }
 }

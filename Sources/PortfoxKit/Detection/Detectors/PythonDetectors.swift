@@ -89,9 +89,15 @@ public extension DetectorCatalog {
             type: .jupyter,
             threshold: standardThreshold,
             signals: [
-                .executableNameContains("jupyter", 100),
-                .commandContains("jupyter", 88),
-                .commandContains("jupyterlab", 88),
+                // The binaries are `jupyter-lab` and `jupyter-notebook`, and `-`
+                // is a word character, so `containsToken("jupyter")` matches
+                // neither. Only the bare `jupyter` launcher would have been found.
+                .custom("a jupyter launcher binary", 100, group: "command") { ctx in
+                    ctx.executableName.hasPrefix("jupyter")
+                },
+                .custom("a jupyter command line", 88, group: "command") { ctx in
+                    ctx.command.contains("/jupyter") || ctx.command.containsToken("jupyter")
+                },
                 .anyDependency(["jupyterlab", "notebook", "jupyter"], 60),
                 .defaultPorts([8888, 8889])
             ]
