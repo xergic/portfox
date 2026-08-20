@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Project instructions for PortFox. Read `README.md` for the user-facing description.
+Project instructions for Portfox. Read `README.md` for the user-facing description.
 
 ## What this is
 
@@ -15,7 +15,7 @@ make run      # regenerate the project, build, relaunch the app
 make test     # swift test, the whole kit suite
 make scan     # run the pipeline headless (./.build/debug/portfox-scan)
 make lint     # SwiftLint, must stay clean
-make gen      # regenerate PortFox.xcodeproj from project.yml
+make gen      # regenerate Portfox.xcodeproj from project.yml
 make snapshot # render popover, dashboard, preferences and about to snapshots/
 make archive  # universal ad hoc signed Release app and DMG into dist/
 ```
@@ -23,7 +23,7 @@ make archive  # universal ad hoc signed Release app and DMG into dist/
 Run `make lint` and `make test` after every code change. Run `make snapshot`
 after a UI change and look at the PNGs.
 
-`PortFox.xcodeproj` is generated and git-ignored. Never edit it. Change
+`Portfox.xcodeproj` is generated and git-ignored. Never edit it. Change
 `project.yml` and run `make gen`.
 
 `snapshots/` and `dist/` are git-ignored. Do not commit PNGs or build output.
@@ -32,10 +32,10 @@ after a UI change and look at the PNGs.
 
 | Path | Holds |
 |---|---|
-| `Sources/PortFoxKit/` | The whole pipeline. No SwiftUI, no AppKit, no UI state. |
+| `Sources/PortfoxKit/` | The whole pipeline. No SwiftUI, no AppKit, no UI state. |
 | `Sources/portfox-scan/` | CLI over the same pipeline. |
-| `App/PortFox/` | SwiftUI shell: `AppState`, `DashboardState`, views, theme. |
-| `Tests/PortFoxKitTests/` | Tests for the kit only. The app target has none. |
+| `App/Portfox/` | SwiftUI shell: `AppState`, `DashboardState`, views, theme. |
+| `Tests/PortfoxKitTests/` | Tests for the kit only. The app target has none. |
 | `.github/` | CI on every push, the signed release pipeline on a tag. |
 | `Tools/` | `fetch-icons.py` (simple-icons), `make-appicon.swift`, `make-dmg.sh`, `archive.sh`. |
 
@@ -67,7 +67,7 @@ drives the identical pipeline, so detection can be developed without the GUI.
 
 ## Rules
 
-**The kit never imports SwiftUI.** If a change needs UI types in `PortFoxKit`,
+**The kit never imports SwiftUI.** If a change needs UI types in `PortfoxKit`,
 the change is in the wrong layer.
 
 **Preferences live in the app, not the kit.** `IgnoredServices` and
@@ -102,10 +102,10 @@ that bar or write nothing.
 Three edits, no new code paths:
 
 1. A case in `ServiceType` with its display name, category and default ports.
-2. A `RuleBasedDetector` row in `Sources/PortFoxKit/Detection/Detectors/`.
+2. A `RuleBasedDetector` row in `Sources/PortfoxKit/Detection/Detectors/`.
 3. An entry in `Tools/fetch-icons.py`, then `python3 Tools/fetch-icons.py`.
 
-Then a test in the matching `Tests/PortFoxKitTests/Detection/` file.
+Then a test in the matching `Tests/PortfoxKitTests/Detection/` file.
 
 Every detector needs at least one match in its `requiredGroup` (default
 `command`). Project evidence alone must never identify a service.
@@ -143,7 +143,7 @@ DMG alone leaves the copied app waiting on an online check at first launch.
 ### A local build to hand to someone
 
 `make archive` (or `Tools/archive.sh 0.2.0`) runs the same archive invocation
-without a Developer ID, and writes `dist/PortFox.app` and `dist/PortFox-<v>.dmg`.
+without a Developer ID, and writes `dist/Portfox.app` and `dist/Portfox-<v>.dmg`.
 It fails the run when either architecture slice is missing, exactly as CI does.
 
 Version defaults to the latest git tag, build number to `git rev-list --count

@@ -2,25 +2,25 @@
 import PackageDescription
 
 let package = Package(
-    name: "PortFox",
+    name: "Portfox",
     platforms: [.macOS(.v15)],
     products: [
-        .library(name: "PortFoxKit", targets: ["PortFoxKit"]),
+        .library(name: "PortfoxKit", targets: ["PortfoxKit"]),
         .executable(name: "portfox-scan", targets: ["portfox-scan"])
     ],
     targets: [
         .target(
-            name: "PortFoxKit",
+            name: "PortfoxKit",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
         .executableTarget(
             name: "portfox-scan",
-            dependencies: ["PortFoxKit"],
+            dependencies: ["PortfoxKit"],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
         .testTarget(
-            name: "PortFoxKitTests",
-            dependencies: ["PortFoxKit"],
+            name: "PortfoxKitTests",
+            dependencies: ["PortfoxKit"],
             resources: [.copy("Fixtures")],
             swiftSettings: [.swiftLanguageMode(.v6)]
         )

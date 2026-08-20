@@ -1,10 +1,10 @@
-# PortFox
+# Portfox
 
 A macOS menu bar app that shows what is listening on your local ports, which project it belongs to, and lets you stop it.
 
 Discovery works from processes, not from port numbers, so custom ports need no configuration.
 
-There is no signed release yet, so PortFox is built from source.
+There is no signed release yet, so Portfox is built from source.
 
 ## Requirements
 
@@ -22,7 +22,7 @@ make lint     # SwiftLint
 make archive  # package a universal build to hand to someone
 ```
 
-`PortFox.xcodeproj` is generated from `project.yml` and is not in version control. Run `make gen` after changing the project definition.
+`Portfox.xcodeproj` is generated from `project.yml` and is not in version control. Run `make gen` after changing the project definition.
 
 ## Packaging a build to share
 
@@ -31,26 +31,26 @@ make archive              # version from the latest git tag
 make archive VERSION=0.2.0
 ```
 
-This writes `dist/PortFox.app` and `dist/PortFox-<version>.dmg`, both universal, and fails if either the arm64 or the x86_64 slice is missing. `dist/` is wiped on each run and is not in version control.
+This writes `dist/Portfox.app` and `dist/Portfox-<version>.dmg`, both universal, and fails if either the arm64 or the x86_64 slice is missing. `dist/` is wiped on each run and is not in version control.
 
 The build is ad hoc signed, not notarized, so macOS blocks it on another machine and offers no right-click Open. Whoever receives it clears the quarantine flag once:
 
 ```sh
-xattr -dr com.apple.quarantine /Applications/PortFox.app
+xattr -dr com.apple.quarantine /Applications/Portfox.app
 ```
 
 Launch at login also needs a real signature, so it fails on this build. Push a `vMAJOR.MINOR.PATCH` tag instead when either matters. `.github/workflows/release.yml` signs with a Developer ID, notarizes, staples and publishes a DMG that installs with no warnings.
 
 ## Layout
 
-`PortFoxKit` is a SwiftPM library holding the whole pipeline. The app target is a thin SwiftUI shell.
+`PortfoxKit` is a SwiftPM library holding the whole pipeline. The app target is a thin SwiftUI shell.
 
 | Path | Holds |
 | --- | --- |
-| `Sources/PortFoxKit/` | The pipeline. No SwiftUI and no UI state. |
+| `Sources/PortfoxKit/` | The pipeline. No SwiftUI and no UI state. |
 | `Sources/portfox-scan/` | The command line tool over the same pipeline. |
-| `App/PortFox/` | The SwiftUI app: state, views, theme, snapshot renderer. |
-| `Tests/PortFoxKitTests/` | Tests for the kit. |
+| `App/Portfox/` | The SwiftUI app: state, views, theme, snapshot renderer. |
+| `Tests/PortfoxKitTests/` | Tests for the kit. |
 | `Tools/` | Icon fetching, app icon generation, and release packaging. |
 
 ## Architecture
@@ -82,7 +82,7 @@ A searchable, filterable service list sits on the left. The right pane shows eve
 - Runner for a wrapper such as `pnpm` or `nodemon`.
 - Listener for the service itself.
 
-The row PortFox would actually signal on Stop is badged "stops here".
+The row Portfox would actually signal on Stop is badged "stops here".
 
 ## Settings
 
@@ -94,7 +94,7 @@ Settings live in a sheet inside the dashboard, replacing the old Settings window
 - **Show all listeners**: include background system ports such as CUPS or mDNSResponder.
 - **Group related services by project**: fold sibling repositories under their shared parent directory.
 - **Ignored services**: the list of services you have hidden, each with a remove button. Right-click any service and choose *Ignore Service* to add one. Ignored services leave the popover, the dashboard, the menu bar count and the memory total. An ignored service that is running can also be un-ignored from the *Ignored* chip in the dashboard sidebar.
-- **Launch at login**: start PortFox automatically when you log in.
+- **Launch at login**: start Portfox automatically when you log in.
 
 ## The scan CLI
 
@@ -112,7 +112,7 @@ swift run portfox-scan --stop 3000 # SIGTERM the service on a port
 Detectors are declarative rows, not code. Adding one costs three edits:
 
 1. A case in `ServiceType`, with its display name, category and default ports.
-2. A row in the relevant file under `Sources/PortFoxKit/Detection/Detectors/`.
+2. A row in the relevant file under `Sources/PortfoxKit/Detection/Detectors/`.
 3. An entry in `Tools/fetch-icons.py`, then `python3 Tools/fetch-icons.py`.
 
 A row looks like this:
@@ -154,9 +154,9 @@ The request is refused unless the URL's host is `localhost`, `127.0.0.1` or `::1
 Three flags render a surface to a file and exit, without a pointer or Screen Recording permission:
 
 ```sh
-PortFox --snapshot out.png [--hover]        # the popover
-PortFox --snapshot-dashboard out.png        # the dashboard window
-PortFox --snapshot-prefs out.png            # the preferences sheet
+Portfox --snapshot out.png [--hover]        # the popover
+Portfox --snapshot-dashboard out.png        # the dashboard window
+Portfox --snapshot-prefs out.png            # the preferences sheet
 ```
 
 Preferences needs its own flag rather than sharing the dashboard's, because it is a sheet, and a sheet is a separate window that never renders inside its parent.
@@ -176,7 +176,7 @@ Preferences needs its own flag rather than sharing the dashboard's, because it i
 
 ## Contributing
 
-PortFox will be open sourced. Issues and pull requests are welcome now.
+Portfox will be open sourced. Issues and pull requests are welcome now.
 
 ### Getting set up
 
@@ -196,18 +196,18 @@ make test     # must pass
 make snapshot # after any UI change, then look at snapshots/
 ```
 
-New behaviour in `PortFoxKit` needs a test. The kit is pure value types with injectable dependencies, so nearly everything is testable without a running machine. `Tests/PortFoxKitTests/Fixtures/live-machine-scan.txt` is a recorded `lsof` sweep used by the regression tests, so detection changes can be checked against a real machine.
+New behaviour in `PortfoxKit` needs a test. The kit is pure value types with injectable dependencies, so nearly everything is testable without a running machine. `Tests/PortfoxKitTests/Fixtures/live-machine-scan.txt` is a recorded `lsof` sweep used by the regression tests, so detection changes can be checked against a real machine.
 
 The app target has no tests. Verify UI changes with `make snapshot`.
 
 ### House rules
 
 - Swift 6 language mode with complete strict concurrency. Do not weaken either.
-- `PortFoxKit` never imports SwiftUI or AppKit. If a change needs UI types in the kit, the change belongs in the app.
+- `PortfoxKit` never imports SwiftUI or AppKit. If a change needs UI types in the kit, the change belongs in the app.
 - Preferences belong to the app, not the kit. The kit reports the machine as it is, which is why `portfox-scan` still lists a service you ignored in the app.
 - Nothing touches a user's dev server on the refresh tick. The HTTP probe only runs when the user presses Inspect.
 - Comments explain a non-obvious *why*, usually naming the bug that forced the decision. Do not add comments that restate the code.
-- `PortFox.xcodeproj` is generated and not in version control. Change `project.yml` and run `make gen`.
+- `Portfox.xcodeproj` is generated and not in version control. Change `project.yml` and run `make gen`.
 
 ### Commits and pull requests
 

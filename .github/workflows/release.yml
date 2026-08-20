@@ -83,11 +83,11 @@ jobs:
           # generic/platform=macOS is what makes this universal. A bare `build`
           # resolves the destination to the runner's own arch and ships arm64 only.
           xcodebuild archive \
-            -project PortFox.xcodeproj \
-            -scheme PortFox \
+            -project Portfox.xcodeproj \
+            -scheme Portfox \
             -configuration Release \
             -destination 'generic/platform=macOS' \
-            -archivePath "$RUNNER_TEMP/PortFox.xcarchive" \
+            -archivePath "$RUNNER_TEMP/Portfox.xcarchive" \
             -quiet \
             MARKETING_VERSION="$VERSION" \
             CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" \
@@ -108,14 +108,14 @@ jobs:
           plutil -insert signingCertificate -string "Developer ID Application" "$plist"
 
           xcodebuild -exportArchive \
-            -archivePath "$RUNNER_TEMP/PortFox.xcarchive" \
+            -archivePath "$RUNNER_TEMP/Portfox.xcarchive" \
             -exportOptionsPlist "$plist" \
             -exportPath "$RUNNER_TEMP/export"
 
       - name: Verify the build before notarizing
         run: |
-          app="$RUNNER_TEMP/export/PortFox.app"
-          archs=$(lipo -archs "$app/Contents/MacOS/PortFox")
+          app="$RUNNER_TEMP/export/Portfox.app"
+          archs=$(lipo -archs "$app/Contents/MacOS/Portfox")
           echo "architectures: $archs"
           for arch in arm64 x86_64; do
             case " $archs " in
@@ -131,9 +131,9 @@ jobs:
           KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
           ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
         run: |
-          app="$RUNNER_TEMP/export/PortFox.app"
-          ditto -c -k --keepParent "$app" "$RUNNER_TEMP/PortFox.zip"
-          xcrun notarytool submit "$RUNNER_TEMP/PortFox.zip" \
+          app="$RUNNER_TEMP/export/Portfox.app"
+          ditto -c -k --keepParent "$app" "$RUNNER_TEMP/Portfox.zip"
+          xcrun notarytool submit "$RUNNER_TEMP/Portfox.zip" \
             --key "$RUNNER_TEMP/notary.p8" --key-id "$KEY_ID" --issuer "$ISSUER_ID" \
             --wait --timeout 30m
           # Staple the app itself, not only the DMG. A ticket stapled to the DMG
@@ -146,8 +146,8 @@ jobs:
           ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          dmg="$RUNNER_TEMP/PortFox-$VERSION.dmg"
-          Tools/make-dmg.sh "$RUNNER_TEMP/export/PortFox.app" "$dmg" "PortFox"
+          dmg="$RUNNER_TEMP/Portfox-$VERSION.dmg"
+          Tools/make-dmg.sh "$RUNNER_TEMP/export/Portfox.app" "$dmg" "Portfox"
           codesign --sign "Developer ID Application" --timestamp "$dmg"
           xcrun notarytool submit "$dmg" \
             --key "$RUNNER_TEMP/notary.p8" --key-id "$KEY_ID" --issuer "$ISSUER_ID" \
@@ -158,8 +158,8 @@ jobs:
       - name: Verify Gatekeeper accepts the DMG and the app inside it
         run: |
           hdiutil attach "$DMG" -nobrowse -quiet -mountpoint "$RUNNER_TEMP/mnt"
-          spctl --assess --type execute --verbose=4 "$RUNNER_TEMP/mnt/PortFox.app"
-          xcrun stapler validate "$RUNNER_TEMP/mnt/PortFox.app"
+          spctl --assess --type execute --verbose=4 "$RUNNER_TEMP/mnt/Portfox.app"
+          xcrun stapler validate "$RUNNER_TEMP/mnt/Portfox.app"
           hdiutil detach "$RUNNER_TEMP/mnt" -quiet
           xcrun stapler validate "$DMG"
           spctl --assess --type open --context context:primary-signature --verbose=4 "$DMG"
@@ -170,7 +170,7 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           gh release create "$GITHUB_REF_NAME" "$DMG" \
-            --title "PortFox $VERSION" \
+            --title "Portfox $VERSION" \
             --generate-notes
 
       - name: Remove the signing keychain

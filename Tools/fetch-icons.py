@@ -52,7 +52,7 @@ ICONS = {
 # luminance under-rates saturated brand colours such as Angular red.
 LIGHTNESS_FLOOR = 0.25
 
-DESTINATION = pathlib.Path("App/PortFox/Resources/Assets.xcassets/Services")
+DESTINATION = pathlib.Path("App/Portfox/Resources/Assets.xcassets/Services")
 
 CONTENTS = {
     "images": [{"filename": "", "idiom": "universal"}],

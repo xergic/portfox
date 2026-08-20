@@ -1,5 +1,5 @@
 import Foundation
-import PortFoxKit
+import PortfoxKit
 
 /// Development driver for the exact pipeline the app runs. Lets detection be
 /// built and verified without launching a GUI.

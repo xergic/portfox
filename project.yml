@@ -1,4 +1,4 @@
-name: PortFox
+name: Portfox
 options:
   bundleIdPrefix: net.kandera
   deploymentTarget:
@@ -7,7 +7,7 @@ options:
   groupSortPosition: top
 
 packages:
-  PortFoxKit:
+  PortfoxKit:
     path: .
 
 settings:
@@ -18,31 +18,31 @@ settings:
     CURRENT_PROJECT_VERSION: "1"
 
 targets:
-  PortFox:
+  Portfox:
     type: application
     platform: macOS
     sources:
-      - path: App/PortFox
+      - path: App/Portfox
         excludes:
           - Resources/Fonts
-          - Resources/PortFox.icon
+          - Resources/Portfox.icon
       # A folder reference, so ATSApplicationFontsPath finds Contents/Resources/Fonts.
-      - path: App/PortFox/Resources/Fonts
+      - path: App/Portfox/Resources/Fonts
         type: folder
       # An Icon Composer bundle. It is a directory, so it has to be named as a
       # single file or XcodeGen would walk into it and add its parts separately.
-      - path: App/PortFox/Resources/PortFox.icon
+      - path: App/Portfox/Resources/Portfox.icon
         type: file
         buildPhase: resources
     dependencies:
-      - package: PortFoxKit
-        product: PortFoxKit
+      - package: PortfoxKit
+        product: PortfoxKit
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: net.kandera.PortFox
-        PRODUCT_NAME: PortFox
-        INFOPLIST_FILE: App/PortFox/Info.plist
-        CODE_SIGN_ENTITLEMENTS: App/PortFox/PortFox.entitlements
+        PRODUCT_BUNDLE_IDENTIFIER: net.kandera.Portfox
+        PRODUCT_NAME: Portfox
+        INFOPLIST_FILE: App/Portfox/Info.plist
+        CODE_SIGN_ENTITLEMENTS: App/Portfox/Portfox.entitlements
         # Ad hoc signing keeps a local build free of a developer team.
         CODE_SIGN_IDENTITY: "-"
         CODE_SIGN_STYLE: Manual
@@ -51,7 +51,7 @@ targets:
         ENABLE_APP_SANDBOX: NO
         ENABLE_HARDENED_RUNTIME: YES
         ENABLE_USER_SCRIPT_SANDBOXING: NO
-        ASSETCATALOG_COMPILER_APPICON_NAME: PortFox
+        ASSETCATALOG_COMPILER_APPICON_NAME: Portfox
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         COMBINE_HIDPI_IMAGES: YES
         GENERATE_INFOPLIST_FILE: NO

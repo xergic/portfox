@@ -5,7 +5,7 @@ set -euo pipefail
 
 app=${1:?usage: make-dmg.sh <app> <output.dmg> [volume-name]}
 dmg=${2:?usage: make-dmg.sh <app> <output.dmg> [volume-name]}
-volume=${3:-PortFox}
+volume=${3:-Portfox}
 
 stage=$(mktemp -d)
 trap 'rm -rf "$stage"' EXIT

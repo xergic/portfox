@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
-SCHEME := PortFox
-PROJECT := PortFox.xcodeproj
+SCHEME := Portfox
+PROJECT := Portfox.xcodeproj
 CONFIG := Debug
 DERIVED := build
 
@@ -27,16 +27,16 @@ app: gen ## Build the menu bar app
 		-derivedDataPath $(DERIVED) build | tail -5
 
 run: app ## Build and launch the menu bar app
-	@pkill -x PortFox || true
-	@open $(DERIVED)/Build/Products/$(CONFIG)/PortFox.app
+	@pkill -x Portfox || true
+	@open $(DERIVED)/Build/Products/$(CONFIG)/Portfox.app
 
 snapshot: app ## Render popover, dashboard, preferences, ignored and about snapshots to snapshots/
 	@mkdir -p snapshots
-	@$(DERIVED)/Build/Products/$(CONFIG)/PortFox.app/Contents/MacOS/PortFox --snapshot snapshots/popover.png
-	@$(DERIVED)/Build/Products/$(CONFIG)/PortFox.app/Contents/MacOS/PortFox --snapshot-dashboard snapshots/dashboard.png
-	@$(DERIVED)/Build/Products/$(CONFIG)/PortFox.app/Contents/MacOS/PortFox --snapshot-prefs snapshots/preferences.png
-	@$(DERIVED)/Build/Products/$(CONFIG)/PortFox.app/Contents/MacOS/PortFox --snapshot-ignored snapshots/ignored.png
-	@$(DERIVED)/Build/Products/$(CONFIG)/PortFox.app/Contents/MacOS/PortFox --snapshot-about snapshots/about.png
+	@$(DERIVED)/Build/Products/$(CONFIG)/Portfox.app/Contents/MacOS/Portfox --snapshot snapshots/popover.png
+	@$(DERIVED)/Build/Products/$(CONFIG)/Portfox.app/Contents/MacOS/Portfox --snapshot-dashboard snapshots/dashboard.png
+	@$(DERIVED)/Build/Products/$(CONFIG)/Portfox.app/Contents/MacOS/Portfox --snapshot-prefs snapshots/preferences.png
+	@$(DERIVED)/Build/Products/$(CONFIG)/Portfox.app/Contents/MacOS/Portfox --snapshot-ignored snapshots/ignored.png
+	@$(DERIVED)/Build/Products/$(CONFIG)/Portfox.app/Contents/MacOS/Portfox --snapshot-about snapshots/about.png
 
 archive: ## Build a universal ad hoc signed Release app and DMG into dist/
 	@Tools/archive.sh $(VERSION)

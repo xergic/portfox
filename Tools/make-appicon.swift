@@ -1,12 +1,12 @@
 #!/usr/bin/env swift
-// Draws the PortFox app icon and writes the macOS AppIcon set.
+// Draws the Portfox app icon and writes the macOS AppIcon set.
 // Run from the repository root:  swift Tools/make-appicon.swift
 
 import AppKit
 import CoreGraphics
 import Foundation
 
-let destination = URL(fileURLWithPath: "App/PortFox/Resources/Assets.xcassets/AppIcon.appiconset")
+let destination = URL(fileURLWithPath: "App/Portfox/Resources/Assets.xcassets/AppIcon.appiconset")
 
 /// Same geometry as MenuBarFox.svg, in a 24 unit box with y pointing down.
 func foxPath(in box: CGRect) -> CGPath {

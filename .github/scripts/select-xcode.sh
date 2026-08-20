@@ -1,6 +1,6 @@
 #!/bin/bash
 # The macos-26 image ships Xcode 26 as its default, but the default has drifted
-# on past images. PortFox needs 26 for the Icon Composer .icon bundle, so pick
+# on past images. Portfox needs 26 for the Icon Composer .icon bundle, so pick
 # the newest 26.x explicitly when the default is anything else.
 set -euo pipefail
 
