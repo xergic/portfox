@@ -90,8 +90,10 @@ Settings live in a sheet inside the dashboard, replacing the old Settings window
 
 - **Automatic refresh loop**: poll listening TCP sockets while a window is open. Off stops the timer entirely. With every window closed the loop drops to one scan a minute, which is only there to keep the menu bar count current.
 - **Polling interval**: 1s, 2s or 5s, used while a window is open. Disabled while automatic refresh is off.
+- **Show count in menu bar**: draw the number of active services next to the icon. Off leaves the glyph alone.
 - **Service list layout**: Service or Project, which fact leads each row. Daemons and databases always stay service-first, since their resolved project is an accident of where they run.
 - **Show all listeners**: include background system ports such as CUPS or mDNSResponder.
+- **Hide infrastructure and daemons**: leave out databases, daemons and anything without a project, and drop them from the counts. Hides the whole *Infrastructure & Daemons* section and the dashboard's DB chip along with it. Like ignoring, it is a preference of the app, so `portfox-scan` still lists them.
 - **Group related services by project**: fold sibling repositories under their shared parent directory.
 - **Ignored services**: the list of services you have hidden, each with a remove button. Right-click any service and choose *Ignore Service* to add one. Ignored services leave the popover, the dashboard, the menu bar count and the memory total. An ignored service that is running can also be un-ignored from the *Ignored* chip in the dashboard sidebar.
 - **Launch at login**: start Portfox automatically when you log in.
@@ -113,7 +115,9 @@ Detectors are declarative rows, not code. Adding one costs three edits:
 
 1. A case in `ServiceType`, with its display name, category and default ports.
 2. A row in the relevant file under `Sources/PortfoxKit/Detection/Detectors/`.
-3. An entry in `Tools/fetch-icons.py`, then `python3 Tools/fetch-icons.py`.
+3. An entry in `Tools/fetch-icons.py`, either in `ICONS` or in `NO_BRAND_ICON` with a reason, then `python3 Tools/fetch-icons.py`.
+
+`CatalogueGuardTests` fails the build if a type has no detector, no icon decision, or a threshold no combination of its signals can reach.
 
 A row looks like this:
 

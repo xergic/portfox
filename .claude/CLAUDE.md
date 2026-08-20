@@ -93,6 +93,11 @@ happens when the user explicitly asks for Force Stop.
 **Command matching is word-boundary aware.** Use `String.containsToken`, not
 `contains`. A plain substring search labels `ngrok` as Angular via `/bin/ng`.
 
+**`containsToken` cannot match inside a versioned filename.** Digits and `-` are
+word characters, so it fails on `spring-boot-3.2.0.jar`, `net8.0` and `php8.3`.
+Evidence living in one of those needs a raw `contains` behind a runtime gate from
+`DetectionContextRuntimes.swift` (`isJVM`, `isPHP`, `isDotNetBuildOutput`).
+
 **No comments that restate the code.** The existing comments explain *why* a
 non-obvious choice was made, usually with the concrete bug that forced it. Match
 that bar or write nothing.
@@ -102,16 +107,37 @@ that bar or write nothing.
 Three edits, no new code paths:
 
 1. A case in `ServiceType` with its display name, category and default ports.
-2. A `RuleBasedDetector` row in `Sources/PortfoxKit/Detection/Detectors/`.
-3. An entry in `Tools/fetch-icons.py`, then `python3 Tools/fetch-icons.py`.
+   Set `specificity` by hand: the `default: 3` arm is for frameworks, generic
+   runtimes belong at 1 and application servers at 2.
+2. A `RuleBasedDetector` row in the matching file under
+   `Sources/PortfoxKit/Detection/Detectors/` (`NodeDetectors`, `PythonDetectors`,
+   `JVMDetectors`, `DotNetDetectors`, `RubyDetectors`, `PHPDetectors`,
+   `GoRustDetectors`, `DatabaseDetectors`, `InfrastructureDetectors`).
+3. An entry in `Tools/fetch-icons.py`, in `ICONS` or in `NO_BRAND_ICON` with a
+   reason, then `python3 Tools/fetch-icons.py`.
 
 Then a test in the matching `Tests/PortfoxKitTests/Detection/` file.
+`CatalogueGuardTests` fails the build if you skip step 1's specificity, step 2
+entirely, or step 3.
 
 Every detector needs at least one match in its `requiredGroup` (default
-`command`). Project evidence alone must never identify a service.
+`command`). Project evidence alone must never identify a service. A `custom`
+signal carrying command-line evidence must pass `group: "command"` explicitly,
+or it does not satisfy the gate.
 
 `defaultPorts` is ordered by usefulness, not numerically. The first bound
 default wins the port pill.
+
+**A veto only disqualifies the detector that declares it.** Shared suppression,
+such as `DetectionContext.isJVMTooling`, has to be repeated on every row in the
+family, or a Surefire fork whose classpath mentions Spring gets reported as a
+running application.
+
+**Detection promotes.** `ListenerClassifier` consults the detection result
+before its `/usr/bin/` and `.app/Contents/` noise rules, so a new generic runtime
+detector drags every matching system process out of hiding. Those rows need
+explicit vetoes, not optimism. The ephemeral-port rule is what actually saves
+you: anything bound only above 49152 never reaches detection.
 
 ## Snapshots
 
