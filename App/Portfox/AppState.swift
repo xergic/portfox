@@ -503,10 +503,18 @@ final class AppState {
         await stopEach(group.services)
     }
 
-    /// Stops everything on screen. Ignored and hidden services are not touched,
-    /// because the list is what the user was promised this would clear.
+    /// Stops every dev server on screen, and nothing else.
+    ///
+    /// Databases and daemons are left alone even though they are listed, for the
+    /// reason on `ServiceClass.isUserManaged`. A menu bar button two presses from
+    /// the user's Postgres is a bad trade for a rare want, and Restart already
+    /// draws the same line.
     func stopAllVisible() async {
-        await stopEach(result.services)
+        await stopEach(stoppableServices)
+    }
+
+    var stoppableServices: [RunningService] {
+        result.services.filter(\.classification.isUserManaged)
     }
 
     /// Concurrent rather than sequential, because each stop waits out a three

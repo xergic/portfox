@@ -64,16 +64,8 @@ public struct RelaunchCommand: Equatable, Sendable {
         directoryExists: (String) -> Bool = { FileManager.default.fileExists(atPath: $0) },
         fileExists: (String) -> Bool = { FileManager.default.fileExists(atPath: $0) }
     ) -> Result<RelaunchCommand, RelaunchRefusal> {
-        switch service.classification {
-        case .infrastructure, .systemNoise:
-            return .failure(.managedService)
-        case .developmentService, .probableDeveloperProcess:
-            return make(
-                forRoot: service.rootProcess,
-                directoryExists: directoryExists,
-                fileExists: fileExists
-            )
-        }
+        guard service.classification.isUserManaged else { return .failure(.managedService) }
+        return make(forRoot: service.rootProcess, directoryExists: directoryExists, fileExists: fileExists)
     }
 
     public static func make(

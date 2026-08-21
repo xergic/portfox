@@ -152,7 +152,7 @@ struct MenuView: View {
 
             // Two services is where the button earns its width. With one, Stop
             // All is the row's own Stop with a longer name.
-            if state.serviceCount > 1 {
+            if state.stoppableServices.count > 1 {
                 StopAllButton()
             }
 
@@ -188,7 +188,9 @@ private struct StopAllButton: View {
     var body: some View {
         FooterButton(
             symbol: isArmed ? "exclamationmark.triangle.fill" : "stop.circle",
-            title: isArmed ? "Stop \(state.serviceCount)?" : "Stop All",
+            // The count is what will actually stop, not what is listed, so the
+            // question cannot promise more than the button delivers.
+            title: isArmed ? "Stop \(state.stoppableServices.count)?" : "Stop All",
             tint: isArmed ? Theme.danger : nil
         ) {
             guard isArmed else {

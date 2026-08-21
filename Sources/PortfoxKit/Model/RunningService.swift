@@ -20,6 +20,19 @@ public enum ServiceClass: String, Codable, Sendable, Comparable {
         }
     }
 
+    /// Whether this is the user's own process to start and stop.
+    ///
+    /// Databases and daemons are not. Homebrew, DBngin and Docker each supervise
+    /// their own, so stopping one by hand either brings it straight back or leaves
+    /// the supervisor believing it is up, and relaunching one leaves an unmanaged
+    /// copy beside the supervised one. Restart and Stop All both draw the line here.
+    public var isUserManaged: Bool {
+        switch self {
+        case .developmentService, .probableDeveloperProcess: true
+        case .infrastructure, .systemNoise: false
+        }
+    }
+
     public static func < (lhs: ServiceClass, rhs: ServiceClass) -> Bool { lhs.rank < rhs.rank }
 }
 
