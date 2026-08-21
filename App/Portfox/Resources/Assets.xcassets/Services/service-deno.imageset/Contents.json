@@ -3,6 +3,16 @@
     {
       "filename": "deno.svg",
       "idiom": "universal"
+    },
+    {
+      "appearances": [
+        {
+          "appearance": "luminosity",
+          "value": "dark"
+        }
+      ],
+      "filename": "deno-dark.svg",
+      "idiom": "universal"
     }
   ],
   "info": {

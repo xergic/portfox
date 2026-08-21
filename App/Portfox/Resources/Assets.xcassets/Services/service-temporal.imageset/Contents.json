@@ -3,6 +3,16 @@
     {
       "filename": "temporal.svg",
       "idiom": "universal"
+    },
+    {
+      "appearances": [
+        {
+          "appearance": "luminosity",
+          "value": "dark"
+        }
+      ],
+      "filename": "temporal-dark.svg",
+      "idiom": "universal"
     }
   ],
   "info": {

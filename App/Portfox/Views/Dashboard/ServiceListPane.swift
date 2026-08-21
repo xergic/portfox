@@ -193,7 +193,7 @@ private struct FilterChip: View {
         Button(action: action) {
             Text(title)
                 .font(.system(size: 11, weight: isSelected ? .semibold : .regular))
-                .foregroundStyle(isSelected ? Theme.background : Theme.secondaryText)
+                .foregroundStyle(isSelected ? Theme.onAccent : Theme.secondaryText)
                 .padding(.horizontal, 9)
                 .padding(.vertical, 3)
                 .background(

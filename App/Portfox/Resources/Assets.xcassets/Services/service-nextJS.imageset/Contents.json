@@ -3,6 +3,16 @@
     {
       "filename": "nextdotjs.svg",
       "idiom": "universal"
+    },
+    {
+      "appearances": [
+        {
+          "appearance": "luminosity",
+          "value": "dark"
+        }
+      ],
+      "filename": "nextdotjs-dark.svg",
+      "idiom": "universal"
     }
   ],
   "info": {

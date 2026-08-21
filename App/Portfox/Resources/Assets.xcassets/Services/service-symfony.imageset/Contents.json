@@ -3,6 +3,16 @@
     {
       "filename": "symfony.svg",
       "idiom": "universal"
+    },
+    {
+      "appearances": [
+        {
+          "appearance": "luminosity",
+          "value": "dark"
+        }
+      ],
+      "filename": "symfony-dark.svg",
+      "idiom": "universal"
     }
   ],
   "info": {

@@ -6,7 +6,6 @@ used here only to identify the software each service is running.
 
 Run from the repository root:  python3 Tools/fetch-icons.py
 """
-import copy
 import json
 import pathlib
 import re
@@ -98,16 +97,21 @@ NO_BRAND_ICON = {
     "uvicorn": "gives up the Gunicorn mark it borrowed, now that gunicorn is a real type",
 }
 
-# The popover is always dark, so a near-black brand colour would be invisible.
-# Those render white, which is how the vendors themselves present these marks on
-# a dark background. HSL lightness rather than relative luminance, because
-# luminance under-rates saturated brand colours such as Angular red.
+# A near-black brand colour is invisible on the dark appearance, and a near-white
+# one is invisible on the light appearance. Each is flipped to the other end for
+# the appearance that cannot show it, which is how the vendors themselves present
+# these marks. HSL lightness rather than relative luminance, because luminance
+# under-rates saturated brand colours such as Angular red.
 LIGHTNESS_FLOOR = 0.25
+LIGHTNESS_CEILING = 0.9
+# What a too-dark mark becomes on dark, and a too-light mark on light.
+DARK_APPEARANCE_INK = "FFFFFF"
+LIGHT_APPEARANCE_INK = "1B1B1F"
 
 DESTINATION = pathlib.Path("App/Portfox/Resources/Assets.xcassets/Services")
 
 CONTENTS = {
-    "images": [{"filename": "", "idiom": "universal"}],
+    "images": [],
     "info": {"author": "xcode", "version": 1},
     "properties": {"preserves-vector-representation": True, "template-rendering-intent": "original"},
 }
@@ -136,14 +140,47 @@ def service_types() -> list[str]:
     return re.findall(r"^\s*case (\w+)$", body, re.M)
 
 
-def write_imageset(service: str, slug: str, svg: str) -> None:
+def fills(hex_colour: str) -> tuple[str, str]:
+    """The mark's fill for the light appearance and for the dark one."""
+    level = lightness(hex_colour)
+    light = LIGHT_APPEARANCE_INK if level > LIGHTNESS_CEILING else hex_colour
+    dark = DARK_APPEARANCE_INK if level < LIGHTNESS_FLOOR else hex_colour
+    return light, dark
+
+
+def paint(svg: str, fill: str) -> str:
+    return svg.replace("<path", f'<path fill="#{fill}"', 1)
+
+
+def write_imageset(service: str, slug: str, svg: str, hex_colour: str) -> tuple[str, str]:
+    """One file when a single fill serves both appearances, two when it cannot.
+    The unqualified entry is the light one: an asset with only a dark variant has
+    nothing to draw anywhere else, including in the icon picker's own chrome."""
     imageset = DESTINATION / f"service-{service}.imageset"
     imageset.mkdir(exist_ok=True)
-    (imageset / f"{slug}.svg").write_text(svg)
+    light_fill, dark_fill = fills(hex_colour)
 
-    contents = json.loads(json.dumps(CONTENTS))
-    contents["images"][0]["filename"] = f"{slug}.svg"
-    (imageset / "Contents.json").write_text(json.dumps(contents, indent=2))
+    images = [{"filename": f"{slug}.svg", "idiom": "universal"}]
+    (imageset / f"{slug}.svg").write_text(paint(svg, light_fill))
+
+    if dark_fill != light_fill:
+        images.append({
+            "appearances": [{"appearance": "luminosity", "value": "dark"}],
+            "filename": f"{slug}-dark.svg",
+            "idiom": "universal",
+        })
+        (imageset / f"{slug}-dark.svg").write_text(paint(svg, dark_fill))
+
+    (imageset / "Contents.json").write_text(json.dumps({**CONTENTS, "images": images}, indent=2))
+
+    # A mark that stops needing two fills would otherwise keep an orphaned file
+    # in the catalogue forever, and Xcode warns about every one of them.
+    referenced = {image["filename"] for image in images}
+    for stale in imageset.glob("*.svg"):
+        if stale.name not in referenced:
+            stale.unlink()
+
+    return light_fill, dark_fill
 
 
 def main() -> int:
@@ -181,9 +218,8 @@ def main() -> int:
                 continue
         svg = fetched[slug]
 
-        fill = "FFFFFF" if lightness(hex_colour) < LIGHTNESS_FLOOR else hex_colour
-        write_imageset(service, slug, svg.replace("<path", f'<path fill="#{fill}"', 1))
-        print(f"{service:14} {slug:20} #{fill}")
+        light_fill, dark_fill = write_imageset(service, slug, svg, hex_colour)
+        print(f"{service:14} {slug:20} light #{light_fill}  dark #{dark_fill}")
 
     declared = set(ICONS) | set(NO_BRAND_ICON)
     undeclared = [name for name in service_types() if name not in declared]

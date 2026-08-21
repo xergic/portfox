@@ -3,6 +3,16 @@
     {
       "filename": "bun.svg",
       "idiom": "universal"
+    },
+    {
+      "appearances": [
+        {
+          "appearance": "luminosity",
+          "value": "dark"
+        }
+      ],
+      "filename": "bun-dark.svg",
+      "idiom": "universal"
     }
   ],
   "info": {

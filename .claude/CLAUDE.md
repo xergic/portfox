@@ -162,6 +162,41 @@ detector drags every matching system process out of hiding. Those rows need
 explicit vetoes, not optimism. The ephemeral-port rule is what actually saves
 you: anything bound only above 49152 never reaches detection.
 
+## Appearance
+
+`Theme` carries two literal palettes. Every colour token is a dynamic `NSColor`
+bridged into `Color`, so it resolves against the `\.colorScheme` of whatever
+surface draws it. That is what lets one palette switch reach ~200 unchanged
+`Theme.background` call sites.
+
+**A dynamic `NSColor` resolves under `ImageRenderer` too**, against the
+environment's `colorScheme`, and `.opacity()` on one stays dynamic. Both were
+measured, not assumed. This is why the palette is not a global the views read:
+a global cannot be observed, and faking the invalidation with `.id(scheme)`
+destroys the `@State` of every surface it wraps.
+
+**Every surface root wears `themedSurface(state.appearance.colorScheme)`.**
+`preferredColorScheme` is a scene preference and no-ops under `ImageRenderer`.
+Sheets and popovers presented from a themed root inherit it, so they need
+nothing; a surface `ImageRenderer` hosts directly does need its own.
+
+**`Appearance` is the only writer.** It sets `NSApp.appearance` as well as the
+environment, because the service logos are asset appearance variants and
+`NSImage(named:)` resolves those against `NSApp.effectiveAppearance`.
+`setAppearance:` re-enters through its own `effectiveAppearance` observer before
+the property reads back, so `apply()` carries a reentrancy flag. Without it the
+process recurses until the stack runs out.
+
+**`NSApp` is nil while the scene builds its state**, so the AppKit half waits on
+`didFinishLaunching`. The snapshot entry points build a second `AppState` from
+inside that callback, where the notification has already fired, which is why
+`Appearance.init` carries both branches.
+
+**Text on an accent fill uses `onAccent`, never `background`.** Standing in
+`background` for it worked only while there was one appearance. `accent` is the
+brand fill; `accentText` is the accent as a glyph, darkened in light because the
+brand colour scores about 2:1 on white.
+
 ## Snapshots
 
 `ImageRenderer` lays out in one pass and never draws scroll content, so every

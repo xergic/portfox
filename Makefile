@@ -37,6 +37,11 @@ snapshot: app ## Render popover, dashboard, preferences, ignored and about snaps
 	@$(DERIVED)/Build/Products/$(CONFIG)/Portfox.app/Contents/MacOS/Portfox --snapshot-prefs snapshots/preferences.png
 	@$(DERIVED)/Build/Products/$(CONFIG)/Portfox.app/Contents/MacOS/Portfox --snapshot-ignored snapshots/ignored.png
 	@$(DERIVED)/Build/Products/$(CONFIG)/Portfox.app/Contents/MacOS/Portfox --snapshot-about snapshots/about.png
+	@$(DERIVED)/Build/Products/$(CONFIG)/Portfox.app/Contents/MacOS/Portfox --snapshot snapshots/popover-light.png --light
+	@$(DERIVED)/Build/Products/$(CONFIG)/Portfox.app/Contents/MacOS/Portfox --snapshot-dashboard snapshots/dashboard-light.png --light
+	@$(DERIVED)/Build/Products/$(CONFIG)/Portfox.app/Contents/MacOS/Portfox --snapshot-prefs snapshots/preferences-light.png --light
+	@$(DERIVED)/Build/Products/$(CONFIG)/Portfox.app/Contents/MacOS/Portfox --snapshot-ignored snapshots/ignored-light.png --light
+	@$(DERIVED)/Build/Products/$(CONFIG)/Portfox.app/Contents/MacOS/Portfox --snapshot-about snapshots/about-light.png --light
 
 archive: ## Build a universal ad hoc signed Release app and DMG into dist/
 	@Tools/archive.sh $(VERSION)

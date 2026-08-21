@@ -3,6 +3,16 @@
     {
       "filename": "rust.svg",
       "idiom": "universal"
+    },
+    {
+      "appearances": [
+        {
+          "appearance": "luminosity",
+          "value": "dark"
+        }
+      ],
+      "filename": "rust-dark.svg",
+      "idiom": "universal"
     }
   ],
   "info": {

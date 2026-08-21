@@ -20,7 +20,6 @@ struct AboutSheet: View {
         }
         .frame(width: 360)
         .background(Theme.background)
-        .environment(\.colorScheme, .dark)
     }
 
     private var identity: some View {

@@ -3,6 +3,16 @@
     {
       "filename": "expo.svg",
       "idiom": "universal"
+    },
+    {
+      "appearances": [
+        {
+          "appearance": "luminosity",
+          "value": "dark"
+        }
+      ],
+      "filename": "expo-dark.svg",
+      "idiom": "universal"
     }
   ],
   "info": {

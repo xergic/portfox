@@ -29,7 +29,7 @@ struct MenuView: View {
         }
         .frame(width: Theme.Metrics.popoverWidth)
         .background(Theme.background)
-        .environment(\.colorScheme, .dark)
+        .themedSurface(state.appearance.colorScheme)
         .onAppear { state.popoverDidAppear() }
         .onDisappear { state.popoverDidDisappear() }
     }
@@ -41,7 +41,7 @@ struct MenuView: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 19, height: 19)
-                .foregroundStyle(Theme.accent)
+                .foregroundStyle(Theme.accentText)
 
             Text("Portfox")
                 .font(.system(size: 15, weight: .bold))

@@ -3,6 +3,16 @@
     {
       "filename": "elasticsearch.svg",
       "idiom": "universal"
+    },
+    {
+      "appearances": [
+        {
+          "appearance": "luminosity",
+          "value": "dark"
+        }
+      ],
+      "filename": "elasticsearch-dark.svg",
+      "idiom": "universal"
     }
   ],
   "info": {

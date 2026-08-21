@@ -62,7 +62,7 @@ struct PreferencesSheet: View {
         }
         .frame(width: 560)
         .background(Theme.background)
-        .environment(\.colorScheme, .dark)
+        .themedSurface(state.appearance.colorScheme)
     }
 
     private var header: some View {
@@ -148,6 +148,17 @@ struct PreferencesSheet: View {
             sectionLabel("APPEARANCE", symbol: "paintbrush")
             PreferencesCard {
                 @Bindable var state = state
+                @Bindable var appearance = state.appearance
+                PreferenceRow(
+                    title: "Appearance",
+                    subtitle: "Follow the system theme, or pin Portfox to light or dark"
+                ) {
+                    SegmentedControl(
+                        selection: $appearance.preference,
+                        options: AppAppearance.allCases.map { ($0, $0.displayName) }
+                    )
+                }
+                Divider().overlay(Theme.separator)
                 PreferenceRow(
                     title: "Show count in menu bar",
                     subtitle: "Draw the number of active services next to the icon"
@@ -535,7 +546,7 @@ private struct SegmentedControl<Value: Hashable>: View {
                 } label: {
                     Text(option.label)
                         .font(.mono(11, .medium))
-                        .foregroundStyle(option.value == selection ? Theme.background : Theme.secondaryText)
+                        .foregroundStyle(option.value == selection ? Theme.onAccent : Theme.secondaryText)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
                         .background(

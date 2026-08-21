@@ -3,6 +3,16 @@
     {
       "filename": "django.svg",
       "idiom": "universal"
+    },
+    {
+      "appearances": [
+        {
+          "appearance": "luminosity",
+          "value": "dark"
+        }
+      ],
+      "filename": "django-dark.svg",
+      "idiom": "universal"
     }
   ],
   "info": {

@@ -78,7 +78,7 @@ struct DashboardContent: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 20, height: 20)
-                .foregroundStyle(Theme.accent)
+                .foregroundStyle(Theme.accentText)
 
             Text("Portfox — Services & Process Inspector")
                 .font(.system(size: 15, weight: .bold))

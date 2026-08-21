@@ -3,6 +3,16 @@
     {
       "filename": "prisma.svg",
       "idiom": "universal"
+    },
+    {
+      "appearances": [
+        {
+          "appearance": "luminosity",
+          "value": "dark"
+        }
+      ],
+      "filename": "prisma-dark.svg",
+      "idiom": "universal"
     }
   ],
   "info": {

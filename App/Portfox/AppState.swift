@@ -127,6 +127,7 @@ final class AppState {
     private let repository = ServiceRepository()
     private let controller = ProcessController()
     let projectIcons = ProjectIcons()
+    let appearance = Appearance()
     private let ignoredServices = IgnoredServices()
     private let defaults = UserDefaults.standard
 

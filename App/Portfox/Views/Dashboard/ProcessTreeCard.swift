@@ -137,10 +137,10 @@ private struct ProcessLineView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 9, style: .continuous)
-                .fill(line.isListener ? Theme.roleService.opacity(0.06) : Theme.cardHover)
+                .fill(line.isListener ? Theme.listenerRow : Theme.cardHover)
                 .overlay(
                     RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        .strokeBorder(line.isListener ? Theme.roleService.opacity(0.45) : Theme.border, lineWidth: 1)
+                        .strokeBorder(line.isListener ? Theme.listenerBorder : Theme.border, lineWidth: 1)
                 )
         )
     }

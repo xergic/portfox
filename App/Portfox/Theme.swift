@@ -1,37 +1,82 @@
+import AppKit
 import SwiftUI
 
-/// The popover is always dark, matching the design, so colours are literal
-/// rather than semantic. A light appearance is out of scope for the MVP.
+/// Two literal palettes rather than semantic system colours, because the design
+/// is a specific dark grey and a specific off-white, not whatever the OS picks.
+///
+/// Every token is a dynamic `NSColor`, so it resolves against the `\.colorScheme`
+/// of the surface being drawn. That is what makes a light appearance reach ~200
+/// unchanged call sites, and it keeps working under `ImageRenderer`, where a
+/// snapshot of the light appearance has to actually come out light.
 enum Theme {
-    static let background = Color(red: 0.055, green: 0.055, blue: 0.063)
-    static let card = Color(red: 0.106, green: 0.106, blue: 0.118)
-    static let cardHover = Color(red: 0.137, green: 0.137, blue: 0.153)
-    static let separator = Color.white.opacity(0.07)
-    static let border = Color.white.opacity(0.09)
+    static let background = dynamic(dark: srgb(0.055, 0.055, 0.063), light: srgb(0.965, 0.965, 0.973))
+    static let card = dynamic(dark: srgb(0.106, 0.106, 0.118), light: srgb(1, 1, 1))
+    static let cardHover = dynamic(dark: srgb(0.137, 0.137, 0.153), light: srgb(0.941, 0.941, 0.949))
+    static let separator = dynamic(dark: srgb(1, 1, 1, 0.07), light: srgb(0, 0, 0, 0.08))
+    static let border = dynamic(dark: srgb(1, 1, 1, 0.09), light: srgb(0, 0, 0, 0.12))
 
-    static let primaryText = Color(red: 0.949, green: 0.949, blue: 0.957)
-    static let secondaryText = Color(red: 0.541, green: 0.541, blue: 0.576)
-    static let tertiaryText = Color(red: 0.396, green: 0.396, blue: 0.427)
+    static let primaryText = dynamic(dark: srgb(0.949, 0.949, 0.957), light: srgb(0.106, 0.106, 0.118))
+    static let secondaryText = dynamic(dark: srgb(0.541, 0.541, 0.576), light: srgb(0.400, 0.400, 0.435))
+    static let tertiaryText = dynamic(dark: srgb(0.396, 0.396, 0.427), light: srgb(0.557, 0.557, 0.588))
 
     /// Interactive chrome only: a primary button, a selected row, a chosen
     /// segment. The same orange as the menu bar fox, so the accent is the brand.
-    static let accent = Color(red: 0.980, green: 0.549, blue: 0.239)
+    /// One value for both appearances, because a brand that changes shade with
+    /// the theme stops being a brand.
+    static let accent = Color(nsColor: accentBrand)
+    /// The accent as text or a glyph rather than a fill. Brand orange on white
+    /// is 2.2:1, so light darkens it; dark keeps the brand value exactly.
+    static let accentText = dynamic(dark: accentBrand, light: srgb(0.722, 0.361, 0.055))
+    /// Ink for text sitting on an accent fill. Near-black in both appearances:
+    /// black scores 9.5:1 on the orange where white scores 2.2:1. Not
+    /// `background`, which used to stand in for it and inverts in light.
+    static let onAccent = Color(nsColor: ink)
+
     /// "This is healthy", never chrome. Kept green after the accent turned
     /// orange, because an orange 200 OK reads as a warning.
-    static let success = Color(red: 0.133, green: 0.773, blue: 0.369)
-    static let danger = Color(red: 0.937, green: 0.267, blue: 0.267)
+    static let success = dynamic(dark: successDark, light: successLight)
+    static let danger = dynamic(dark: srgb(0.937, 0.267, 0.267), light: srgb(0.784, 0.110, 0.110))
 
-    static let pill = Color(red: 0.137, green: 0.137, blue: 0.149)
+    static let pill = dynamic(dark: srgb(0.137, 0.137, 0.149), light: srgb(0.925, 0.925, 0.937))
 
     /// What a process is doing in a service's tree, matching `ProcessRole`.
-    static let roleBoundary = Color(red: 0.694, green: 0.549, blue: 0.973)
-    static let roleWrapper = Color(red: 0.965, green: 0.694, blue: 0.290)
+    static let roleBoundary = dynamic(dark: srgb(0.694, 0.549, 0.973), light: srgb(0.486, 0.227, 0.929))
+    static let roleWrapper = dynamic(dark: srgb(0.965, 0.694, 0.290), light: srgb(0.706, 0.325, 0.035))
     static let roleService = success
+
+    /// The listening process's row in the tree, a wash of `roleService` over the
+    /// card. Alpha over near-black and alpha over white do not read the same: 6%
+    /// separates the row in dark and is invisible in light, so light gets more.
+    static let listenerRow = dynamic(
+        dark: successDark.withAlphaComponent(0.06),
+        light: successLight.withAlphaComponent(0.10)
+    )
+    static let listenerBorder = dynamic(
+        dark: successDark.withAlphaComponent(0.45),
+        light: successLight.withAlphaComponent(0.55)
+    )
 
     /// Path values in the metadata card, so the executable and the working
     /// directory are told apart without reading their labels.
     static let pathExecutable = roleWrapper
-    static let pathDirectory = Color(red: 0.376, green: 0.647, blue: 0.980)
+    static let pathDirectory = dynamic(dark: srgb(0.376, 0.647, 0.980), light: srgb(0.146, 0.388, 0.922))
+
+    private static let accentBrand = srgb(0.980, 0.549, 0.239)
+    private static let ink = srgb(0.055, 0.055, 0.063)
+    private static let successDark = srgb(0.133, 0.773, 0.369)
+    private static let successLight = srgb(0.016, 0.471, 0.341)
+
+    /// Resolved at draw time, never at read time, so a token can stay a
+    /// `static let` and SwiftUI still repaints it when the appearance moves.
+    private static func dynamic(dark: NSColor, light: NSColor) -> Color {
+        Color(nsColor: NSColor(name: nil) { appearance in
+            appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? dark : light
+        })
+    }
+
+    private static func srgb(_ red: Double, _ green: Double, _ blue: Double, _ alpha: Double = 1) -> NSColor {
+        NSColor(srgbRed: red, green: green, blue: blue, alpha: alpha)
+    }
 
     enum Metrics {
         static let popoverWidth: CGFloat = 404
@@ -93,4 +138,14 @@ extension Font {
     static let portVersion = Font.mono(10)
     static let portSection = Font.system(size: 10, weight: .semibold)
     static let portCount = Font.mono(11, .medium)
+}
+
+extension View {
+    /// Every surface root wears this, and it is the only thing driving the
+    /// palette: the tokens resolve against `\.colorScheme`. `preferredColorScheme`
+    /// would be the obvious choice and is not usable, because it is a scene
+    /// preference and no-ops under `ImageRenderer`.
+    func themedSurface(_ scheme: ColorScheme) -> some View {
+        environment(\.colorScheme, scheme)
+    }
 }

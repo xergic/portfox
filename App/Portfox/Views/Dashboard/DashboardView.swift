@@ -15,7 +15,7 @@ struct DashboardView: View {
             .environment(state)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Theme.background)
-            .environment(\.colorScheme, .dark)
+            .themedSurface(state.appearance.colorScheme)
             .background(WindowAccessor(onAttach: attach(_:)))
             .onReceive(NotificationCenter.default.publisher(for: NSWindow.willCloseNotification)) { note in
                 guard let closing = note.object as? NSWindow, closing === window else { return }
@@ -31,6 +31,11 @@ struct DashboardView: View {
             .onChange(of: state.result.services.map(\.id)) {
                 dashboard.forgetProbes(missingFrom: state.result)
             }
+            // `attach` runs once per window, so a preference flipped while the
+            // dashboard is open would leave the AppKit chrome on the old theme.
+            .onChange(of: state.appearance.colorScheme) {
+                if let window { applyAppearance(to: window) }
+            }
     }
 
     /// Activation has to happen here rather than beside `openWindow`, because at
@@ -39,8 +44,14 @@ struct DashboardView: View {
         self.window = window
         NSApp.activate()
         window.makeKeyAndOrderFront(nil)
-        window.appearance = NSAppearance(named: .darkAqua)
-        window.backgroundColor = NSColor(Theme.background)
         window.isRestorable = false
+        applyAppearance(to: window)
+    }
+
+    /// The window is drawn by SwiftUI, but its own background flashes the other
+    /// theme during a resize without this.
+    private func applyAppearance(to window: NSWindow) {
+        window.appearance = state.appearance.nsAppearance
+        window.backgroundColor = NSColor(Theme.background)
     }
 }

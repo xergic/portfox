@@ -3,6 +3,16 @@
     {
       "filename": "openjdk.svg",
       "idiom": "universal"
+    },
+    {
+      "appearances": [
+        {
+          "appearance": "luminosity",
+          "value": "dark"
+        }
+      ],
+      "filename": "openjdk-dark.svg",
+      "idiom": "universal"
     }
   ],
   "info": {

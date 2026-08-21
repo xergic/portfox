@@ -3,6 +3,16 @@
     {
       "filename": "ollama.svg",
       "idiom": "universal"
+    },
+    {
+      "appearances": [
+        {
+          "appearance": "luminosity",
+          "value": "dark"
+        }
+      ],
+      "filename": "ollama-dark.svg",
+      "idiom": "universal"
     }
   ],
   "info": {

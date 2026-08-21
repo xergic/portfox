@@ -3,6 +3,16 @@
     {
       "filename": "apachekafka.svg",
       "idiom": "universal"
+    },
+    {
+      "appearances": [
+        {
+          "appearance": "luminosity",
+          "value": "dark"
+        }
+      ],
+      "filename": "apachekafka-dark.svg",
+      "idiom": "universal"
     }
   ],
   "info": {

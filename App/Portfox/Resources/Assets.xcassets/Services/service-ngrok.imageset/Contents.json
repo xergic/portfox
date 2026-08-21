@@ -3,6 +3,16 @@
     {
       "filename": "ngrok.svg",
       "idiom": "universal"
+    },
+    {
+      "appearances": [
+        {
+          "appearance": "luminosity",
+          "value": "dark"
+        }
+      ],
+      "filename": "ngrok-dark.svg",
+      "idiom": "universal"
     }
   ],
   "info": {

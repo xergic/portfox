@@ -5,7 +5,7 @@ import SwiftUI
 /// reference screenshots without Screen Recording permission, and without
 /// hand-driving the menu bar.
 ///
-/// Usage: `Portfox --snapshot out.png [--hover]`, `--snapshot-dashboard out.png`,
+/// Usage: `Portfox --snapshot out.png [--hover] [--light]`, `--snapshot-dashboard out.png`,
 /// `--snapshot-prefs out.png`, `--snapshot-ignored out.png` or
 /// `--snapshot-about out.png`.
 @MainActor
@@ -43,6 +43,7 @@ enum SnapshotRenderer {
         case .dashboard: state.dashboardDidAppear()
         case .preferences, .ignored, .about: break
         }
+        if CommandLine.arguments.contains("--light") { state.appearance.force(.light) }
         await state.refresh()
 
         let renderer = ImageRenderer(content: content(for: request.surface, state: state))
@@ -67,8 +68,10 @@ enum SnapshotRenderer {
         }
     }
 
-    /// `preferredColorScheme` is a scene preference and does nothing here, so every
-    /// surface sets the environment value the way `MenuView` already does.
+    /// `preferredColorScheme` is a scene preference and does nothing here, so
+    /// every surface carries `themedSurface` the way `MenuView` already does.
+    /// `.dashboard` hosts `DashboardContent` directly, bypassing the
+    /// `DashboardView` that normally wears it, so it applies its own.
     @ViewBuilder
     private static func content(for surface: Surface, state: AppState) -> some View {
         let forcesHover = CommandLine.arguments.contains("--hover")
@@ -83,7 +86,7 @@ enum SnapshotRenderer {
                 .environment(state)
                 .frame(width: Theme.Metrics.dashboardWidth, height: Theme.Metrics.dashboardHeight)
                 .background(Theme.background)
-                .environment(\.colorScheme, .dark)
+                .themedSurface(state.appearance.colorScheme)
         case .preferences:
             PreferencesSheet(scrolls: false)
                 .environment(state)
