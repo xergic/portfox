@@ -18,12 +18,16 @@ final class AppState {
     /// Services whose Stop was delivered but which are still alive.
     private(set) var stubbornServiceIDs: Set<String> = []
     private(set) var busyServiceIDs: Set<String> = []
+    /// Which services Restart could actually bring back. Settled when the scan
+    /// moves, because deciding it asks the filesystem whether a directory and a
+    /// binary are still there, and a menu drawn on hover must not stat anything.
+    private(set) var relaunchableServiceIDs: Set<String> = []
     /// The tree from the last scan. The dashboard renders it, and stopping needs
     /// it to sweep orphans.
     private(set) var processTree: ProcessTree?
-    /// Resident memory by pid. Held apart from `ScanResult` so a number that moves
-    /// on every sample cannot invalidate a scan that did not move.
-    private var memoryByPID: [pid_t: UInt64] = [:]
+    /// Resident memory and CPU by pid. Held apart from `ScanResult` so numbers
+    /// that move on every sample cannot invalidate a scan that did not move.
+    private let metrics = ProcessMetrics()
 
     var isRefreshing: Bool { inFlightRefresh != nil }
 
@@ -57,6 +61,27 @@ final class AppState {
 
     var showsMenuBarCount: Bool {
         didSet { defaults.set(showsMenuBarCount, forKey: Key.showsMenuBarCount) }
+    }
+
+    var showsUptime: Bool {
+        didSet { defaults.set(showsUptime, forKey: Key.showsUptime) }
+    }
+
+    /// Off costs nothing: with no reader, nothing is sampled and the deltas are
+    /// dropped, so turning it back on starts from a clean pair.
+    var showsCPU: Bool {
+        didSet {
+            defaults.set(showsCPU, forKey: Key.showsCPU)
+            if !showsCPU { metrics.forgetCPU() }
+        }
+    }
+
+    var editorBundleID: String? {
+        didSet { defaults.set(editorBundleID, forKey: Key.editorBundleID) }
+    }
+
+    var terminalBundleID: String? {
+        didSet { defaults.set(terminalBundleID, forKey: Key.terminalBundleID) }
     }
 
     /// Hides the standalone bucket, which is what the daemons section renders.
@@ -93,12 +118,15 @@ final class AppState {
         static let pollingSeconds = "pollingSeconds"
         static let showsMenuBarCount = "showsMenuBarCount"
         static let hidesDaemons = "hidesDaemons"
+        static let showsUptime = "showsUptime"
+        static let showsCPU = "showsCPU"
+        static let editorBundleID = "editorBundleID"
+        static let terminalBundleID = "terminalBundleID"
     }
 
     private let repository = ServiceRepository()
     private let controller = ProcessController()
-    private let assetScanner = ProjectAssetScanner()
-    private let iconOverrides = ProjectIconOverrides()
+    let projectIcons = ProjectIcons()
     private let ignoredServices = IgnoredServices()
     private let defaults = UserDefaults.standard
 
@@ -127,7 +155,8 @@ final class AppState {
             Key.groupSiblingRepositories: true,
             Key.automaticRefresh: true,
             Key.pollingSeconds: 2,
-            Key.showsMenuBarCount: true
+            Key.showsMenuBarCount: true,
+            Key.showsUptime: true
         ])
         showAllListeners = defaults.bool(forKey: Key.showAllListeners)
         groupSiblingRepositories = defaults.bool(forKey: Key.groupSiblingRepositories)
@@ -136,6 +165,11 @@ final class AppState {
         pollingSeconds = defaults.integer(forKey: Key.pollingSeconds)
         showsMenuBarCount = defaults.bool(forKey: Key.showsMenuBarCount)
         hidesDaemons = defaults.bool(forKey: Key.hidesDaemons)
+        showsUptime = defaults.bool(forKey: Key.showsUptime)
+        showsCPU = defaults.bool(forKey: Key.showsCPU)
+        editorBundleID = defaults.string(forKey: Key.editorBundleID)
+        terminalBundleID = defaults.string(forKey: Key.terminalBundleID)
+        Task.detached { RelaunchRunner.sweepLeftovers() }
         start()
     }
 
@@ -219,45 +253,76 @@ final class AppState {
                 // and the whole point of this branch is to skip a redraw.
                 if update.result != rawResult {
                     rawResult = update.result
+                    let relaunchable = Set(update.result.services.filter(canRelaunch).map(\.id))
+                    if relaunchable != relaunchableServiceIDs { relaunchableServiceIDs = relaunchable }
                     applyFilters()
                     stubbornServiceIDs.formIntersection(Set(update.result.services.map(\.id)))
                 }
                 processTree = update.tree
             }
-            await sampleMemory()
+            await sampleTasks()
             if lastError != nil { lastError = nil }
         } catch {
             lastError = "Could not read listening ports. \(error.localizedDescription)"
         }
     }
 
-    // MARK: - Memory
+    // MARK: - Memory and CPU
 
-    func memory(of pid: pid_t) -> UInt64? { memoryByPID[pid] }
+    func memory(of pid: pid_t) -> UInt64? { metrics.memory(of: pid) }
+    func cpu(of pid: pid_t) -> Int? { metrics.cpu(of: pid) }
+
+    /// A service's whole share of the CPU, summed at sample time. Empty while the
+    /// preference is off, so a label reads it without depending on the preference.
+    func cpu(ofServiceAt pid: pid_t) -> Int? { metrics.cpuIncludingWorkers(of: pid) }
 
     /// Resident memory of every visible service's listener, which is what the
     /// dashboard header reports. Workers are excluded, so this is a floor.
     var watchedMemoryBytes: UInt64 {
-        result.services.reduce(0) { $0 + (memoryByPID[$1.listenerProcess.pid] ?? 0) }
+        result.services.reduce(0) { $0 + (metrics.memory(of: $1.listenerProcess.pid) ?? 0) }
     }
 
-    /// Only the dashboard shows memory, so nothing is sampled while it is closed.
-    private func sampleMemory() async {
-        guard visibleSurfaces.contains(.dashboard), let tree = processTree else {
-            if !memoryByPID.isEmpty { memoryByPID = [:] }
+    /// Only the dashboard shows memory, and CPU is off until asked for, so a
+    /// machine nobody is looking at is never sampled.
+    private func sampleTasks() async {
+        guard let tree = processTree, wantsMemory || wantsCPU else {
+            metrics.forgetEverything()
             return
         }
 
         // Ignored services are sampled too, so one selected under the Ignored chip
-        // still reports resident memory in its detail pane. They stay out of
-        // `watchedMemoryBytes`, which is the number the user asked to be rid of.
+        // still reports its numbers in the detail pane. They stay out of
+        // `watchedMemoryBytes`, which is the total the user asked to be rid of.
         let watched = result.services + ignoredResult.services
         // A set, because relatives include ancestors and two services under one
         // shell would otherwise be asked about the same pid twice.
         let pids = Set(watched.flatMap { tree.relatives(of: $0.listenerProcess.pid) })
-        let sampled = await repository.sampleResidentMemory(of: pids)
-        if sampled != memoryByPID { memoryByPID = sampled }
+        guard !pids.isEmpty else {
+            metrics.forgetEverything()
+            return
+        }
+
+        // Walked once here rather than once per row per redraw, which is also what
+        // keeps a CPU label from depending on the tree.
+        var workersByListener: [pid_t: [pid_t]] = [:]
+        if wantsCPU {
+            for service in watched {
+                let listener = service.listenerProcess.pid
+                workersByListener[listener] = tree.descendants(of: listener).map(\.pid)
+            }
+        }
+
+        let sampled = await repository.sampleTasks(of: pids)
+        metrics.absorb(
+            sampled,
+            workersByListener: workersByListener,
+            keepingMemory: wantsMemory,
+            keepingCPU: wantsCPU
+        )
     }
+
+    private var wantsMemory: Bool { visibleSurfaces.contains(.dashboard) }
+    private var wantsCPU: Bool { showsCPU && !visibleSurfaces.isEmpty }
 
     // MARK: - Ignored services
 
@@ -340,37 +405,83 @@ final class AppState {
         NSWorkspace.shared.activateFileViewerSelecting([directory])
     }
 
-    // MARK: - Project icons
+    /// The one way anything outside this file puts a message in front of the user.
+    /// `lastError` stays `private(set)` so a view cannot write one directly.
+    func report(_ problem: String) { lastError = problem }
 
-    /// The user's chosen icon, or whatever the resolver found on disk.
-    func iconPath(for group: ProjectGroup) -> String? {
-        iconOverrides.iconPath(forProjectAt: group.project.root) ?? group.project.iconPath
-    }
+    // MARK: - Restart
 
-    func hasIconOverride(for group: ProjectGroup) -> Bool {
-        iconOverrides.hasOverride(forProjectAt: group.project.root)
-    }
-
-    func setIcon(_ path: String?, for group: ProjectGroup) {
-        iconOverrides.set(path, forProjectAt: group.project.root)
-    }
-
-    /// Images the user could pick. A sibling group has no manifests of its own,
-    /// so every member project is scanned and the results merged.
-    func projectAssets(for group: ProjectGroup) -> [ProjectAsset] {
-        var seen: Set<String> = []
-        var found: [ProjectAsset] = []
-
-        for snapshot in group.services.compactMap(\.project) {
-            for asset in assetScanner.assets(in: snapshot) where seen.insert(asset.path).inserted {
-                found.append(asset)
-            }
+    /// Stops the service, then hands its own command line to a terminal.
+    ///
+    /// The relaunch is built before anything is signalled. Stopping a server and
+    /// only then discovering it cannot be brought back is the one outcome worth
+    /// designing away.
+    func restart(_ service: RunningService) async {
+        guard let terminal = terminalApp, terminal.runsHandedOverScript else {
+            let name = terminalApp?.name ?? "This terminal"
+            lastError = "\(name) cannot be asked to run a command, "
+                + "so Portfox cannot restart \(service.displayName)."
+            return
         }
-        return found
+        guard let command = relaunchCommand(for: service) else { return }
+
+        busyServiceIDs.insert(service.id)
+        defer { busyServiceIDs.remove(service.id) }
+
+        let tree = await repository.processTree()
+        let outcome = await controller.stop(service, tree: tree)
+        let problem = record(outcome, for: service)
+
+        // Never relaunch onto a port that is still held. Two servers fighting over
+        // one socket is a worse afternoon than a restart that did not happen.
+        guard outcome.didStop else {
+            await refresh(.afterAction)
+            lastError = problem ?? "\(service.displayName) did not stop, so it was not restarted."
+            return
+        }
+
+        var launchProblem: String?
+        do {
+            try await RelaunchRunner.run(command, in: terminal)
+        } catch {
+            launchProblem = "\(service.displayName) stopped but could not be restarted. \(error.localizedDescription)"
+        }
+
+        await refresh(.afterAction)
+        if let message = launchProblem ?? problem { lastError = message }
+    }
+
+    /// For a terminal that cannot be handed a script: stop the service and leave
+    /// the command on the pasteboard, so bringing it back is one paste.
+    func stopAndCopyCommand(_ service: RunningService) async {
+        guard let command = relaunchCommand(for: service) else { return }
+        copy(command.clipboardText)
+        await stop(service)
+    }
+
+    /// Whether a Restart or a Copy Command would have anything to offer, so a
+    /// service that cannot come back never shows an item that would only explain
+    /// itself after being pressed.
+    private func canRelaunch(_ service: RunningService) -> Bool {
+        if case .success = RelaunchCommand.make(for: service) { return true }
+        return false
+    }
+
+    private func relaunchCommand(for service: RunningService) -> RelaunchCommand? {
+        switch RelaunchCommand.make(for: service) {
+        case .success(let command):
+            return command
+        case .failure(let refusal):
+            lastError = "Portfox cannot restart \(service.displayName) because \(refusal.reason)."
+            return nil
+        }
     }
 
     func copyURL(_ service: RunningService) {
-        let value = service.localURL?.absoluteString ?? String(service.port)
+        copy(service.localURL?.absoluteString ?? String(service.port))
+    }
+
+    func copy(_ value: String) {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(value, forType: .string)
     }
@@ -388,13 +499,21 @@ final class AppState {
     }
 
     /// Stops every service under one project heading.
-    ///
+    func stopAll(in group: ProjectGroup) async {
+        await stopEach(group.services)
+    }
+
+    /// Stops everything on screen. Ignored and hidden services are not touched,
+    /// because the list is what the user was promised this would clear.
+    func stopAllVisible() async {
+        await stopEach(result.services)
+    }
+
     /// Concurrent rather than sequential, because each stop waits out a three
     /// second grace period and four in a row would freeze the popover for twelve.
     /// The tree is read once and shared, which is safe because `ProcessController`
     /// re-reads each pid's identity from the kernel immediately before it signals.
-    func stopAll(in group: ProjectGroup) async {
-        let services = group.services
+    private func stopEach(_ services: [RunningService]) async {
         guard !services.isEmpty else { return }
 
         busyServiceIDs.formUnion(services.map(\.id))

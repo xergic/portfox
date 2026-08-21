@@ -87,15 +87,20 @@ public struct ProcessInspector: Sendable {
         return written == size ? info : nil
     }
 
-    /// Resident set size. Sampled on its own rather than as part of a snapshot,
-    /// for the reason given on `ProcessSnapshot`.
-    public func residentMemory(pid: pid_t) -> UInt64? {
+    /// Resident set size and cumulative CPU time, from one `proc_pidinfo` call.
+    /// Sampled on its own rather than as part of a snapshot, for the reason given
+    /// on `ProcessSnapshot`.
+    public func taskSample(pid: pid_t) -> TaskSample? {
         var info = proc_taskinfo()
         let size = Int32(MemoryLayout<proc_taskinfo>.size)
         let written = withUnsafeMutablePointer(to: &info) {
             proc_pidinfo(pid, PROC_PIDTASKINFO, 0, $0, size)
         }
-        return written == size ? info.pti_resident_size : nil
+        guard written == size else { return nil }
+        return TaskSample(
+            residentBytes: info.pti_resident_size,
+            cpuNanoseconds: info.pti_total_user &+ info.pti_total_system
+        )
     }
 
     public func executablePath(pid: pid_t) -> String? {

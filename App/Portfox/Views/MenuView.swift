@@ -150,6 +150,12 @@ struct MenuView: View {
                 WindowPresenter.showDashboard(openWindow)
             }
 
+            // Two services is where the button earns its width. With one, Stop
+            // All is the row's own Stop with a longer name.
+            if state.serviceCount > 1 {
+                StopAllButton()
+            }
+
             Spacer()
 
             VersionButton {
@@ -165,6 +171,36 @@ struct MenuView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 9)
+    }
+}
+
+/// Arms on the first press and fires on the second.
+///
+/// A modal alert would be the usual confirmation, but a `MenuBarExtra` popover
+/// closes the moment focus leaves it, so the question would arrive after the
+/// list it is asking about had gone. Arming happens in place and disarms as soon
+/// as the pointer leaves.
+private struct StopAllButton: View {
+    @Environment(AppState.self) private var state
+
+    @State private var isArmed = false
+
+    var body: some View {
+        FooterButton(
+            symbol: isArmed ? "exclamationmark.triangle.fill" : "stop.circle",
+            title: isArmed ? "Stop \(state.serviceCount)?" : "Stop All",
+            tint: isArmed ? Theme.danger : nil
+        ) {
+            guard isArmed else {
+                isArmed = true
+                return
+            }
+            isArmed = false
+            Task { await state.stopAllVisible() }
+        }
+        .onHover { hovering in
+            if !hovering { isArmed = false }
+        }
     }
 }
 
@@ -189,6 +225,9 @@ private struct VersionButton: View {
 private struct FooterButton: View {
     let symbol: String
     let title: String
+    /// Overrides the hover colouring, for a button that has to look dangerous
+    /// whether or not the pointer is on it.
+    var tint: Color?
     let action: () -> Void
 
     @State private var isHovering = false
@@ -200,7 +239,7 @@ private struct FooterButton: View {
                 Text(title)
             }
             .font(.system(size: 12))
-            .foregroundStyle(isHovering ? Theme.primaryText : Theme.secondaryText)
+            .foregroundStyle(tint ?? (isHovering ? Theme.primaryText : Theme.secondaryText))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

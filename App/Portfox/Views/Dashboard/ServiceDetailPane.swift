@@ -63,6 +63,7 @@ struct ServiceDetailPane: View {
                 }
                 CardDivider()
                 ResidentMemoryRow(pid: service.listenerProcess.pid)
+                CPUUsageRow(pid: service.listenerProcess.pid)
             }
         }
     }

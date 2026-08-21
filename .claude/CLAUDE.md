@@ -35,6 +35,8 @@ after a UI change and look at the PNGs.
 | `Sources/PortfoxKit/` | The whole pipeline. No SwiftUI, no AppKit, no UI state. |
 | `Sources/portfox-scan/` | CLI over the same pipeline. |
 | `App/Portfox/` | SwiftUI shell: `AppState`, `DashboardState`, views, theme. |
+| `App/Portfox/ProcessMetrics.swift` | Memory and CPU by pid, deliberately outside `ScanResult`. |
+| `App/Portfox/ExternalApps.swift` | Which editors and terminals are installed, and how to launch one. |
 | `Tests/PortfoxKitTests/` | Tests for the kit only. The app target has none. |
 | `.github/` | CI on every push, the signed release pipeline on a tag. |
 | `Tools/` | `fetch-icons.py` (simple-icons), `make-appicon.swift`, `make-dmg.sh`, `archive.sh`. |
@@ -78,6 +80,15 @@ machine as it is. This is why `portfox-scan` still lists an ignored service.
 compares before assigning. A blind write redraws the whole dashboard on a 1-2s
 tick. New observable properties follow the same rule.
 
+**Live numbers live in `ProcessMetrics`, not in `ScanResult`.** Memory and CPU
+move on every sample. Inside the scan result they would make two scans of an
+unchanged machine compare unequal and redraw the whole dashboard once a second.
+They are read by leaf views (`MemoryLabels.swift`) so a tick redraws a `Text`.
+
+**CPU is a delta, not a reading.** `proc_taskinfo` carries a cumulative counter,
+so a percent needs two samples and a wall interval. That is why the first tick
+after enabling it shows nothing, and why it stays blank with the refresh loop off.
+
 **Compare a fresh scan against `rawResult`, never `result`.** `result` is the
 ignore-filtered projection, so comparing to it differs forever once anything is
 ignored, and the skip-the-redraw branch stops working.
@@ -85,6 +96,18 @@ ignored, and the skip-the-redraw branch stops working.
 **Nothing touches a user's dev server on the refresh tick.** `HTTPProbe` runs
 only when the user presses Inspect. It refuses any host other than `localhost`,
 `127.0.0.1` or `::1`, and never follows a redirect.
+
+**A relaunch is built from the logical root, the same process Stop signals.**
+`RelaunchCommand` quotes every argv entry into a `zsh -l` script, because the
+command comes from another process and must never be read as shell syntax. The
+login shell is what puts nvm, direnv, asdf and mise back. It refuses databases
+and daemons outright: Homebrew and DBngin restart their own, and a hand-relaunched
+copy ends up unmanaged beside the supervised one.
+
+**Restart hands a `.command` file to a terminal, because a terminal cannot be
+told to run something, only to open something.** Terminal, iTerm2 and Warp were
+tested running one; `ExternalApp.runsHandedOverScript` records that. Anything
+untested falls back to Stop and Copy Command rather than appearing to work.
 
 **Signals go to the logical root, never to a process group.** A dev server
 started from a terminal shares its group with the user's shell. `SIGKILL` only

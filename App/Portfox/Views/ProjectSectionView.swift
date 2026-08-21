@@ -27,7 +27,7 @@ struct ProjectSectionView: View {
         HStack(spacing: 9) {
             ServiceIconView(
                 type: group.services.first?.type ?? .unknown,
-                projectIconPath: state.iconPath(for: group),
+                projectIconPath: state.projectIcons.iconPath(for: group),
                 size: Theme.Metrics.projectIcon
             )
             Text(group.project.name)
@@ -65,9 +65,9 @@ struct ProjectSectionView: View {
             IconPickerView(
                 group: group,
                 assets: assets,
-                currentPath: state.iconPath(for: group)
+                currentPath: state.projectIcons.iconPath(for: group)
             ) { path in
-                state.setIcon(path, for: group)
+                state.projectIcons.setIcon(path, for: group)
             }
         }
     }
@@ -75,9 +75,9 @@ struct ProjectSectionView: View {
     private var actions: some View {
         HStack(spacing: 1) {
             IconButton(symbol: "photo", help: "Change icon") { presentIconPicker() }
-            if state.hasIconOverride(for: group) {
+            if state.projectIcons.hasIconOverride(for: group) {
                 IconButton(symbol: "arrow.uturn.backward", help: "Use the default icon") {
-                    state.setIcon(nil, for: group)
+                    state.projectIcons.setIcon(nil, for: group)
                 }
             }
             IconButton(symbol: "folder", help: "Reveal in Finder") { state.reveal(group.project.root) }
@@ -119,7 +119,7 @@ struct ProjectSectionView: View {
     /// Assets are scanned when the menu item is chosen rather than on every
     /// redraw, because the popover reappears every two seconds.
     private func presentIconPicker() {
-        assets = state.projectAssets(for: group)
+        assets = state.projectIcons.projectAssets(for: group)
         isPickingIcon = true
     }
 }

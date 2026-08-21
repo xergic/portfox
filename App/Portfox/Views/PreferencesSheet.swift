@@ -111,6 +111,7 @@ struct PreferencesSheet: View {
             discoverySection
             appearanceSection
             filteringSection
+            applicationsSection
             generalSection
         }
         .padding(14)
@@ -165,8 +166,72 @@ struct PreferencesSheet: View {
                         options: ServiceCellLayout.allCases.map { ($0, $0.displayName) }
                     )
                 }
+                Divider().overlay(Theme.separator)
+                PreferenceRow(
+                    title: "Show uptime",
+                    subtitle: "How long each service has been running, beside its folder"
+                ) {
+                    Toggle("", isOn: $state.showsUptime)
+                        .labelsHidden()
+                        .toggleStyle(.checkbox)
+                }
+                Divider().overlay(Theme.separator)
+                PreferenceRow(
+                    title: "Show CPU usage",
+                    subtitle: cpuSubtitle
+                ) {
+                    Toggle("", isOn: $state.showsCPU)
+                        .labelsHidden()
+                        .toggleStyle(.checkbox)
+                }
             }
         }
+    }
+
+    /// CPU is a rate measured between two ticks. With the loop off there is never
+    /// a second tick, so the row would sit empty and the toggle would look broken.
+    private var cpuSubtitle: String {
+        state.automaticRefresh
+            ? "Percent of one core, listener and workers together, as Activity Monitor counts it"
+            : "Needs the automatic refresh loop, which is off. It is measured between two scans."
+    }
+
+    private var applicationsSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            sectionLabel("APPLICATIONS", symbol: "square.grid.2x2")
+            PreferencesCard {
+                @Bindable var state = state
+                PreferenceRow(
+                    title: "Editor",
+                    subtitle: "Open in… opens the service's repository"
+                ) {
+                    AppMenu(
+                        apps: ExternalApps.editors,
+                        selection: $state.editorBundleID,
+                        fallback: "None found"
+                    )
+                }
+                Divider().overlay(Theme.separator)
+                PreferenceRow(title: "Terminal", subtitle: terminalSubtitle) {
+                    AppMenu(
+                        apps: ExternalApps.terminals,
+                        selection: $state.terminalBundleID,
+                        fallback: "None found"
+                    )
+                }
+            }
+        }
+    }
+
+    private var terminalSubtitle: String {
+        guard let terminal = state.terminalApp else {
+            return "Opens a window in the directory the service runs in"
+        }
+        if state.canRestart {
+            return "Opens a window in the directory the service runs in, and runs Restart"
+        }
+        return "Opens a window in the directory the service runs in. \(terminal.name) "
+            + "cannot be asked to run a command, so Restart becomes Stop and Copy Command."
     }
 
     private var filteringSection: some View {
@@ -407,6 +472,53 @@ private struct PreferenceRow<Leading: View, Control: View>: View {
 extension PreferenceRow where Leading == EmptyView {
     init(title: String, subtitle: String? = nil, @ViewBuilder control: @escaping () -> Control) {
         self.init(title: title, subtitle: subtitle, leading: { EmptyView() }, control: control)
+    }
+}
+
+/// A dropdown of installed apps.
+///
+/// Like every AppKit-backed control in this sheet it renders as a placeholder
+/// block under `ImageRenderer`, so a snapshot shows where the choice sits but
+/// never which app is chosen.
+private struct AppMenu: View {
+    let apps: [ExternalApp]
+    @Binding var selection: String?
+    let fallback: String
+
+    var body: some View {
+        if apps.isEmpty {
+            Text(fallback)
+                .font(.mono(11))
+                .foregroundStyle(Theme.tertiaryText)
+        } else {
+            Menu {
+                ForEach(apps) { app in
+                    Button(app.name) { selection = app.bundleID }
+                }
+            } label: {
+                Text(currentName)
+                    .font(.mono(11, .medium))
+                    .foregroundStyle(Theme.secondaryText)
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Theme.pill)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .strokeBorder(Theme.border, lineWidth: 1)
+                    )
+            )
+        }
+    }
+
+    /// Resolved the same way the actions resolve it, so the row cannot claim one
+    /// app while Open in… launches another.
+    private var currentName: String {
+        ExternalApps.resolve(selection, among: apps)?.name ?? fallback
     }
 }
 

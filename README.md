@@ -92,11 +92,47 @@ Settings live in a sheet inside the dashboard, replacing the old Settings window
 - **Polling interval**: 1s, 2s or 5s, used while a window is open. Disabled while automatic refresh is off.
 - **Show count in menu bar**: draw the number of active services next to the icon. Off leaves the glyph alone.
 - **Service list layout**: Service or Project, which fact leads each row. Daemons and databases always stay service-first, since their resolved project is an accident of where they run.
+- **Show uptime**: how long each service has been running, beside its folder. Read at scan time, so it ages in jumps rather than counting seconds.
+- **Show CPU usage**: percent of one core, listener and workers together, as Activity Monitor counts it. It is measured between two scans, so it stays blank with the refresh loop off.
 - **Show all listeners**: include background system ports such as CUPS or mDNSResponder.
 - **Hide infrastructure and daemons**: leave out databases, daemons and anything without a project, and drop them from the counts. Hides the whole *Infrastructure & Daemons* section and the dashboard's DB chip along with it. Like ignoring, it is a preference of the app, so `portfox-scan` still lists them.
 - **Group related services by project**: fold sibling repositories under their shared parent directory.
 - **Ignored services**: the list of services you have hidden, each with a remove button. Right-click any service and choose *Ignore Service* to add one. Ignored services leave the popover, the dashboard, the menu bar count and the memory total. An ignored service that is running can also be un-ignored from the *Ignored* chip in the dashboard sidebar.
+- **Editor** and **Terminal**: which app *Open in…* uses. Only apps installed on this Mac are listed. The editor opens the repository, the terminal opens the directory the service actually runs in.
 - **Launch at login**: start Portfox automatically when you log in.
+
+## Stopping and restarting
+
+Right-click a service for *Restart*, or press it in the dashboard header. Portfox
+stops the service, then hands its own command line to your terminal, which opens
+a window running it again in the same directory.
+
+The command is rebuilt from the service's *logical root*, the same process Stop
+signals, so `pnpm dev` comes back as `pnpm dev` rather than as the inner node
+server. It runs through `zsh -l`, so nvm, direnv, asdf and mise are all back in
+place. A plain respawn would inherit Portfox's own environment, and a
+version-managed runtime would simply be missing.
+
+Relaunching in a terminal rather than in the background is deliberate. The logs
+stay visible, Ctrl-C still stops it, and the server does not die with Portfox.
+
+Portfox refuses to restart rather than guess:
+
+- Databases and daemons. Homebrew, DBngin and Docker bring their own back, so a
+  hand-relaunched copy would end up unmanaged beside the supervised one.
+- Anything whose working directory or command line could not be read, whose
+  directory has been deleted, or whose binary is gone after an upgrade.
+- A shell or terminal session, which Stop already refuses to signal.
+
+Restart needs a terminal that runs a script handed to it. Terminal, iTerm2 and
+Warp were tested doing so. For any other terminal the menu offers *Stop and Copy
+Command* instead, which stops the service and leaves the command on the
+pasteboard.
+
+**Stop All** sits in the popover footer once two or more services are listed. It
+arms on the first press and fires on the second, because a `MenuBarExtra` popover
+closes the moment focus leaves it and a modal confirmation would arrive after the
+list it was asking about had gone.
 
 ## The scan CLI
 
@@ -177,6 +213,8 @@ Preferences needs its own flag rather than sharing the dashboard's, because it i
 - An ignore is matched by port plus project directory, or port plus executable path for a service with no project. Move a project or change its port and the ignore no longer applies.
 - A service whose ports are all ephemeral is hidden by default. That is what orphaned `workerd` children look like. Turn on *Show all listeners* to see them.
 - Launch at login needs a signed build. It fails on a local ad hoc one.
+- Restart only works with a terminal that runs a script handed to it. Terminal, iTerm2 and Warp do. Anything else gets *Stop and Copy Command*.
+- CPU is measured between two scans, so it reads blank while automatic refresh is off.
 
 ## Contributing
 

@@ -196,13 +196,13 @@ public actor ServiceRepository {
         return ScanUpdate(result: result, tree: tree, didRebuild: true)
     }
 
-    /// Resident memory for the pids the caller asked about, sampled fresh. One
+    /// Memory and CPU for the pids the caller asked about, sampled fresh. One
     /// `proc_pidinfo` call per pid, so the caller passes only what it will draw.
-    public func sampleResidentMemory(of pids: some Collection<pid_t>) -> [pid_t: UInt64] {
-        var sampled: [pid_t: UInt64] = [:]
+    public func sampleTasks(of pids: some Collection<pid_t>) -> [pid_t: TaskSample] {
+        var sampled: [pid_t: TaskSample] = [:]
         sampled.reserveCapacity(pids.count)
         for pid in pids {
-            if let bytes = inspector.residentMemory(pid: pid) { sampled[pid] = bytes }
+            if let sample = inspector.taskSample(pid: pid) { sampled[pid] = sample }
         }
         return sampled
     }

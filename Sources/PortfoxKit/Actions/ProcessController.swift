@@ -29,6 +29,15 @@ public struct ProcessController: Sendable {
         case notFound
         /// Refused by Portfox itself because signalling it would be unsafe.
         case refused(reason: String)
+
+        /// Whether the port is now free, which is the only question a restart asks.
+        /// `notFound` counts: the process was already gone before the signal.
+        public var didStop: Bool {
+            switch self {
+            case .exited, .exitedLeavingChildren, .notFound: true
+            case .stillRunning, .notPermitted, .refused: false
+            }
+        }
     }
 
     private let inspector: ProcessInspector

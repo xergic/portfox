@@ -24,10 +24,10 @@ struct ServiceRowView: View {
                 switch effectiveLayout {
                 case .serviceFirst:
                     serviceLine
-                    folderLine
+                    HStack(spacing: 4) { folderLine; metrics }
                 case .projectFirst:
                     projectLine
-                    serviceLine
+                    HStack(spacing: 4) { serviceLine; metrics }
                 }
             }
             .layoutPriority(1)
@@ -88,7 +88,7 @@ struct ServiceRowView: View {
                 .lineLimit(1)
                 .truncationMode(.tail)
             if let version = service.version {
-                VersionLabel(text: version)
+                TrailingFact(text: version)
             }
         }
     }
@@ -102,7 +102,7 @@ struct ServiceRowView: View {
                 .truncationMode(.tail)
                 .layoutPriority(1)
             if let version = service.project?.version {
-                VersionLabel(text: "@ \(version)", fixed: false)
+                TrailingFact(text: "@ \(version)", fixed: false)
             }
         }
     }
@@ -121,9 +121,25 @@ struct ServiceRowView: View {
                     .layoutPriority(1)
             }
             if let version = service.project?.version {
-                VersionLabel(text: "@ \(version)", fixed: false)
+                TrailingFact(text: "@ \(version)", fixed: false)
             }
         }
+    }
+
+    /// Uptime and CPU, on the line under the name.
+    ///
+    /// Uptime is read at scan time, not on a clock. A row only redraws when the
+    /// scan behind it moves, so a machine where nothing changes shows an uptime
+    /// that ages in jumps. Anything finer would mean redrawing every row every
+    /// second, which is the redraw this app is built to avoid, and nobody reads a
+    /// three day old dev server to the second.
+    @ViewBuilder
+    private var metrics: some View {
+        if state.showsUptime, let started = service.listenerProcess.startTime,
+           let uptime = Uptime.duration(since: started) {
+            TrailingFact(text: uptime)
+        }
+        ServiceCPULabel(pid: service.listenerProcess.pid)
     }
 
     /// The per-service project name, not the group heading. In a sibling group the
@@ -144,11 +160,12 @@ struct ServiceRowView: View {
     }
 }
 
-/// The version of the thing that is running, beside its name.
-struct VersionLabel: View {
+/// A dim fact appended to a line: the version of the thing that is running, or
+/// how long it has been up.
+struct TrailingFact: View {
     let text: String
-    /// Beside a service name the version must never shrink, since the name can
-    /// truncate instead. Beside a folder it is the version that gives way.
+    /// Beside a service name the fact must never shrink, since the name can
+    /// truncate instead. Beside a folder it is the fact that gives way.
     var fixed = true
 
     var body: some View {
@@ -174,11 +191,26 @@ private struct ServiceContextMenu: View {
         }
         if service.revealDirectory != nil {
             Button("Reveal in Finder") { state.reveal(service) }
+            if let editor = state.editorApp {
+                Button("Open in \(editor.name)") { state.openInEditor(service) }
+            }
+            if let terminal = state.terminalApp {
+                Button("Open in \(terminal.name)") { state.openInTerminal(service) }
+            }
         }
         Divider()
         Button("Stop") { Task { await state.stop(service) } }
         if state.isStubborn(service) {
             Button("Force Stop") { Task { await state.forceStop(service) } }
+        }
+        // A terminal that cannot be handed a script gets the honest half of the
+        // action instead of a Restart that would quietly do nothing.
+        if state.relaunchableServiceIDs.contains(service.id) {
+            if state.canRestart {
+                Button("Restart") { Task { await state.restart(service) } }
+            } else {
+                Button("Stop and Copy Command") { Task { await state.stopAndCopyCommand(service) } }
+            }
         }
         if state.canIgnore(service) {
             Divider()

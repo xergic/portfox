@@ -41,7 +41,7 @@ struct ServiceHeaderView: View {
                 .font(.system(size: 17, weight: .bold))
                 .foregroundStyle(Theme.primaryText)
             if let version = service.version {
-                VersionLabel(text: version)
+                TrailingFact(text: version)
             }
             attributionPill
         }
@@ -95,6 +95,11 @@ struct ServiceHeaderView: View {
                     state.open(service)
                 }
             }
+            if state.canRestart, state.relaunchableServiceIDs.contains(service.id) {
+                ActionButton(symbol: "arrow.clockwise", label: "Restart", tint: Theme.primaryText) {
+                    Task { await state.restart(service) }
+                }
+            }
             stopButton
         }
     }
@@ -144,23 +149,5 @@ private struct ActionButton: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-    }
-}
-
-/// Compact, locale-stable relative times for a process's start time.
-/// `RelativeDateTimeFormatter` produces verbose, locale-variable strings like
-/// "12 minutes ago", so this is built by hand.
-enum Uptime {
-    static func label(since start: Date, now: Date = Date()) -> String {
-        let interval = now.timeIntervalSince(start)
-        guard interval >= 10 else { return "just now" }
-
-        let seconds = Int(interval)
-        switch seconds {
-        case ..<60: return "\(seconds)s ago"
-        case ..<3600: return "\(seconds / 60)m ago"
-        case ..<86400: return "\(seconds / 3600)h ago"
-        default: return "\(seconds / 86400)d ago"
-        }
     }
 }

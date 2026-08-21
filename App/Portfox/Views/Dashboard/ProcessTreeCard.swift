@@ -169,6 +169,7 @@ private struct ProcessLineView: View {
 
             Spacer(minLength: 8)
 
+            ProcessCPULabel(pid: line.process.pid)
             ProcessMemoryLabel(pid: line.process.pid)
         }
     }

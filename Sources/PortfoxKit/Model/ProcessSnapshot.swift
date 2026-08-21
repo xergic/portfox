@@ -43,7 +43,7 @@ public struct ListeningSocket: Identifiable, Hashable, Codable, Sendable {
 /// Deliberately structural. Resident memory is not here because it changes on
 /// every sample, which would make two scans of an unchanged machine compare
 /// unequal and redraw the whole UI. It is sampled separately, by
-/// `ServiceRepository.sampleResidentMemory`.
+/// `ServiceRepository.sampleTasks`.
 public struct ProcessSnapshot: Identifiable, Hashable, Codable, Sendable {
     public var id: pid_t { pid }
 
