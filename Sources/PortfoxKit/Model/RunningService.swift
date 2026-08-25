@@ -54,6 +54,11 @@ public struct RunningService: Identifiable, Hashable, Sendable {
     public let detection: DetectionResult
     public let classification: ServiceClass
     public let project: ProjectSnapshot?
+    /// Set when this row is one container behind a shared port forwarder, rather
+    /// than a process on this machine. `listenerProcess` and `rootProcess` are
+    /// then the forwarder, shared with every other container it publishes for,
+    /// which is why nothing here may be signalled.
+    public let container: ContainerSnapshot?
     /// Version of the framework or runtime, resolved after detection because it
     /// can need a file read or, rarely, asking the binary itself.
     public var version: String?
@@ -67,6 +72,7 @@ public struct RunningService: Identifiable, Hashable, Sendable {
         detection: DetectionResult,
         classification: ServiceClass,
         project: ProjectSnapshot?,
+        container: ContainerSnapshot? = nil,
         version: String? = nil
     ) {
         self.id = id
@@ -77,8 +83,17 @@ public struct RunningService: Identifiable, Hashable, Sendable {
         self.detection = detection
         self.classification = classification
         self.project = project
+        self.container = container
         self.version = version
     }
+
+    /// Whether this row is backed by a process on this machine.
+    ///
+    /// False for a container, whose real process lives in a VM: `listenerProcess`
+    /// is then the forwarder, shared with every other container it publishes for.
+    /// Everything that reads a number off that process, or signals it, asks this
+    /// first, so the rule lives in one place rather than in each caller.
+    public var hasHostProcess: Bool { container == nil }
 
     public var type: ServiceType { detection.type }
     public var port: Int { primarySocket.port }
@@ -101,6 +116,9 @@ public struct RunningService: Identifiable, Hashable, Sendable {
     /// labelled with where it was installed from, which is what actually
     /// distinguishes two PostgreSQL 17 instances on different ports.
     public var subtitle: String? {
+        // The compose project and service, because the installation label below
+        // would read "Docker" on every row of an eight-container stack.
+        if let container { return container.displayLabel }
         if type.category == .database || type.category == .infrastructure {
             return Self.installationLabel(for: listenerProcess.resolvedExecutablePath)
                 ?? Self.packageLabel(for: listenerProcess.resolvedExecutablePath)
@@ -178,6 +196,11 @@ public struct RunningService: Identifiable, Hashable, Sendable {
 
     /// Directory to reveal in Finder.
     public var revealDirectory: URL? {
-        listenerProcess.workingDirectoryURL ?? project?.serviceDirectory ?? project?.root
+        // A container has no host working directory, and the forwarder's is inside
+        // the Docker or OrbStack bundle, which would open a folder the user has
+        // never seen. The compose file's directory is the only honest answer, and
+        // for `docker run` there is no answer at all.
+        guard hasHostProcess else { return project?.serviceDirectory ?? project?.root }
+        return listenerProcess.workingDirectoryURL ?? project?.serviceDirectory ?? project?.root
     }
 }

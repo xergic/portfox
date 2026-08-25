@@ -5,7 +5,7 @@ import SwiftUI
 /// reference screenshots without Screen Recording permission, and without
 /// hand-driving the menu bar.
 ///
-/// Usage: `Portfox --snapshot out.png [--hover] [--light]`, `--snapshot-dashboard out.png`,
+/// Usage: `Portfox --snapshot out.png [--hover] [--arrived] [--light]`, `--snapshot-dashboard out.png`,
 /// `--snapshot-prefs out.png`, `--snapshot-ignored out.png` or
 /// `--snapshot-about out.png`.
 @MainActor
@@ -45,6 +45,14 @@ enum SnapshotRenderer {
         }
         if CommandLine.arguments.contains("--light") { state.appearance.force(.light) }
         await state.refresh()
+
+        // Not threaded down as a parameter the way `--hover` is. Forcing hover on
+        // every row is what you want for hover, but a wall of green says nothing
+        // about how one arrived row reads among ordinary ones, which is the only
+        // question the wash has to answer.
+        if CommandLine.arguments.contains("--arrived"), let first = state.firstServiceID {
+            state.arrivals.force(first)
+        }
 
         let renderer = ImageRenderer(content: content(for: request.surface, state: state))
         renderer.scale = 2

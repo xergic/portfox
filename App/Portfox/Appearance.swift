@@ -52,7 +52,7 @@ final class Appearance {
     private var forced: AppAppearance?
     private var observation: NSKeyValueObservation?
     private var isApplying = false
-    private var launchObserver: (any NSObjectProtocol)?
+    private var launchGate: LaunchGate?
     private let defaults = UserDefaults.standard
 
     private enum Key {
@@ -66,31 +66,12 @@ final class Appearance {
         // palette the enum happened to default to.
         apply()
 
-        // `NSApp` is still nil here: the scene builds its state before there is
-        // an `NSApplication` to hand it. Everything AppKit-side has to wait, or
-        // it writes into nothing and the asset variants never follow the pin.
-        // Portfox builds its state from the scene, before `NSApplication` exists.
-        // The snapshot entry points build a second one from inside
-        // `applicationDidFinishLaunching`, where the notification has already
-        // fired and will never fire again, so both branches are live.
-        if NSApp == nil {
-            launchObserver = NotificationCenter.default.addObserver(
-                forName: NSApplication.didFinishLaunchingNotification,
-                object: nil,
-                queue: .main
-            ) { [weak self] _ in
-                MainActor.assumeIsolated { self?.activate() }
-            }
-        } else {
-            activate()
-        }
+        // The asset variants cannot follow the pin until there is an `NSApp` to
+        // pin, so the AppKit half waits.
+        launchGate = LaunchGate { [weak self] in self?.activate() }
     }
 
     private func activate() {
-        if let launchObserver {
-            NotificationCenter.default.removeObserver(launchObserver)
-            self.launchObserver = nil
-        }
         observation = NSApp?.observe(\.effectiveAppearance) { [weak self] _, _ in
             MainActor.assumeIsolated { self?.apply() }
         }

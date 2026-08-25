@@ -16,13 +16,18 @@ struct HoverActionsView: View {
             if service.revealDirectory != nil {
                 IconButton(symbol: "folder", help: "Reveal in Finder") { state.reveal(service) }
             }
-            if state.isStubborn(service) {
-                IconButton(symbol: "stop.fill", tint: Theme.danger, help: "Force stop, it ignored SIGTERM") {
-                    Task { await state.forceStop(service) }
-                }
-            } else {
-                IconButton(symbol: "stop.fill", tint: Theme.danger, help: "Stop") {
-                    Task { await state.stop(service) }
+            // Signalling a container row would take down the forwarder every
+            // other container publishes through, so `ProcessController` refuses
+            // it. Offering a button that always refuses would be worse.
+            if service.hasHostProcess {
+                if state.isStubborn(service) {
+                    IconButton(symbol: "stop.fill", tint: Theme.danger, help: "Force stop, it ignored SIGTERM") {
+                        Task { await state.forceStop(service) }
+                    }
+                } else {
+                    IconButton(symbol: "stop.fill", tint: Theme.danger, help: "Stop") {
+                        Task { await state.stop(service) }
+                    }
                 }
             }
         }

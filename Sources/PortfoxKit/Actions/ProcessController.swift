@@ -61,7 +61,7 @@ public struct ProcessController: Sendable {
     /// reparent to launchd the moment their parent dies and are then unreachable
     /// through the tree.
     public func stop(_ service: RunningService, tree: ProcessTree? = nil) async -> Outcome {
-        let target = service.rootProcess
+        guard let target = signalTarget(of: service) else { return Self.containerRefusal }
         let verdict = verify(target)
         guard verdict == .exited else { return verdict }
 
@@ -75,7 +75,7 @@ public struct ProcessController: Sendable {
     /// Sends SIGKILL to the logical root and to any descendant that outlives it.
     /// Only offered after a SIGTERM has already failed.
     public func forceStop(_ service: RunningService, tree: ProcessTree) async -> Outcome {
-        let target = service.rootProcess
+        guard let target = signalTarget(of: service) else { return Self.containerRefusal }
         let verdict = verify(target)
         guard verdict == .exited else { return verdict }
 
@@ -95,6 +95,20 @@ public struct ProcessController: Sendable {
     }
 
     // MARK: - Safety
+
+    static let containerRefusal = Outcome.refused(reason: "a container's shared port forwarder")
+
+    /// The process to signal, or nil when there is none that may be signalled.
+    ///
+    /// A container row points `rootProcess` at the forwarder that publishes every
+    /// container's port, so signalling it takes the whole machine's containers
+    /// offline. `safetyCheck` cannot catch this: it is handed a `ProcessSnapshot`
+    /// and the forwarder looks like any other user process. The check has to sit
+    /// here, in the two entry points that can still see the `RunningService`, and
+    /// it lives in the kit so `portfox-scan --stop` is refused too.
+    private func signalTarget(of service: RunningService) -> ProcessSnapshot? {
+        service.hasHostProcess ? service.rootProcess : nil
+    }
 
     /// Confirms the pid still hosts the process the snapshot describes, then
     /// applies the safety rules to the freshly read process rather than the

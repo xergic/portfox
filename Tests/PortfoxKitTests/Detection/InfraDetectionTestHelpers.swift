@@ -35,6 +35,34 @@ enum DetectionFixture {
         )
     }
 
+    /// A container row. `executablePath` is the forwarder's on purpose, so a test
+    /// can prove the image won and the `.docker` detector did not.
+    static func containerContext(
+        image: String,
+        ports: [Int] = [],
+        composeProject: String? = nil,
+        executablePath: String = "/Applications/Docker.app/Contents/MacOS/com.docker.backend"
+    ) -> DetectionContext {
+        let process = ProcessSnapshot(
+            pid: 4242,
+            parentPID: 1,
+            uid: 501,
+            executablePath: executablePath,
+            arguments: [executablePath]
+        )
+        return DetectionContext(
+            process: process,
+            project: nil,
+            ports: ports,
+            container: ContainerSnapshot(
+                id: "c0ffee",
+                name: "fixture",
+                image: image,
+                composeProject: composeProject
+            )
+        )
+    }
+
     static func context(
         command: String,
         executablePath: String? = nil,

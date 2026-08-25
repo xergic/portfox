@@ -49,14 +49,7 @@ struct ServiceRowView: View {
                     .padding(.trailing, Theme.Metrics.portPillWidth + 14)
             }
         }
-        .background(
-            RoundedRectangle(cornerRadius: Theme.Metrics.rowRadius, style: .continuous)
-                .fill(isHighlighted ? Theme.cardHover : .clear)
-                .overlay(
-                    RoundedRectangle(cornerRadius: Theme.Metrics.rowRadius, style: .continuous)
-                        .strokeBorder(borderColor, lineWidth: isSelected ? 1.5 : 1)
-                )
-        )
+        .background(rowBackground)
         .contentShape(Rectangle())
         .onHover { hovering in
             withAnimation(.easeOut(duration: 0.12)) { isHovering = hovering }
@@ -66,6 +59,29 @@ struct ServiceRowView: View {
         }
         .contextMenu { ServiceContextMenu(service: service) }
         .opacity(state.isBusy(service) ? 0.5 : 1)
+    }
+
+    /// The arrival wash sits over the hover fill and under the border, so a row
+    /// that is both flashing and hovered still lightens and still reveals its
+    /// actions, and nothing shifts when the flash ends.
+    ///
+    /// `.animation(_:value:)` rather than a transition, because SwiftUI does not
+    /// animate an initial value and a newly arrived service is a brand-new
+    /// `ForEach` element. The row therefore arrives green and fades out, with no
+    /// fade in, which is the right reading of "this appeared".
+    private var rowBackground: some View {
+        RoundedRectangle(cornerRadius: Theme.Metrics.rowRadius, style: .continuous)
+            .fill(isHighlighted ? Theme.cardHover : .clear)
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.Metrics.rowRadius, style: .continuous)
+                    .fill(Theme.arrivalRow)
+                    .opacity(isArriving ? 1 : 0)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.Metrics.rowRadius, style: .continuous)
+                    .strokeBorder(borderColor, lineWidth: isSelected ? 1.5 : 1)
+            )
+            .animation(.easeInOut(duration: 0.35), value: isArriving)
     }
 
     /// Project-first leads with the project's own icon, which is usually its
@@ -133,13 +149,18 @@ struct ServiceRowView: View {
     /// that ages in jumps. Anything finer would mean redrawing every row every
     /// second, which is the redraw this app is built to avoid, and nobody reads a
     /// three day old dev server to the second.
+    /// Nothing for a container row. Both numbers come from the forwarder, so its
+    /// uptime is the daemon's and its CPU is every container's at once. A real
+    /// container start time needs a second `docker inspect` per container.
     @ViewBuilder
     private var metrics: some View {
-        if state.showsUptime, let started = service.listenerProcess.startTime,
-           let uptime = Uptime.duration(since: started) {
-            TrailingFact(text: uptime)
+        if service.hasHostProcess {
+            if state.showsUptime, let started = service.listenerProcess.startTime,
+               let uptime = Uptime.duration(since: started) {
+                TrailingFact(text: uptime)
+            }
+            ServiceCPULabel(pid: service.listenerProcess.pid)
         }
-        ServiceCPULabel(pid: service.listenerProcess.pid)
     }
 
     /// The per-service project name, not the group heading. In a sibling group the
@@ -152,10 +173,12 @@ struct ServiceRowView: View {
         service.projectIdentifiesService ? layout : .serviceFirst
     }
 
+    private var isArriving: Bool { state.arrivals.isRecent(service) }
     private var showsActions: Bool { showsHoverActions && (isHovering || forcedHover) }
     private var isHighlighted: Bool { showsActions || isSelected || (isHovering && !showsHoverActions) }
     private var borderColor: Color {
         if isSelected { return Theme.accent }
+        if isArriving { return Theme.arrivalBorder }
         return isHighlighted ? Theme.border : .clear
     }
 }
@@ -198,10 +221,12 @@ private struct ServiceContextMenu: View {
                 Button("Open in \(terminal.name)") { state.openInTerminal(service) }
             }
         }
-        Divider()
-        Button("Stop") { Task { await state.stop(service) } }
-        if state.isStubborn(service) {
-            Button("Force Stop") { Task { await state.forceStop(service) } }
+        if service.hasHostProcess {
+            Divider()
+            Button("Stop") { Task { await state.stop(service) } }
+            if state.isStubborn(service) {
+                Button("Force Stop") { Task { await state.forceStop(service) } }
+            }
         }
         // A terminal that cannot be handed a script gets the honest half of the
         // action instead of a Restart that would quietly do nothing.
@@ -221,6 +246,10 @@ private struct ServiceContextMenu: View {
             }
         }
         Divider()
-        Text("PID \(service.listenerProcess.pid) · stops \(service.rootProcess.pid)")
+        if let container = service.container {
+            Text("Container \(container.name) · \(container.image)")
+        } else {
+            Text("PID \(service.listenerProcess.pid) · stops \(service.rootProcess.pid)")
+        }
     }
 }

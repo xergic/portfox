@@ -100,7 +100,9 @@ struct ServiceHeaderView: View {
                     Task { await state.restart(service) }
                 }
             }
-            stopButton
+            if service.hasHostProcess {
+                stopButton
+            }
         }
     }
 

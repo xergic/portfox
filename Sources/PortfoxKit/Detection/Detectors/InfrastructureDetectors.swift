@@ -1,7 +1,6 @@
 import Foundation
 
 private extension DetectionContext {
-    static let containerForwarders = ["orbstack", "/colima/", "limactl"]
     static let rabbitPorts = [5672, 15672, 25672]
 }
 
@@ -13,6 +12,7 @@ public extension DetectorCatalog {
             type: .minio,
             threshold: standardThreshold,
             signals: [
+                .containerImage(["minio"]),
                 .executableNamed("minio", 100),
                 .defaultPorts([9000, 9001])
             ]
@@ -21,6 +21,7 @@ public extension DetectorCatalog {
             type: .mailpit,
             threshold: standardThreshold,
             signals: [
+                .containerImage(["mailpit"]),
                 .executableNamed("mailpit", 100),
                 .defaultPorts([8025, 1025])
             ]
@@ -29,6 +30,7 @@ public extension DetectorCatalog {
             type: .rabbitmq,
             threshold: standardThreshold,
             signals: [
+                .containerImage(["rabbitmq"]),
                 // The real executable is the Erlang VM (beam.smp), shared with every
                 // other Erlang app, so identity comes from the command line instead.
                 .executableNamed("rabbitmq-server", 95),
@@ -45,6 +47,7 @@ public extension DetectorCatalog {
             type: .mailhog,
             threshold: standardThreshold,
             signals: [
+                .containerImage(["mailhog"]),
                 .executableNameContains("mailhog", 100),
                 .defaultPorts([8025, 1025])
             ]
@@ -53,6 +56,7 @@ public extension DetectorCatalog {
             type: .kafka,
             threshold: standardThreshold,
             signals: [
+                .containerImage(["kafka"]),
                 // Runs under `java`, like Elasticsearch, and `bin/kafka-server-start.sh`
                 // only execs it. Identity is the bootstrap class on the command line.
                 .commandContains("kafka.kafka", 100),
@@ -69,6 +73,7 @@ public extension DetectorCatalog {
             type: .nats,
             threshold: standardThreshold,
             signals: [
+                .containerImage(["nats"]),
                 // `nats` is the CLI. The server is always `nats-server`.
                 .executableNamed("nats-server", 100),
                 .defaultPorts([4222, 8222])
@@ -78,6 +83,7 @@ public extension DetectorCatalog {
             type: .temporal,
             threshold: standardThreshold,
             signals: [
+                .containerImage(["temporal", "temporalio"]),
                 .executableNamed("temporal", 100),
                 .commandContains("server start-dev", 88),
                 .defaultPorts([8233, 7233])
@@ -87,6 +93,7 @@ public extension DetectorCatalog {
             type: .nginx,
             threshold: standardThreshold,
             signals: [
+                .containerImage(["nginx"]),
                 // nginx rewrites its argv to `nginx: master process ...`, which is
                 // harmless because executableName comes from proc_pidpath.
                 .executableNamed("nginx", 100),
@@ -98,6 +105,7 @@ public extension DetectorCatalog {
             type: .caddy,
             threshold: standardThreshold,
             signals: [
+                .containerImage(["caddy"]),
                 .executableNamed("caddy", 100),
                 .commandContains("caddy run", 88),
                 .defaultPorts([80, 443, 2019])
@@ -115,6 +123,7 @@ public extension DetectorCatalog {
             type: .grafana,
             threshold: standardThreshold,
             signals: [
+                .containerImage(["grafana"]),
                 // Modern builds run `grafana server`; older ones ship a separate
                 // `grafana-server` binary. Both are in the field.
                 .executableNamed("grafana", 100),
@@ -127,6 +136,7 @@ public extension DetectorCatalog {
             type: .prometheus,
             threshold: standardThreshold,
             signals: [
+                .containerImage(["prometheus"]),
                 .executableNamed("prometheus", 100),
                 .defaultPort(9090)
             ]
@@ -135,6 +145,7 @@ public extension DetectorCatalog {
             type: .ollama,
             threshold: standardThreshold,
             signals: [
+                .containerImage(["ollama"]),
                 .executableNamed("ollama", 100),
                 .defaultPort(11434)
             ]
@@ -161,19 +172,22 @@ public extension DetectorCatalog {
             type: .docker,
             threshold: standardThreshold,
             signals: [
-                // High recall, no precision about *what* is listening. Portfox
-                // never sees the container's own process, so Postgres in a
-                // container reads as "Docker" and an eight-container compose
-                // stack becomes eight identical rows. The row still beats the
-                // alternative, which is eight unexplained "Local Process" entries,
-                // and `.infrastructure` puts them all in the standalone bucket
-                // that the "Hide infrastructure and daemons" preference switches off.
-                .executableNamed("com.docker.backend", 100),
-                .executableNamed("docker-proxy", 100),
-                .executableNamed("vpnkit", 95),
-                .custom("an OrbStack, Colima or Lima port forwarder", 95, group: "command") { ctx in
-                    DetectionContext.containerForwarders.contains(where: ctx.executablePath.contains)
-                }
+                // The forwarder itself, for a published port no container claimed:
+                // Docker Desktop's own API port, an OrbStack machine port, or any
+                // machine whose daemon could not be asked.
+                .custom("a container port forwarder", 100, group: "command") { ctx in
+                    ContainerRuntime.forwarderNames.contains(ctx.executableName)
+                        || ContainerRuntime.forwarderPathFragments.contains(where: ctx.executablePath.contains)
+                },
+                // The fallback for a container whose image names nothing known.
+                // Weighted at exactly `standardThreshold`, and that number is the
+                // invariant: any lower and every container reads as Docker again,
+                // any higher and it outranks a real image row. An unidentified
+                // container must still reach the threshold, because `.unknown`
+                // would send it to `ListenerClassifier`, which sees the forwarder
+                // sitting inside Docker.app and buries the row as system noise.
+                .custom("a published container port whose image names nothing known", standardThreshold,
+                        group: "command") { $0.containerImage != nil }
             ]
         )
     ]

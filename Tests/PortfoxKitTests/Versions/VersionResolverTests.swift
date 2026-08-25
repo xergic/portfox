@@ -220,4 +220,28 @@ struct ManifestVersionTests {
 
         #expect(ManifestReader.expoConfig(in: tree.root)?.version == "1.0.0")
     }
+
+    /// `versionByProcess` is keyed on the listener's identity, and every container
+    /// row behind one forwarder shares it. Without the image branch running ahead
+    /// of the cache, the first row to resolve poisons the rest of the stack.
+    @Test("two containers sharing a forwarder each report their own version")
+    func containersDoNotShareACachedVersion() async {
+        let resolver = VersionResolver()
+        func row(_ image: String, port: Int) -> RunningService {
+            makeService(
+                port: port,
+                project: nil,
+                pid: 900,
+                executable: "/Applications/Docker.app/Contents/MacOS/com.docker.backend",
+                id: "container-\(image)-\(port)",
+                container: ContainerSnapshot(id: image, name: image, image: image)
+            )
+        }
+
+        let postgres = await resolver.version(for: row("postgres:16", port: 5432))
+        let redis = await resolver.version(for: row("redis:7-alpine", port: 6379))
+
+        #expect(postgres == "16")
+        #expect(redis == "7")
+    }
 }

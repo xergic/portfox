@@ -124,10 +124,12 @@ final class AppState {
         static let terminalBundleID = "terminalBundleID"
     }
 
-    private let repository = ServiceRepository()
-    private let controller = ProcessController()
+    let repository = ServiceRepository()
+    let controller = ProcessController()
     let projectIcons = ProjectIcons()
     let appearance = Appearance()
+    /// Which rows just appeared, and whether that is worth telling the user about.
+    let arrivals = ServiceArrivals()
     private let ignoredServices = IgnoredServices()
     private let defaults = UserDefaults.standard
 
@@ -248,11 +250,16 @@ final class AppState {
             // `@Observable` notifies on every write, equal or not, so each of these
             // is written only when it actually moved. A blind write redraws the
             // whole dashboard on every tick.
+            // Hoisted out of the branch below, because it is the only moment
+            // both scans exist as values, and reported after them, because the
+            // ignore filter it consults is applied in `applyFilters`.
+            var appeared: [RunningService] = []
             if update.didRebuild {
                 // Against `rawResult`, never `result`. A fresh scan compared to the
                 // filtered value would differ forever once anything is ignored,
                 // and the whole point of this branch is to skip a redraw.
                 if update.result != rawResult {
+                    appeared = update.result.appeared(since: rawResult)
                     rawResult = update.result
                     let relaunchable = Set(update.result.services.filter(canRelaunch).map(\.id))
                     if relaunchable != relaunchableServiceIDs { relaunchableServiceIDs = relaunchable }
@@ -261,6 +268,9 @@ final class AppState {
                 }
                 processTree = update.tree
             }
+            // Unconditional, so a machine with no listeners at launch still settles
+            // and the first service to start afterwards is announced properly.
+            noteArrivals(appeared, kind: kind)
             await sampleTasks()
             if lastError != nil { lastError = nil }
         } catch {
@@ -279,8 +289,13 @@ final class AppState {
 
     /// Resident memory of every visible service's listener, which is what the
     /// dashboard header reports. Workers are excluded, so this is a floor.
+    ///
+    /// Over a set of pids, not of services. Every container behind one forwarder
+    /// is its own row pointing at the same process, so summing per row would
+    /// report an eight-container stack's forwarder eight times.
     var watchedMemoryBytes: UInt64 {
-        result.services.reduce(0) { $0 + (metrics.memory(of: $1.listenerProcess.pid) ?? 0) }
+        Set(result.services.map(\.listenerProcess.pid))
+            .reduce(0) { $0 + (metrics.memory(of: $1) ?? 0) }
     }
 
     /// Only the dashboard shows memory, and CPU is off until asked for, so a
@@ -410,74 +425,6 @@ final class AppState {
     /// `lastError` stays `private(set)` so a view cannot write one directly.
     func report(_ problem: String) { lastError = problem }
 
-    // MARK: - Restart
-
-    /// Stops the service, then hands its own command line to a terminal.
-    ///
-    /// The relaunch is built before anything is signalled. Stopping a server and
-    /// only then discovering it cannot be brought back is the one outcome worth
-    /// designing away.
-    func restart(_ service: RunningService) async {
-        guard let terminal = terminalApp, terminal.runsHandedOverScript else {
-            let name = terminalApp?.name ?? "This terminal"
-            lastError = "\(name) cannot be asked to run a command, "
-                + "so Portfox cannot restart \(service.displayName)."
-            return
-        }
-        guard let command = relaunchCommand(for: service) else { return }
-
-        busyServiceIDs.insert(service.id)
-        defer { busyServiceIDs.remove(service.id) }
-
-        let tree = await repository.processTree()
-        let outcome = await controller.stop(service, tree: tree)
-        let problem = record(outcome, for: service)
-
-        // Never relaunch onto a port that is still held. Two servers fighting over
-        // one socket is a worse afternoon than a restart that did not happen.
-        guard outcome.didStop else {
-            await refresh(.afterAction)
-            lastError = problem ?? "\(service.displayName) did not stop, so it was not restarted."
-            return
-        }
-
-        var launchProblem: String?
-        do {
-            try await RelaunchRunner.run(command, in: terminal)
-        } catch {
-            launchProblem = "\(service.displayName) stopped but could not be restarted. \(error.localizedDescription)"
-        }
-
-        await refresh(.afterAction)
-        if let message = launchProblem ?? problem { lastError = message }
-    }
-
-    /// For a terminal that cannot be handed a script: stop the service and leave
-    /// the command on the pasteboard, so bringing it back is one paste.
-    func stopAndCopyCommand(_ service: RunningService) async {
-        guard let command = relaunchCommand(for: service) else { return }
-        copy(command.clipboardText)
-        await stop(service)
-    }
-
-    /// Whether a Restart or a Copy Command would have anything to offer, so a
-    /// service that cannot come back never shows an item that would only explain
-    /// itself after being pressed.
-    private func canRelaunch(_ service: RunningService) -> Bool {
-        if case .success = RelaunchCommand.make(for: service) { return true }
-        return false
-    }
-
-    private func relaunchCommand(for service: RunningService) -> RelaunchCommand? {
-        switch RelaunchCommand.make(for: service) {
-        case .success(let command):
-            return command
-        case .failure(let refusal):
-            lastError = "Portfox cannot restart \(service.displayName) because \(refusal.reason)."
-            return nil
-        }
-    }
-
     func copyURL(_ service: RunningService) {
         copy(service.localURL?.absoluteString ?? String(service.port))
     }
@@ -553,7 +500,7 @@ final class AppState {
     /// Applies one stop outcome to the stubborn set and returns a message when the
     /// user needs to know something. `notFound` is silent on purpose, since a
     /// service can legitimately have died in a sibling's orphan sweep.
-    private func record(_ outcome: ProcessController.Outcome, for service: RunningService) -> String? {
+    func record(_ outcome: ProcessController.Outcome, for service: RunningService) -> String? {
         switch outcome {
         case .exited, .notFound:
             stubbornServiceIDs.remove(service.id)
@@ -589,4 +536,9 @@ final class AppState {
 
     func isStubborn(_ service: RunningService) -> Bool { stubbornServiceIDs.contains(service.id) }
     func isBusy(_ service: RunningService) -> Bool { busyServiceIDs.contains(service.id) }
+
+    /// The only way another file marks a row mid-action. `busyServiceIDs` stays
+    /// `private(set)` so a view cannot dim a row it does not own.
+    func markBusy(_ service: RunningService) { busyServiceIDs.insert(service.id) }
+    func clearBusy(_ service: RunningService) { busyServiceIDs.remove(service.id) }
 }

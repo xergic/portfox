@@ -59,6 +59,25 @@ extension ScanResult {
     }
 }
 
+extension ScanResult {
+    /// Every listener the scan saw, whether or not the filter kept it.
+    ///
+    /// The union, not `services`, is what a diff has to run over. `hidden` holds
+    /// the system noise while "Show all listeners" is off, so diffing the visible
+    /// list alone would turn one flip of that preference into thirty arrivals.
+    public var everyService: [RunningService] { services + hidden }
+
+    /// Services here whose id was absent from `previous`.
+    ///
+    /// An id diff, not a value diff. A manual Refresh drops every cache and can
+    /// re-resolve a version or a project name, so the results compare unequal
+    /// while nothing actually started.
+    public func appeared(since previous: ScanResult) -> [RunningService] {
+        let known = Set(previous.everyService.map(\.id))
+        return everyService.filter { !known.contains($0.id) }
+    }
+}
+
 /// One turn of the scan loop.
 ///
 /// `didRebuild` is false when the listening sockets had not moved since the last
@@ -99,6 +118,7 @@ public actor ServiceRepository {
     private let engine: DetectionEngine
     private let classifier: ListenerClassifier
     private let iconResolver: IconResolver
+    private let lister: ContainerLister
     private let versionResolver = VersionResolver()
 
     /// Project metadata keyed by directory. Filesystem walks are the expensive
@@ -108,6 +128,11 @@ public actor ServiceRepository {
 
     /// Process metadata keyed by pid and start time, so a recycled pid misses.
     private var processCache: [String: ProcessSnapshot] = [:]
+
+    /// What the container daemon last reported. Read only on a rebuild that found
+    /// a forwarder listening, so an idle machine never spawns `docker` at all.
+    private var containerCache: (containers: [ContainerSnapshot], expires: ContinuousClock.Instant)?
+    private let containerCacheTTL: Duration
 
     /// Most recent tree, kept so a Force Stop can reach descendants that have
     /// already reparented to launchd.
@@ -130,7 +155,9 @@ public actor ServiceRepository {
         engine: DetectionEngine = DetectionEngine(),
         classifier: ListenerClassifier = ListenerClassifier(),
         iconResolver: IconResolver = IconResolver(),
-        projectCacheTTL: Duration = .seconds(60)
+        lister: ContainerLister = ContainerLister(),
+        projectCacheTTL: Duration = .seconds(60),
+        containerCacheTTL: Duration = .seconds(30)
     ) {
         self.scanner = scanner
         self.inspector = inspector
@@ -138,7 +165,9 @@ public actor ServiceRepository {
         self.engine = engine
         self.classifier = classifier
         self.iconResolver = iconResolver
+        self.lister = lister
         self.projectCacheTTL = projectCacheTTL
+        self.containerCacheTTL = containerCacheTTL
     }
 
     public func processTree() -> ProcessTree? { lastTree }
@@ -175,8 +204,15 @@ public actor ServiceRepository {
         let tree = buildTree(listenerPIDs: listenerPIDs)
         lastTree = tree
 
+        // Asked only when a forwarder is actually holding a port. Combined with
+        // the socket-set short circuit above, a machine running no containers
+        // never spawns `docker` at any point, and one that is running them is
+        // asked at most once per `containerCacheTTL`.
+        let hasForwarder = listenerPIDs.contains { tree.process($0).map(ContainerRuntime.isForwarder) ?? false }
+        let containers = hasForwarder ? await containerInventory() : []
+
         let services = await withVersions(
-            assembleServices(sockets: sockets, listenerPIDs: listenerPIDs, tree: tree)
+            assembleServices(sockets: sockets, listenerPIDs: listenerPIDs, tree: tree, containers: containers)
         )
         let visible = services.filter { options.showAllListeners || $0.classification != .systemNoise }
         let hidden = services.filter { !options.showAllListeners && $0.classification == .systemNoise }
@@ -253,7 +289,8 @@ public actor ServiceRepository {
     private func assembleServices(
         sockets: [ListeningSocket],
         listenerPIDs: Set<pid_t>,
-        tree: ProcessTree
+        tree: ProcessTree,
+        containers: [ContainerSnapshot]
     ) -> [RunningService] {
         var socketsByRepresentative: [pid_t: [ListeningSocket]] = [:]
 
@@ -263,8 +300,14 @@ public actor ServiceRepository {
         }
 
         let serviceRoots = Set(socketsByRepresentative.keys)
-        return socketsByRepresentative.compactMap { representative, owned in
-            build(representative: representative, sockets: owned, tree: tree, serviceRoots: serviceRoots)
+        return socketsByRepresentative.flatMap { representative, owned in
+            build(
+                representative: representative,
+                sockets: owned,
+                tree: tree,
+                serviceRoots: serviceRoots,
+                containers: containers
+            )
         }
         .sorted { lhs, rhs in
             if lhs.classification != rhs.classification { return lhs.classification < rhs.classification }
@@ -295,23 +338,53 @@ public actor ServiceRepository {
         return best
     }
 
+    /// One process usually produces one service. A container forwarder produces
+    /// one per container it publishes for, plus a residual row for any port no
+    /// container claimed.
     private func build(
         representative: pid_t,
         sockets: [ListeningSocket],
         tree: ProcessTree,
-        serviceRoots: Set<pid_t>
-    ) -> RunningService? {
-        guard let listener = tree.process(representative) else { return nil }
+        serviceRoots: Set<pid_t>,
+        containers: [ContainerSnapshot]
+    ) -> [RunningService] {
+        guard let listener = tree.process(representative) else { return [] }
+        let root = tree.logicalRoot(of: representative, serviceRoots: serviceRoots) ?? listener
 
+        guard !containers.isEmpty, ContainerRuntime.isForwarder(listener) else {
+            return [hostService(listener: listener, root: root, sockets: sockets, tree: tree)]
+        }
+
+        let split = ContainerAttribution.attribute(sockets: sockets, to: containers)
+        // Nothing matched, so this forwarder is publishing for containers the
+        // daemon did not report. Collapses to exactly the row it had before.
+        guard !split.owned.isEmpty else {
+            return [hostService(listener: listener, root: root, sockets: sockets, tree: tree)]
+        }
+
+        var rows = split.owned.map {
+            containerService(container: $0.container, sockets: $0.sockets, listener: listener, root: root)
+        }
+        if !split.residual.isEmpty {
+            rows.append(hostService(listener: listener, root: root, sockets: split.residual, tree: tree))
+        }
+        return rows
+    }
+
+    private func hostService(
+        listener: ProcessSnapshot,
+        root: ProcessSnapshot,
+        sockets: [ListeningSocket],
+        tree: ProcessTree
+    ) -> RunningService {
         let project = listener.workingDirectoryURL.flatMap { cachedProject(for: $0) }
         let ports = Set(sockets.map(\.port)).sorted()
-        let related = (tree.ancestors(of: representative, limit: 4) + tree.descendants(of: representative, limit: 12))
+        let related = (tree.ancestors(of: listener.pid, limit: 4) + tree.descendants(of: listener.pid, limit: 12))
             .map(\.command)
             .filter { !$0.isEmpty }
 
         let context = DetectionContext(process: listener, project: project, ports: ports, relatedCommands: related)
         let detection = engine.detect(context)
-        let root = tree.logicalRoot(of: representative, serviceRoots: serviceRoots) ?? listener
         let primary = Self.primarySocket(from: sockets, type: detection.type)
 
         return RunningService(
@@ -323,6 +396,42 @@ public actor ServiceRepository {
             detection: detection,
             classification: classifier.classify(process: listener, detection: detection, project: project, ports: ports),
             project: project
+        )
+    }
+
+    /// The forwarder is shared by every row it produces, which is why the id is
+    /// keyed on the container instead. A container restart on Docker Desktop gives
+    /// the proxy a new pid, and an id built from that would churn on every restart
+    /// and drop the row's selection and busy state with it.
+    private func containerService(
+        container: ContainerSnapshot,
+        sockets: [ListeningSocket],
+        listener: ProcessSnapshot,
+        root: ProcessSnapshot
+    ) -> RunningService {
+        let project = container.workingDirectoryURL.flatMap { cachedProject(for: $0) }
+        let ports = Set(sockets.map(\.port)).sorted()
+
+        let context = DetectionContext(process: listener, project: project, ports: ports, container: container)
+        let detection = engine.detect(context)
+        let primary = Self.primarySocket(from: sockets, type: detection.type)
+
+        return RunningService(
+            id: "container-\(container.id)-\(primary.port)",
+            listenerProcess: listener,
+            rootProcess: root,
+            sockets: sockets.sorted { $0.port < $1.port },
+            primarySocket: primary,
+            detection: detection,
+            classification: classifier.classify(
+                process: listener,
+                detection: detection,
+                project: project,
+                ports: ports,
+                isContainer: true
+            ),
+            project: project,
+            container: container
         )
     }
 
@@ -367,6 +476,19 @@ public actor ServiceRepository {
 
     // MARK: - Caches
 
+    /// A container renamed or re-imaged while its published ports stayed put keeps
+    /// its old facts until the socket set moves or the user presses Refresh. On
+    /// Docker Desktop that self-corrects, a restart gives the per-port proxy a new
+    /// pid. On OrbStack one helper binds every port, so the socket set can be
+    /// byte-identical across a restart and the row stays stale until Refresh.
+    private func containerInventory() async -> [ContainerSnapshot] {
+        if let cache = containerCache, cache.expires > .now { return cache.containers }
+
+        let containers = await lister.list()
+        containerCache = (containers, .now + containerCacheTTL)
+        return containers
+    }
+
     private func cachedProject(for directory: URL) -> ProjectSnapshot? {
         let key = directory.path
         if let entry = projectCache[key], entry.expires > .now { return entry.snapshot }
@@ -391,6 +513,7 @@ public actor ServiceRepository {
     public func forgetEverything() async {
         projectCache.removeAll()
         processCache.removeAll()
+        containerCache = nil
         lastRun = nil
         lastTree = nil
         await versionResolver.invalidate()

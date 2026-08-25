@@ -186,9 +186,3 @@ private final class NoRedirectDelegate: NSObject, URLSessionTaskDelegate, @unche
         completionHandler(nil)
     }
 }
-
-private extension Duration {
-    var timeInterval: TimeInterval {
-        TimeInterval(components.seconds) + TimeInterval(components.attoseconds) / 1e18
-    }
-}

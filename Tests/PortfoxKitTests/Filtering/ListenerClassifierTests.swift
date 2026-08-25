@@ -211,4 +211,26 @@ struct ListenerClassifierTests {
 
         #expect(result == .systemNoise)
     }
+
+    /// The most consequential rule in this file. A container row's `rootProcess`
+    /// is the forwarder every other container on the machine publishes through.
+    /// `.nginx` is category `.web`, which routes to `.developmentService`, whose
+    /// `isUserManaged` is true, which is what puts a row into Stop All. Left
+    /// alone, one Stop All would SIGTERM the forwarder and take every container
+    /// on the machine down with it.
+    @Test("a container row is infrastructure whatever its image detected as")
+    func containerRowIsAlwaysInfrastructure() {
+        for type in [ServiceType.nginx, .caddy, .grafana, .ollama, .postgres] {
+            let result = classifier.classify(
+                process: process(900, executable: "/Applications/OrbStack.app/Contents/MacOS/xbin/orbstack-helper"),
+                detection: DetectionResult(type: type, score: 100, confidence: 1, evidence: []),
+                project: nil,
+                ports: [8080],
+                isContainer: true
+            )
+
+            #expect(result == .infrastructure, "\(type.rawValue) container was not infrastructure")
+            #expect(!result.isUserManaged)
+        }
+    }
 }

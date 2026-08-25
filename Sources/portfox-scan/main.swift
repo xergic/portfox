@@ -72,6 +72,8 @@ struct CLI {
           --json        machine readable service list
           --all         include listeners classified as system noise
           --diagnose    explain how each listener was resolved and classified
+                        (front half of the pipeline only, so container rows are
+                        not split out here, use --json for those)
           --stop PORT   send SIGTERM to the service listening on PORT
           --force       escalate --stop to SIGKILL, including surviving children
         """)
@@ -202,7 +204,10 @@ struct CLI {
                 "subpath": service.subtitle ?? "",
                 "class": service.classification.rawValue,
                 "cwd": service.listenerProcess.workingDirectory ?? "",
-                "command": service.listenerProcess.command
+                "command": service.listenerProcess.command,
+                "container": service.container?.name ?? "",
+                "image": service.container?.image ?? "",
+                "composeProject": service.container?.composeProject ?? ""
             ]
         }
         guard let data = try? JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted, .sortedKeys]) else {

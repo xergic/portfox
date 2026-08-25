@@ -5,6 +5,7 @@ import SwiftUI
 struct PortfoxApp: App {
     @State private var state = AppState()
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
+    @Environment(\.openWindow) private var openWindow
 
     var body: some Scene {
         MenuBarExtra {
@@ -12,6 +13,12 @@ struct PortfoxApp: App {
                 .environment(state)
         } label: {
             MenuBarLabel(serviceCount: state.serviceCount, showsCount: state.showsMenuBarCount)
+                // On the label rather than on the scene, because the label is the
+                // one view that is always instantiated: it draws the status item.
+                // A notification can be clicked with no window open at all.
+                .onChange(of: state.arrivals.dashboardRequests) {
+                    WindowPresenter.showDashboard(openWindow)
+                }
         }
         .menuBarExtraStyle(.window)
         .onChange(of: delegate.isReady, initial: true) {

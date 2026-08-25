@@ -109,6 +109,28 @@ told to run something, only to open something.** Terminal, iTerm2 and Warp were
 tested running one; `ExternalApp.runsHandedOverScript` records that. Anything
 untested falls back to Stop and Copy Command rather than appearing to work.
 
+**One container is one row, and none of them may be signalled.** Docker Desktop
+publishes every container port through one host process, so `build` returns an
+array: `ContainerAttribution` splits that process's sockets by host port and each
+container gets its own `RunningService` with the forwarder as its
+`listenerProcess`. That is shared, which is why `ProcessController` refuses any
+row carrying a `container` outright. `ListenerClassifier` alone is not enough:
+the Stop button is offered without asking whether a service is user-managed, and
+an `nginx:alpine` row detects as `.web` and would otherwise be user-managed.
+
+**`ContainerSnapshot` may hold nothing that moves while the container runs.** It
+reaches `RunningService`'s synthesised `Equatable`, which is the comparison that
+decides whether the dashboard repaints. `docker ps`'s `.Status` is the field this
+forbids, and it is why container uptime is absent rather than approximated.
+
+**`docker ps` runs only on a rebuild that found a forwarder listening.** The gate
+is `ContainerRuntime.isForwarder` over the listener pids, so a machine with no
+containers never spawns it at all, and the socket-set short circuit above means an
+idle machine spawns it zero times rather than once per TTL. The known cost is that
+an OrbStack container restarted on the same port produces a byte-identical socket
+set, so its row stays stale until Refresh. Do not fix that by weakening the short
+circuit.
+
 **Signals go to the logical root, never to a process group.** A dev server
 started from a terminal shares its group with the user's shell. `SIGKILL` only
 happens when the user explicitly asks for Force Stop.
@@ -161,6 +183,28 @@ before its `/usr/bin/` and `.app/Contents/` noise rules, so a new generic runtim
 detector drags every matching system process out of hiding. Those rows need
 explicit vetoes, not optimism. The ephemeral-port rule is what actually saves
 you: anything bound only above 49152 never reaches detection.
+
+## Arrivals
+
+`ScanResult.appeared(since:)` is the one diff, computed at the only moment both
+scans exist as values, and it feeds both the notification and the row flash.
+
+**It diffs `everyService`, not `services`.** `hidden` holds the system noise while
+"Show all listeners" is off, so diffing the visible list turns one flip of that
+preference into thirty arrivals.
+
+**It is an id diff, not a value diff.** A manual Refresh drops every cache and can
+re-resolve a version, so two results compare unequal while nothing started. That
+same path can also move `primarySocket` and so change an id, which is why
+`.userRequested` is never announced at all.
+
+**`busyServiceIDs` cannot suppress a restart.** It is cleared when `restart`
+returns, and a relaunched server has not bound its port by then. `ServiceArrivals`
+records the expected port with a deadline instead, before anything is signalled.
+
+**The flash never inserts a row, it is a property an existing row reads.** That is
+how "no lingering closed rows" falls out, and why `recentIDs` is not intersected
+with the live set the way `stubbornServiceIDs` is.
 
 ## Appearance
 

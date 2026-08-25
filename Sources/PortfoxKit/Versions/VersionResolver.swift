@@ -54,6 +54,13 @@ public actor VersionResolver {
     /// Version to show beside the service name, or nil when nothing reliable was
     /// found. Never blocks on an unknown binary.
     public func version(for service: RunningService) async -> String? {
+        // Ahead of the cache, and that ordering is the point. `versionByProcess`
+        // is keyed on the listener's identity, which every container row behind
+        // one forwarder shares, so the first row to resolve would otherwise hand
+        // its version to the whole stack. The tag is a pure string transform and
+        // wants no caching anyway.
+        if let container = service.container { return ContainerImage.versionTag(container.image) }
+
         let listener = service.listenerProcess
         if let cached = versionByProcess[listener.identity] { return cached }
 
@@ -189,7 +196,7 @@ public actor VersionResolver {
         return nil
     }
 
-    private static func isVersionLike(_ text: String) -> Bool {
+    static func isVersionLike(_ text: String) -> Bool {
         guard !text.isEmpty else { return false }
         return text.range(of: #"^\d+(\.\d+)*$"#, options: .regularExpression) != nil
     }
@@ -210,7 +217,7 @@ public actor VersionResolver {
             process.standardOutput = stdout
             process.standardError = stderr
 
-            let finisher = SpawnFinisher(continuation: continuation)
+            let finisher = ContinuationGate(continuation)
 
             process.terminationHandler = { _ in
                 let outputData = stdout.fileHandleForReading.readDataToEndOfFile()
@@ -231,27 +238,6 @@ public actor VersionResolver {
                 if process.isRunning { process.terminate() }
                 finisher.finish(nil)
             }
-        }
-    }
-
-    /// Resumes a spawn continuation exactly once, whichever of the termination
-    /// handler or the timeout fires first.
-    private final class SpawnFinisher: @unchecked Sendable {
-        private let continuation: CheckedContinuation<String?, Never>
-        private let lock = NSLock()
-        private var finished = false
-
-        init(continuation: CheckedContinuation<String?, Never>) {
-            self.continuation = continuation
-        }
-
-        func finish(_ value: String?) {
-            lock.lock()
-            let alreadyFinished = finished
-            finished = true
-            lock.unlock()
-            guard !alreadyFinished else { return }
-            continuation.resume(returning: value)
         }
     }
 }

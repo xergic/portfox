@@ -34,7 +34,11 @@ struct ServiceDetailPane: View {
                 }
             }
 
-            ProcessTreeCard(service: service)
+            // A container's real process lives in a VM. The tree here would be
+            // the forwarder's, identical on every row of the stack.
+            if service.hasHostProcess {
+                ProcessTreeCard(service: service)
+            }
         }
     }
 
@@ -61,9 +65,13 @@ struct ServiceDetailPane: View {
                         layout: .inline
                     )
                 }
-                CardDivider()
-                ResidentMemoryRow(pid: service.listenerProcess.pid)
-                CPUUsageRow(pid: service.listenerProcess.pid)
+                // Both read the forwarder, which is shared, so on a container row
+                // they would report the whole daemon against one container.
+                if service.hasHostProcess {
+                    CardDivider()
+                    ResidentMemoryRow(pid: service.listenerProcess.pid)
+                    CPUUsageRow(pid: service.listenerProcess.pid)
+                }
             }
         }
     }

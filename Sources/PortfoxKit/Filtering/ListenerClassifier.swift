@@ -32,8 +32,16 @@ public struct ListenerClassifier: Sendable {
         process: ProcessSnapshot,
         detection: DetectionResult,
         project: ProjectSnapshot?,
-        ports: [Int]
+        ports: [Int],
+        isContainer: Bool = false
     ) -> ServiceClass {
+        // First, above everything, because a container row's `rootProcess` is a
+        // port forwarder shared with every other container on the machine. An
+        // `nginx:alpine` row would otherwise detect as `.nginx`, whose category is
+        // `.web`, fall to `.developmentService` below, and let Stop All SIGTERM
+        // the forwarder for the whole machine.
+        if isContainer { return .infrastructure }
+
         // Nothing a developer opens lives only on an ephemeral port. This is what
         // orphaned `workerd` children look like after their wrangler parent dies.
         if !ports.isEmpty, ports.allSatisfy({ $0 >= Self.ephemeralPortFloor }) { return .systemNoise }

@@ -102,6 +102,31 @@ public extension Signal {
         }
     }
 
+    /// The container's image names this software.
+    ///
+    /// Declared in the `command` group on purpose. An image reference names what
+    /// a container runs, which is what a command line names for a host process,
+    /// so it satisfies the `requiredGroup` gate the same way and needs no change
+    /// to it. Sharing the group also keeps `maximumScore` where it was for any
+    /// detector whose command signal already weighed 100, so the confidence shown
+    /// for an ordinary Homebrew install does not shift.
+    ///
+    /// Matched on whole components, not with `containsToken`. An image repository
+    /// separates words with `/` and `-`, and `-` is a word character to
+    /// `containsToken`, so `confluentinc/cp-kafka` would never match `kafka`.
+    /// Splitting on both and comparing exactly matches it and still refuses
+    /// `mongoku` for `mongo`.
+    ///
+    /// Takes a list because one piece of software ships under several names:
+    /// `postgres` and `postgresql`, `temporal` and `temporalio`.
+    static func containerImage(_ names: [String], _ weight: Int = 100, group: String? = "command") -> Signal {
+        let names = Set(names.map { $0.lowercased() })
+        let description = "container image names \(names.sorted().joined(separator: " or "))"
+        return Signal(description, weight: weight, group: group) { ctx in
+            !ctx.containerImageWords.isDisjoint(with: names)
+        }
+    }
+
     /// A weak supporting hint only. Never enough to identify a service on its own.
     static func defaultPort(_ port: Int, _ weight: Int = 10, group: String? = "port") -> Signal {
         Signal("listening on default port \(port)", weight: weight, group: group) { ctx in

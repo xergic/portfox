@@ -40,7 +40,9 @@ func makeService(
     executable: String? = nil,
     arguments: [String] = [],
     id: String? = nil,
-    detection: DetectionResult = .unknown()
+    detection: DetectionResult = .unknown(),
+    classification: ServiceClass = .developmentService,
+    container: ContainerSnapshot? = nil
 ) -> RunningService {
     let process = ProcessSnapshot(
         pid: pid,
@@ -57,8 +59,9 @@ func makeService(
         sockets: [socket],
         primarySocket: socket,
         detection: detection,
-        classification: .developmentService,
-        project: project
+        classification: classification,
+        project: project,
+        container: container
     )
 }
 

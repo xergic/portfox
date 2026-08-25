@@ -80,6 +80,20 @@ struct CatalogueGuardTests {
         }
     }
 
+    @Test("an unrelated image identifies nothing but Docker")
+    func imageAloneIdentifiesOnlyItsOwnService() {
+        // The mirror of the port guard, for the other kind of thin evidence. An
+        // image that names none of the catalogue must fall to `.docker`, never to
+        // whichever detector happened to carry a matching default port.
+        let engine = DetectionEngine()
+
+        for image in ["alpine:3.20", "busybox", "myorg/shop-api:v3", "ghcr.io/acme/worker:latest"] {
+            let context = DetectionFixture.containerContext(image: image)
+
+            #expect(engine.detect(context).type == .docker, "\(image) identified something")
+        }
+    }
+
     /// Walks up from this file to the directory holding Package.swift.
     private static func repositoryRoot() -> URL {
         var directory = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
