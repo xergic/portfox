@@ -59,15 +59,12 @@ enum Theme {
     /// A row that appeared since the previous scan, washed for a few seconds.
     /// Same asymmetry as `listenerRow` and for the same measured reason: alpha
     /// over near-black and alpha over white do not read the same, so light gets
-    /// more. Stronger at both ends than `listenerRow`, because this one has to
-    /// stay legible over `cardHover` when the row is also under the pointer.
+    /// more. Much stronger than `listenerRow`, because the fill is the whole
+    /// effect: the arrival carries no border, so nothing else marks the row, and
+    /// it still has to stay legible over `cardHover` when the pointer is on it.
     static let arrivalRow = dynamic(
-        dark: successDark.withAlphaComponent(0.14),
-        light: successLight.withAlphaComponent(0.16)
-    )
-    static let arrivalBorder = dynamic(
-        dark: successDark.withAlphaComponent(0.55),
-        light: successLight.withAlphaComponent(0.60)
+        dark: successDark.withAlphaComponent(0.26),
+        light: successLight.withAlphaComponent(0.28)
     )
 
     /// Path values in the metadata card, so the executable and the working

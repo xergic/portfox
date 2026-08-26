@@ -15,6 +15,7 @@ struct ServiceRowView: View {
     var forcedHover = false
 
     @State private var isHovering = false
+    @State private var hasAppeared = false
 
     var body: some View {
         HStack(spacing: 10) {
@@ -54,6 +55,7 @@ struct ServiceRowView: View {
         .onHover { hovering in
             withAnimation(.easeOut(duration: 0.12)) { isHovering = hovering }
         }
+        .onAppear { hasAppeared = true }
         .onTapGesture {
             if let onTap { onTap(service) } else { state.open(service) }
         }
@@ -65,23 +67,21 @@ struct ServiceRowView: View {
     /// that is both flashing and hovered still lightens and still reveals its
     /// actions, and nothing shifts when the flash ends.
     ///
-    /// `.animation(_:value:)` rather than a transition, because SwiftUI does not
-    /// animate an initial value and a newly arrived service is a brand-new
-    /// `ForEach` element. The row therefore arrives green and fades out, with no
-    /// fade in, which is the right reading of "this appeared".
+    /// In fast and out slow: the row has to announce itself, then get out of the
+    /// way. Both fit inside `ServiceArrivals.flashDuration` with room to spare.
     private var rowBackground: some View {
         RoundedRectangle(cornerRadius: Theme.Metrics.rowRadius, style: .continuous)
             .fill(isHighlighted ? Theme.cardHover : .clear)
             .overlay(
                 RoundedRectangle(cornerRadius: Theme.Metrics.rowRadius, style: .continuous)
                     .fill(Theme.arrivalRow)
-                    .opacity(isArriving ? 1 : 0)
+                    .opacity(showsArrival ? 1 : 0)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: Theme.Metrics.rowRadius, style: .continuous)
                     .strokeBorder(borderColor, lineWidth: isSelected ? 1.5 : 1)
             )
-            .animation(.easeInOut(duration: 0.35), value: isArriving)
+            .animation(showsArrival ? .easeOut(duration: 0.2) : .easeIn(duration: 0.9), value: showsArrival)
     }
 
     /// Project-first leads with the project's own icon, which is usually its
@@ -174,11 +174,19 @@ struct ServiceRowView: View {
     }
 
     private var isArriving: Bool { state.arrivals.isRecent(service) }
+
+    /// `isArriving` is already true when an arrived row is first built, and SwiftUI
+    /// does not animate an initial value, so the row has to render transparent once
+    /// and flip afterwards or there is no fade in. `ImageRenderer` never calls
+    /// `onAppear`, which is why a snapshot skips the latch.
+    private var showsArrival: Bool {
+        isArriving && (hasAppeared || SnapshotRenderer.requestedPath != nil)
+    }
+
     private var showsActions: Bool { showsHoverActions && (isHovering || forcedHover) }
     private var isHighlighted: Bool { showsActions || isSelected || (isHovering && !showsHoverActions) }
     private var borderColor: Color {
         if isSelected { return Theme.accent }
-        if isArriving { return Theme.arrivalBorder }
         return isHighlighted ? Theme.border : .clear
     }
 }
