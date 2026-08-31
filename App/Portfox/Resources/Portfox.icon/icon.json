@@ -1,33 +1,26 @@
 {
   "fill" : {
-    "solid" : "extended-srgb:1.00000,0.55294,0.15686,1.00000"
+    "solid" : "extended-srgb:0.05490,0.74902,0.68627,1.00000"
   },
   "groups" : [
     {
       "layers" : [
         {
           "blend-mode" : "normal",
-          "fill" : {
-            "solid" : "display-p3:0.99902,0.96854,0.83128,1.00000"
-          },
           "hidden" : false,
-          "image-name" : "fox-face-tail.svg",
-          "name" : "fox-face-tail",
+          "image-name" : "portfox.png",
+          "name" : "portfox",
           "position" : {
-            "scale" : 1.15,
+            "scale" : 1,
             "translation-in-points" : [
-              -2.4533333333333758,
-              -12.261442904477576
+              0,
+              0
             ]
           }
         }
       ],
-      "shadow" : {
-        "kind" : "neutral",
-        "opacity" : 0.5
-      },
       "translucency" : {
-        "enabled" : true,
+        "enabled" : false,
         "value" : 0.3
       }
     }
