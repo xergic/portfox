@@ -20,20 +20,20 @@ enum Theme {
     static let tertiaryText = dynamic(dark: srgb(0.396, 0.396, 0.427), light: srgb(0.557, 0.557, 0.588))
 
     /// Interactive chrome only: a primary button, a selected row, a chosen
-    /// segment. The same orange as the menu bar fox, so the accent is the brand.
+    /// segment. The same teal as the app icon, so the accent is the brand.
     /// One value for both appearances, because a brand that changes shade with
     /// the theme stops being a brand.
     static let accent = Color(nsColor: accentBrand)
-    /// The accent as text or a glyph rather than a fill. Brand orange on white
-    /// is 2.2:1, so light darkens it; dark keeps the brand value exactly.
-    static let accentText = dynamic(dark: accentBrand, light: srgb(0.722, 0.361, 0.055))
+    /// The accent as text or a glyph rather than a fill. Brand teal on white is
+    /// 2.1:1, so light darkens it; dark keeps the brand value exactly.
+    static let accentText = dynamic(dark: accentBrand, light: srgb(0.0, 0.478, 0.427))
     /// Ink for text sitting on an accent fill. Near-black in both appearances:
-    /// black scores 9.5:1 on the orange where white scores 2.2:1. Not
+    /// black scores 10:1 on the teal where white scores 2.1:1. Not
     /// `background`, which used to stand in for it and inverts in light.
     static let onAccent = Color(nsColor: ink)
 
-    /// "This is healthy", never chrome. Kept green after the accent turned
-    /// orange, because an orange 200 OK reads as a warning.
+    /// "This is healthy", never chrome. A warmer green than the teal accent,
+    /// so a 200 OK does not read as a selected control.
     static let success = dynamic(dark: successDark, light: successLight)
     static let danger = dynamic(dark: srgb(0.937, 0.267, 0.267), light: srgb(0.784, 0.110, 0.110))
 
@@ -72,7 +72,7 @@ enum Theme {
     static let pathExecutable = roleWrapper
     static let pathDirectory = dynamic(dark: srgb(0.376, 0.647, 0.980), light: srgb(0.146, 0.388, 0.922))
 
-    private static let accentBrand = srgb(0.980, 0.549, 0.239)
+    private static let accentBrand = srgb(0.0, 0.786, 0.741)
     private static let ink = srgb(0.055, 0.055, 0.063)
     private static let successDark = srgb(0.133, 0.773, 0.369)
     private static let successLight = srgb(0.016, 0.471, 0.341)
