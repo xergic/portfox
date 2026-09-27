@@ -36,13 +36,6 @@ struct MenuView: View {
 
     private var header: some View {
         HStack(spacing: 8) {
-            Image(.menuBarFox)
-                .renderingMode(.template)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 19, height: 19)
-                .foregroundStyle(Theme.accentText)
-
             Text("Portfox")
                 .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(Theme.primaryText)

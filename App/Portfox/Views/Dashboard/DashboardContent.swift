@@ -73,13 +73,6 @@ struct DashboardContent: View {
 
     private var topBar: some View {
         HStack(spacing: 10) {
-            Image(.menuBarFox)
-                .renderingMode(.template)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 20, height: 20)
-                .foregroundStyle(Theme.accentText)
-
             Text("Portfox — Services & Process Inspector")
                 .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(Theme.primaryText)

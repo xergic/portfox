@@ -72,12 +72,17 @@ private struct MenuBarLabel: View {
     let serviceCount: Int
     let showsCount: Bool
 
-    /// A sized template `NSImage`, not `Image(.menuBarFox).frame(...)`. Inside a
-    /// `MenuBarExtra` label SwiftUI ignores the frame and draws the asset at the
-    /// status bar's own image size, so the only lever on the glyph is the image.
+    /// The colon before a port number, drawn as a sized template `NSImage`.
+    /// Inside a `MenuBarExtra` label SwiftUI ignores `.frame`, so the only lever
+    /// on the glyph's size is the image itself.
     private static let glyph: NSImage = {
-        let image = NSImage(resource: .menuBarFox).copy() as? NSImage ?? NSImage()
-        image.size = NSSize(width: 17, height: 17)
+        let image = NSImage(size: NSSize(width: 8, height: 17), flipped: false) { rect in
+            let dot: CGFloat = 3.6
+            for y: CGFloat in [3.2, 10.2] {
+                NSBezierPath(ovalIn: NSRect(x: (rect.width - dot) / 2, y: y, width: dot, height: dot)).fill()
+            }
+            return true
+        }
         image.isTemplate = true
         return image
     }()
