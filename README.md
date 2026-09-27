@@ -4,9 +4,19 @@ A macOS menu bar app that shows what is listening on your local ports, which pro
 
 Discovery works from processes, not from port numbers, so custom ports need no configuration.
 
-There is no signed release yet, so Portfox is built from source.
+## Install
 
-## Requirements
+```sh
+brew install --cask xergic/tap/portfox
+```
+
+Or download the DMG from [Releases](https://github.com/xergic/portfox/releases/latest). Every release is signed with a Developer ID and notarized by Apple, so it opens without a Gatekeeper warning.
+
+Portfox needs macOS 15 or later on Apple Silicon.
+
+Remove it with `brew uninstall --cask portfox`. Add `--zap` to delete its preferences too.
+
+## Requirements for building
 
 - macOS 15 or later
 - Apple Silicon
