@@ -136,7 +136,9 @@ private struct ActionButton: View {
                     .font(.system(size: 11, weight: .medium))
                 Text(label)
                     .font(.system(size: 12, weight: .medium))
+                    .lineLimit(1)
             }
+            .fixedSize()
             .foregroundStyle(isPrimary ? Theme.onAccent : tint)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
