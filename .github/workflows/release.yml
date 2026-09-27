@@ -14,6 +14,9 @@ env:
 jobs:
   release:
     runs-on: macos-26
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      sha256: ${{ steps.publish.outputs.sha256 }}
     steps:
       # Pinned to a commit, not a moving major tag. This job holds the signing
       # identity and a contents:write token.
@@ -164,6 +167,7 @@ jobs:
           spctl --assess --type open --context context:primary-signature --verbose=4 "$DMG"
 
       - name: Publish the release
+        id: publish
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.version }}
@@ -171,7 +175,37 @@ jobs:
           gh release create "$GITHUB_REF_NAME" "$DMG" \
             --title "Portfox $VERSION" \
             --generate-notes
+          echo "sha256=$(shasum -a 256 "$DMG" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
 
       - name: Remove the signing keychain
         if: always()
         run: security delete-keychain "$RUNNER_TEMP/signing.keychain-db" || true
+
+  # A separate job so the tap token never shares a runner with the signing identity.
+  tap:
+    needs: release
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: xergic/homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+
+      - name: Bump the cask
+        env:
+          VERSION: ${{ needs.release.outputs.version }}
+          SHA256: ${{ needs.release.outputs.sha256 }}
+        run: |
+          cask=Casks/portfox.rb
+          sed -i -E \
+            -e "s/^  version \".*\"$/  version \"$VERSION\"/" \
+            -e "s/^  sha256 \".*\"$/  sha256 \"$SHA256\"/" \
+            "$cask"
+          # sed succeeds on a line it failed to match, so check the result instead.
+          grep -qx "  version \"$VERSION\"" "$cask"
+          grep -qx "  sha256 \"$SHA256\"" "$cask"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "feat(portfox): update to $VERSION"
+          git push

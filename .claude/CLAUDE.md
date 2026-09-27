@@ -256,6 +256,11 @@ The popover measures its own list height. Inside a `MenuBarExtra` window a
 Push a `vMAJOR.MINOR.PATCH` tag. `.github/workflows/release.yml` archives,
 signs with Developer ID, notarizes, staples, builds the DMG and publishes it.
 
+A second `tap` job then sets `version` and `sha256` in `Casks/portfox.rb` of
+`xergic/homebrew-tap` and pushes. It runs on its own runner with the
+`HOMEBREW_TAP_TOKEN` secret, a fine-grained PAT with contents write on the tap
+only, so that token never shares a machine with the signing identity.
+
 `MARKETING_VERSION` comes from the tag and `CURRENT_PROJECT_VERSION` from the
 run number, so `project.yml` stays at its placeholder and nobody edits a version
 by hand.
