@@ -16,6 +16,10 @@ settings:
     SWIFT_STRICT_CONCURRENCY: complete
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
+    # Apple Silicon only. macOS 26 is the last release for the few Intel Macs it
+    # still supports, so a second slice buys a vanishing audience.
+    ARCHS: arm64
+    ONLY_ACTIVE_ARCH: NO
 
 targets:
   Portfox:

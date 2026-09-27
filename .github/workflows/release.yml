@@ -80,8 +80,9 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           make gen
-          # generic/platform=macOS is what makes this universal. A bare `build`
-          # resolves the destination to the runner's own arch and ships arm64 only.
+          # A bare `build` resolves the destination to the runner's own arch.
+          # `archive -destination generic/platform=macOS` is what produces a
+          # build whose architecture is decided by ARCHS rather than the runner.
           xcodebuild archive \
             -project Portfox.xcodeproj \
             -scheme Portfox \
@@ -117,12 +118,10 @@ jobs:
           app="$RUNNER_TEMP/export/Portfox.app"
           archs=$(lipo -archs "$app/Contents/MacOS/Portfox")
           echo "architectures: $archs"
-          for arch in arm64 x86_64; do
-            case " $archs " in
-              *" $arch "*) ;;
-              *) echo "Missing the $arch slice, the build is not universal" >&2; exit 1 ;;
-            esac
-          done
+          if [ "$archs" != "arm64" ]; then
+            echo "Expected an arm64-only build, got: $archs" >&2
+            exit 1
+          fi
           codesign --verify --deep --strict --verbose=2 "$app"
           codesign --display --verbose=4 "$app"
 

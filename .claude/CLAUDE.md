@@ -17,7 +17,7 @@ make scan     # run the pipeline headless (./.build/debug/portfox-scan)
 make lint     # SwiftLint, must stay clean
 make gen      # regenerate Portfox.xcodeproj from project.yml
 make snapshot # render popover, dashboard, preferences and about to snapshots/
-make archive  # universal ad hoc signed Release app and DMG into dist/
+make archive  # arm64 ad hoc signed Release app and DMG into dist/
 ```
 
 Run `make lint` and `make test` after every code change. Run `make snapshot`
@@ -260,10 +260,13 @@ signs with Developer ID, notarizes, staples, builds the DMG and publishes it.
 run number, so `project.yml` stays at its placeholder and nobody edits a version
 by hand.
 
+**The app is arm64 only.** `ARCHS: arm64` in `project.yml`. macOS 26 is the last
+release for the few Intel Macs it supports, so a second slice buys almost nobody.
+
 **A release build must archive, never build.** `xcodebuild build` resolves the
-destination to the runner's own arch and silently ships arm64 only. Only
-`archive -destination 'generic/platform=macOS'` produces the universal binary,
-which is why the workflow fails the job when a slice is missing.
+destination to the runner's own arch. Only `archive -destination
+'generic/platform=macOS'` lets `ARCHS` decide, which is why the workflow fails the
+job when the binary is anything but arm64.
 
 **Both the app and the DMG get notarized and stapled.** A ticket stapled to the
 DMG alone leaves the copied app waiting on an online check at first launch.
@@ -272,7 +275,7 @@ DMG alone leaves the copied app waiting on an online check at first launch.
 
 `make archive` (or `Tools/archive.sh 0.2.0`) runs the same archive invocation
 without a Developer ID, and writes `dist/Portfox.app` and `dist/Portfox-<v>.dmg`.
-It fails the run when either architecture slice is missing, exactly as CI does.
+It fails the run when the binary is anything but arm64, exactly as CI does.
 
 Version defaults to the latest git tag, build number to `git rev-list --count
 HEAD`. Locally there is no run number to borrow, and the commit count is the

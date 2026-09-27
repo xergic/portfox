@@ -45,7 +45,7 @@ snapshot: app ## Render popover, dashboard, preferences, ignored and about snaps
 	@$(DERIVED)/Build/Products/$(CONFIG)/Portfox.app/Contents/MacOS/Portfox --snapshot-about snapshots/about-light.png --light
 	@$(DERIVED)/Build/Products/$(CONFIG)/Portfox.app/Contents/MacOS/Portfox --snapshot snapshots/arrived-light.png --arrived --light
 
-archive: ## Build a universal ad hoc signed Release app and DMG into dist/
+archive: ## Build an arm64 ad hoc signed Release app and DMG into dist/
 	@Tools/archive.sh $(VERSION)
 
 lint: ## Run SwiftLint

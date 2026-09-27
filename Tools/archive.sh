@@ -24,7 +24,7 @@ mkdir -p "$out"
 make gen
 
 # archive with a generic destination, never build. `xcodebuild build` resolves
-# the destination to this Mac's own arch and silently ships a single slice.
+# the destination to this Mac's own arch instead of the one ARCHS asks for.
 xcodebuild archive \
   -project Portfox.xcodeproj \
   -scheme Portfox \
@@ -39,13 +39,13 @@ xcodebuild archive \
 # so lift the app straight out of the archive.
 cp -R "$archive/Products/Applications/Portfox.app" "$app"
 
+# arm64 only, matching ARCHS in project.yml. The check exists to catch a build
+# that silently resolved to the wrong architecture.
 archs=$(lipo -archs "$app/Contents/MacOS/Portfox")
-for arch in arm64 x86_64; do
-  case " $archs " in
-    *" $arch "*) ;;
-    *) echo "Missing the $arch slice, the build is not universal" >&2; exit 1 ;;
-  esac
-done
+if [ "$archs" != "arm64" ]; then
+  echo "Expected an arm64-only build, got: $archs" >&2
+  exit 1
+fi
 
 Tools/make-dmg.sh "$app" "$dmg" Portfox >/dev/null
 

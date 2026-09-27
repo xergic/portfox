@@ -9,6 +9,7 @@ There is no signed release yet, so Portfox is built from source.
 ## Requirements
 
 - macOS 15 or later
+- Apple Silicon
 - Xcode 26 or later
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen) and [SwiftLint](https://github.com/realm/SwiftLint), both via `brew install xcodegen swiftlint`
 
@@ -19,7 +20,7 @@ make run      # build and launch the menu bar app
 make test     # run the core test suite
 make scan     # resolve services on this machine, no GUI
 make lint     # SwiftLint
-make archive  # package a universal build to hand to someone
+make archive  # package an arm64 build to hand to someone
 ```
 
 `Portfox.xcodeproj` is generated from `project.yml` and is not in version control. Run `make gen` after changing the project definition.
@@ -31,7 +32,7 @@ make archive              # version from the latest git tag
 make archive VERSION=0.2.0
 ```
 
-This writes `dist/Portfox.app` and `dist/Portfox-<version>.dmg`, both universal, and fails if either the arm64 or the x86_64 slice is missing. `dist/` is wiped on each run and is not in version control.
+This writes `dist/Portfox.app` and `dist/Portfox-<version>.dmg`, both arm64 only, and fails if the binary carries any other architecture. `dist/` is wiped on each run and is not in version control.
 
 The build is ad hoc signed, not notarized, so macOS blocks it on another machine and offers no right-click Open. Whoever receives it clears the quarantine flag once:
 
