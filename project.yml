@@ -9,6 +9,9 @@ options:
 packages:
   PortfoxKit:
     path: .
+  TelemetryDeck:
+    url: https://github.com/TelemetryDeck/SwiftSDK
+    from: 2.14.2
 
 settings:
   base:
@@ -41,6 +44,8 @@ targets:
     dependencies:
       - package: PortfoxKit
         product: PortfoxKit
+      - package: TelemetryDeck
+        product: TelemetryDeck
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: net.kandera.Portfox

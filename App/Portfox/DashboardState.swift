@@ -115,6 +115,7 @@ final class DashboardState {
         guard let url = service.localURL, !probingServiceIDs.contains(service.id) else { return }
 
         probingServiceIDs.insert(service.id)
+        Telemetry.send(.serviceInspected(service))
         defer { probingServiceIDs.remove(service.id) }
 
         do {

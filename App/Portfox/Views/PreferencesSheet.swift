@@ -386,6 +386,16 @@ struct PreferencesSheet: View {
                         .padding(.horizontal, 12)
                         .padding(.bottom, 10)
                 }
+                Divider().overlay(Theme.separator)
+                @Bindable var state = state
+                PreferenceRow(
+                    title: "Share anonymous usage data",
+                    subtitle: "Never includes project names, paths or ports"
+                ) {
+                    Toggle("", isOn: $state.sharesUsageData)
+                        .labelsHidden()
+                        .toggleStyle(.checkbox)
+                }
             }
         }
     }

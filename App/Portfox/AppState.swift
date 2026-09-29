@@ -63,6 +63,13 @@ final class AppState {
         didSet { defaults.set(showsMenuBarCount, forKey: Key.showsMenuBarCount) }
     }
 
+    var sharesUsageData: Bool {
+        didSet {
+            defaults.set(sharesUsageData, forKey: Telemetry.defaultsKey)
+            Telemetry.setEnabled(sharesUsageData)
+        }
+    }
+
     var showsUptime: Bool {
         didSet { defaults.set(showsUptime, forKey: Key.showsUptime) }
     }
@@ -159,7 +166,8 @@ final class AppState {
             Key.automaticRefresh: true,
             Key.pollingSeconds: 2,
             Key.showsMenuBarCount: true,
-            Key.showsUptime: true
+            Key.showsUptime: true,
+            Telemetry.defaultsKey: true
         ])
         showAllListeners = defaults.bool(forKey: Key.showAllListeners)
         groupSiblingRepositories = defaults.bool(forKey: Key.groupSiblingRepositories)
@@ -169,10 +177,12 @@ final class AppState {
         showsMenuBarCount = defaults.bool(forKey: Key.showsMenuBarCount)
         hidesDaemons = defaults.bool(forKey: Key.hidesDaemons)
         showsUptime = defaults.bool(forKey: Key.showsUptime)
+        sharesUsageData = defaults.bool(forKey: Telemetry.defaultsKey)
         showsCPU = defaults.bool(forKey: Key.showsCPU)
         editorBundleID = defaults.string(forKey: Key.editorBundleID)
         terminalBundleID = defaults.string(forKey: Key.terminalBundleID)
         Task.detached { RelaunchRunner.sweepLeftovers() }
+        Telemetry.setEnabled(sharesUsageData)
         start()
     }
 
@@ -195,7 +205,10 @@ final class AppState {
 
     func popoverDidAppear() { surfaceDidAppear(.popover) }
     func popoverDidDisappear() { surfaceDidDisappear(.popover) }
-    func dashboardDidAppear() { surfaceDidAppear(.dashboard) }
+    func dashboardDidAppear() {
+        surfaceDidAppear(.dashboard)
+        Telemetry.send(.dashboardOpened)
+    }
     func dashboardDidDisappear() { surfaceDidDisappear(.dashboard) }
 
     private func surfaceDidAppear(_ surface: Surface) {
@@ -366,6 +379,7 @@ final class AppState {
     func ignore(_ service: RunningService) {
         ignoredServices.ignore(service)
         applyFilters()
+        Telemetry.send(.serviceIgnored(service))
     }
 
     func stopIgnoring(_ service: RunningService) {
@@ -439,7 +453,9 @@ final class AppState {
         defer { busyServiceIDs.remove(service.id) }
 
         let tree = await repository.processTree()
-        let problem = record(await controller.stop(service, tree: tree), for: service)
+        let outcome = await controller.stop(service, tree: tree)
+        let problem = record(outcome, for: service)
+        if outcome.didStop { Telemetry.send(.serviceStopped(service)) }
         await refresh(.afterAction)
         // After the refresh, never before. A successful refresh clears `lastError`,
         // which would silently swallow the reason a stop did not work.
@@ -488,6 +504,7 @@ final class AppState {
         }
 
         let problems = outcomes.compactMap { record($0.outcome, for: $0.service) }
+        for report in outcomes where report.outcome.didStop { Telemetry.send(.serviceStopped(report.service)) }
         await refresh(.afterAction)
         if !problems.isEmpty { lastError = problems.joined(separator: " ") }
     }
@@ -528,6 +545,8 @@ final class AppState {
         var problem: String?
         if case .refused(let reason) = await controller.forceStop(service, tree: tree) {
             problem = "Portfox will not signal a \(reason)."
+        } else {
+            Telemetry.send(.serviceForceStopped(service))
         }
         stubbornServiceIDs.remove(service.id)
         await refresh(.afterAction)

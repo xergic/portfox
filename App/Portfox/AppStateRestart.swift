@@ -46,6 +46,7 @@ extension AppState {
             launchProblem = "\(service.displayName) stopped but could not be restarted. \(error.localizedDescription)"
         }
 
+        if launchProblem == nil { Telemetry.send(.serviceRestarted(service)) }
         await refresh(.afterAction)
         if let message = launchProblem ?? problem { report(message) }
     }
