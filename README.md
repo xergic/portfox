@@ -111,6 +111,7 @@ Settings live in a sheet inside the dashboard, replacing the old Settings window
 - **Ignored services**: the list of services you have hidden, each with a remove button. Right-click any service and choose *Ignore Service* to add one. Ignored services leave the popover, the dashboard, the menu bar count and the memory total. An ignored service that is running can also be un-ignored from the *Ignored* chip in the dashboard sidebar.
 - **Editor** and **Terminal**: which app *Open in…* uses. Only apps installed on this Mac are listed. The editor opens the repository, the terminal opens the directory the service actually runs in.
 - **Launch at login**: start Portfox automatically when you log in.
+- **Share anonymous usage data**: send anonymous usage counts to TelemetryDeck. On by default. See [Privacy](#privacy).
 
 ## Stopping and restarting
 
@@ -213,6 +214,19 @@ Portfox --snapshot-prefs out.png            # the preferences sheet
 Preferences needs its own flag rather than sharing the dashboard's, because it is a sheet, and a sheet is a separate window that never renders inside its parent.
 
 `ImageRenderer` lays out in a single pass and never draws scroll content, so every snapshot renders without its scroll container: the popover's list, the dashboard's panes, and the preferences sheet all carry the same `scrolls` escape hatch. That is also why the popover measures its own list height rather than letting the `ScrollView` size itself: inside a `MenuBarExtra` window a `ScrollView` has no intrinsic height and collapses to nothing. A `TextField` is NSTextField-backed and renders as a placeholder block under `ImageRenderer`, so the dashboard's search box draws its contents as flat text in snapshots instead.
+
+## Privacy
+
+Portfox uses [TelemetryDeck](https://telemetrydeck.com/privacy/) for anonymous usage counts. It is on by default.
+
+What is sent:
+
+- A session start, with the app and macOS version.
+- One signal each time you stop, force stop, restart, inspect or ignore a service, or open the dashboard. Service signals carry the service type and category, such as `nextjs` and `web`.
+
+What is never sent: service or project names, paths, ports, process ids, command lines, hostnames, URLs or container names.
+
+To turn it off, clear *Share anonymous usage data* in Settings. It takes effect at once. Snapshot renders never send anything.
 
 ## Known limitations
 

@@ -6,7 +6,7 @@ Project instructions for Portfox. Read `README.md` for the user-facing descripti
 
 A macOS 15+ menu bar app that lists local TCP listeners, identifies which dev
 service each one is, resolves its project, and can stop it. Swift 6, SwiftUI,
-strict concurrency, no third-party dependencies.
+strict concurrency. The one dependency is TelemetryDeck, in the app target only.
 
 ## Commands
 
@@ -35,6 +35,7 @@ after a UI change and look at the PNGs.
 | `Sources/PortfoxKit/` | The whole pipeline. No SwiftUI, no AppKit, no UI state. |
 | `Sources/portfox-scan/` | CLI over the same pipeline. |
 | `App/Portfox/` | SwiftUI shell: `AppState`, `DashboardState`, views, theme. |
+| `App/Portfox/Telemetry.swift` | The only TelemetryDeck call site: a typed `Signal` enum and the opt-out. |
 | `App/Portfox/ProcessMetrics.swift` | Memory and CPU by pid, deliberately outside `ScanResult`. |
 | `App/Portfox/ExternalApps.swift` | Which editors and terminals are installed, and how to launch one. |
 | `Tests/PortfoxKitTests/` | Tests for the kit only. The app target has none. |
@@ -71,6 +72,12 @@ drives the identical pipeline, so detection can be developed without the GUI.
 
 **The kit never imports SwiftUI.** If a change needs UI types in `PortfoxKit`,
 the change is in the wrong layer.
+
+**Signals carry no names, paths, ports or command lines.** `Telemetry.Signal` is a
+closed enum, and its only parameters are `ServiceType` and its category. A
+snapshot run never initializes the SDK. The SDK's `signal` builds a blank
+manager when none exists, so `Telemetry.send` checks its own `isRunning` flag.
+`PortfoxKit` and `portfox-scan` never import it.
 
 **Preferences live in the app, not the kit.** `IgnoredServices` and
 `ProjectIconOverrides` are `UserDefaults`-backed app state. The kit reports the
