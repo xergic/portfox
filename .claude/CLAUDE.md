@@ -79,6 +79,10 @@ snapshot run never initializes the SDK. The SDK's `signal` builds a blank
 manager when none exists, so `Telemetry.send` checks its own `isRunning` flag.
 `PortfoxKit` and `portfox-scan` never import it.
 
+**The app ID is not in the source.** `Info.plist` carries `$(TELEMETRY_APP_ID)`,
+which only the release workflow sets, from the `TELEMETRY_APP_ID` repository
+variable. A fork or a local build has an empty ID and never starts the SDK.
+
 **Preferences live in the app, not the kit.** `IgnoredServices` and
 `ProjectIconOverrides` are `UserDefaults`-backed app state. The kit reports the
 machine as it is. This is why `portfox-scan` still lists an ignored service.

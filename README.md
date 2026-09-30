@@ -228,6 +228,8 @@ What is never sent: service or project names, paths, ports, process ids, command
 
 To turn it off, clear *Share anonymous usage data* in Settings. It takes effect at once. Snapshot renders never send anything.
 
+Only the official release builds report. The TelemetryDeck app ID is injected by the release workflow, so a build from source or a fork sends nothing.
+
 ## Known limitations
 
 - Only processes owned by the current user are visible. A database installed as a root daemon will not appear.
