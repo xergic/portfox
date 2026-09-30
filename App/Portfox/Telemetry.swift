@@ -39,7 +39,9 @@ enum Telemetry {
 
     static let defaultsKey = "sharesUsageData"
 
-    private static let appID = "03AF9FF5-5DDB-4D89-BA60-0B83A57DDE84"
+    /// Empty unless the release workflow sets `TELEMETRY_APP_ID`, so a fork or a
+    /// local build never reports into the official dashboard.
+    private static let appID = Bundle.main.object(forInfoDictionaryKey: "TelemetryAppID") as? String ?? ""
     private static var isRunning = false
 
     /// Off in a snapshot run, so `make snapshot` never sends anything. The SDK's
@@ -48,7 +50,7 @@ enum Telemetry {
     static func setEnabled(_ enabled: Bool) {
         guard enabled != isRunning else { return }
         if enabled {
-            guard SnapshotRenderer.request == nil else { return }
+            guard !appID.isEmpty, SnapshotRenderer.request == nil else { return }
             TelemetryDeck.initialize(config: .init(appID: appID))
         } else {
             TelemetryDeck.terminate()

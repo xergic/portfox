@@ -81,7 +81,9 @@ jobs:
         env:
           TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
           VERSION: ${{ steps.version.outputs.version }}
+          TELEMETRY_APP_ID: ${{ vars.TELEMETRY_APP_ID }}
         run: |
+          : "${TELEMETRY_APP_ID:?set the TELEMETRY_APP_ID repository variable}"
           make gen
           # A bare `build` resolves the destination to the runner's own arch.
           # `archive -destination generic/platform=macOS` is what produces a
@@ -95,6 +97,7 @@ jobs:
             -quiet \
             MARKETING_VERSION="$VERSION" \
             CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" \
+            TELEMETRY_APP_ID="$TELEMETRY_APP_ID" \
             CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="Developer ID Application" \
             DEVELOPMENT_TEAM="$TEAM_ID" \

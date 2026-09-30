@@ -33,6 +33,7 @@ xcodebuild archive \
   -archivePath "$archive" \
   -quiet \
   MARKETING_VERSION="$version" \
+  TELEMETRY_APP_ID="${TELEMETRY_APP_ID:-}" \
   CURRENT_PROJECT_VERSION="$build"
 
 # -exportArchive wants a team and an export plist. Ad hoc signing has neither,
