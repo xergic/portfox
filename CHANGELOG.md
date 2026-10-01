@@ -2,7 +2,7 @@
 
 Notable changes to Portfox. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.2.0] - 2026-10-01
 
 ### Added
 - Orphaned dev servers are flagged. A server whose launcher exited, such as a `workerd` left behind by a dead `wrangler dev`, gets an "Orphaned" badge and a count in the popover. It shows even when it only binds high ports. Restart is not offered for it.
