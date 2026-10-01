@@ -134,7 +134,7 @@ struct ServiceListPane: View {
                 }
             }
 
-            let ungrouped = ungrouped(in: visible)
+            let ungrouped = visible.ungrouped
             if !ungrouped.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
                     SectionHeader(title: "Other listeners")
@@ -160,16 +160,6 @@ struct ServiceListPane: View {
 
     private func select(_ service: RunningService) {
         dashboard.selectedServiceID = service.id
-    }
-
-    /// Services the grouper did not place. Showing them beats silently dropping a
-    /// running server.
-    private func ungrouped(in visible: ScanResult) -> [RunningService] {
-        let placed = Set(
-            visible.groups.flatMap { $0.services.map(\.id) }
-                + visible.standalone.map(\.id) + visible.agentTools.map(\.id)
-        )
-        return visible.services.filter { !placed.contains($0.id) }
     }
 
     /// Sockets, not services. The header counts services, and a single service

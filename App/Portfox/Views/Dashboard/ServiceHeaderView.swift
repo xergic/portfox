@@ -34,7 +34,7 @@ struct ServiceHeaderView: View {
                 .font(.system(size: 17, weight: .bold))
                 .foregroundStyle(Theme.primaryText)
             if let version = service.version {
-                TrailingFact(text: version)
+                TrailingFact(text: version, font: .portVersion)
             }
             attributionPill
         }

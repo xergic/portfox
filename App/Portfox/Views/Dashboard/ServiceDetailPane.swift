@@ -58,6 +58,20 @@ struct ServiceDetailPane: View {
                     layout: .inline,
                     valueColor: Theme.pathDirectory
                 )
+                switch service.origin {
+                case .orphaned:
+                    LabeledRow(
+                        label: "Orphaned",
+                        value: "Parent exited, nothing will stop it",
+                        layout: .inline,
+                        valueFont: .portDetail,
+                        valueColor: Theme.warning
+                    )
+                case .agent(let agent):
+                    LabeledRow(label: "Started by", value: agent.displayName, layout: .inline, valueFont: .portDetail)
+                case nil:
+                    EmptyView()
+                }
                 if !service.secondaryPorts.isEmpty {
                     LabeledRow(
                         label: "Other ports",

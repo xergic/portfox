@@ -182,9 +182,9 @@ public enum ProcessRole: Sendable, Equatable {
     }
 
     private static func isTerminalOrEditor(_ process: ProcessSnapshot) -> Bool {
-        guard let path = process.resolvedExecutablePath?.lowercased() else { return false }
+        guard let path = process.resolvedExecutablePath else { return false }
         // Anything living inside an application bundle or shipped by the system is
         // a session owner, not a task runner.
-        return path.contains(".app/contents/") || path.hasPrefix("/system/") || path.hasPrefix("/usr/libexec/")
+        return SystemPaths.isInsideAppBundle(path) || SystemPaths.isSystemDaemon(path)
     }
 }

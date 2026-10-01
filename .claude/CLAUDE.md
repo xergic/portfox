@@ -142,6 +142,17 @@ an OrbStack container restarted on the same port produces a byte-identical socke
 set, so its row stays stale until Refresh. Do not fix that by weakening the short
 circuit.
 
+**Origin walks plain ancestors, not `logicalRoot`.** `RunningService.origin` is
+`.orphaned` or `.agent(...)`, orphaned first. An agent runs commands through a
+shell, which is a boundary. Match the exact basename (`claude`, `codex`), never a
+substring, or `claude-mem` and `codex-code-mode-host` match.
+
+**Every tick reads each service root once, on purpose.** A root can die or be
+adopted by launchd without a socket moving: an ending agent session kills the
+shell, a `pnpm` exits and leaves its `node`. `anyRootMoved` costs one
+`proc_pidinfo` per root and forces a rebuild when a root is gone, recycled or
+reparented. `buildTree` likewise drops a cached snapshot whose parent moved.
+
 **Signals go to the logical root, never to a process group.** A dev server
 started from a terminal shares its group with the user's shell. `SIGKILL` only
 happens when the user explicitly asks for Force Stop.
@@ -193,7 +204,20 @@ running application.
 before its `/usr/bin/` and `.app/Contents/` noise rules, so a new generic runtime
 detector drags every matching system process out of hiding. Those rows need
 explicit vetoes, not optimism. The ephemeral-port rule is what actually saves
-you: anything bound only above 49152 never reaches detection.
+you: anything bound only above 49152 is system noise.
+
+**The one exception is an orphan.** `Lineage.isOrphaned` holds when the logical
+root's parent is launchd *and* the root's process group leader is gone. launchd
+`setsid`s every job, so a GUI app or LaunchAgent leads its own group (all 923
+ppid 1 jobs measured did), while a `workerd` whose `wrangler` died sits in a group
+whose leader no longer exists. On top of that, the root's executable must not be
+in a bundle or a system directory, and its cwd or executable directory must
+resolve to a real project outside Homebrew, MacPorts, Nix, `/Library`,
+`~/Library`, `/usr` and hidden folders under home. Databases, daemons and agent
+tools never qualify. `hostService` passes an orphan no ports, so it skips the
+ephemeral rule, and its primary port is the lowest it binds. `canRestart` is
+false for it, because its argv is a dead launcher's child. Do not drop the group
+check: it is what separates an orphan from a LaunchAgent in a project folder.
 
 ## Arrivals
 

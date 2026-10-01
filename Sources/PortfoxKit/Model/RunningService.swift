@@ -63,6 +63,9 @@ public struct RunningService: Identifiable, Hashable, Sendable {
     /// then the forwarder, shared with every other container it publishes for,
     /// which is why nothing here may be signalled.
     public let container: ContainerSnapshot?
+    /// Who started it, when that is worth telling the user. Stable while the
+    /// process runs, except for the one move to `.orphaned` when its launcher dies.
+    public let origin: ServiceOrigin?
     /// Version of the framework or runtime, resolved after detection because it
     /// can need a file read or, rarely, asking the binary itself.
     public var version: String?
@@ -77,6 +80,7 @@ public struct RunningService: Identifiable, Hashable, Sendable {
         classification: ServiceClass,
         project: ProjectSnapshot?,
         container: ContainerSnapshot? = nil,
+        origin: ServiceOrigin? = nil,
         version: String? = nil
     ) {
         self.id = id
@@ -88,6 +92,7 @@ public struct RunningService: Identifiable, Hashable, Sendable {
         self.classification = classification
         self.project = project
         self.container = container
+        self.origin = origin
         self.version = version
     }
 
@@ -98,6 +103,11 @@ public struct RunningService: Identifiable, Hashable, Sendable {
     /// Everything that reads a number off that process, or signals it, asks this
     /// first, so the rule lives in one place rather than in each caller.
     public var hasHostProcess: Bool { container == nil }
+
+    /// Whether Restart may be offered. An orphan's argv is a dead launcher's
+    /// child, `workerd` without its `wrangler`, so relaunching it would start a
+    /// bare runtime with none of the setup its parent did.
+    public var canRestart: Bool { classification.isUserManaged && origin != .orphaned }
 
     public var type: ServiceType { detection.type }
     public var port: Int { primarySocket.port }
@@ -159,21 +169,24 @@ public struct RunningService: Identifiable, Hashable, Sendable {
     /// Where a daemon was installed from, when the path makes that plain.
     static func installationLabel(for executablePath: String?) -> String? {
         guard let path = executablePath?.lowercased() else { return nil }
-        let sources: [(marker: String, name: String)] = [
-            ("/dbngin/", "DBngin"),
-            ("/homebrew/", "Homebrew"),
-            ("/usr/local/cellar/", "Homebrew"),
-            ("/opt/local/", "MacPorts"),
-            ("/.orbstack/", "OrbStack"),
-            ("/library/postgresql", "Postgres.app"),
-            ("/applications/postgres.app/", "Postgres.app"),
-            ("/.docker/", "Docker"),
-            ("/nix/store/", "Nix"),
-            ("/.asdf/", "asdf"),
-            ("/.mise/", "mise")
-        ]
-        return sources.first { path.contains($0.marker) }?.name
+        return installationSources.first { path.contains($0.marker) }?.name
     }
+
+    /// Lowercased path markers of the package managers and installers Portfox
+    /// recognises. `Lineage` reads the package manager entries too.
+    static let installationSources: [(marker: String, name: String)] = [
+        ("/dbngin/", "DBngin"),
+        ("/homebrew/", "Homebrew"),
+        ("/usr/local/cellar/", "Homebrew"),
+        ("/opt/local/", "MacPorts"),
+        ("/.orbstack/", "OrbStack"),
+        ("/library/postgresql", "Postgres.app"),
+        ("/applications/postgres.app/", "Postgres.app"),
+        ("/.docker/", "Docker"),
+        ("/nix/store/", "Nix"),
+        ("/.asdf/", "asdf"),
+        ("/.mise/", "mise")
+    ]
 
     /// Turns `/opt/homebrew/opt/postgresql@17/bin/postgres` into `postgresql@17`
     /// and `/Users/Shared/DBngin/postgresql/17.0/bin/postgres` into `postgresql 17.0`.

@@ -43,6 +43,9 @@ enum Theme {
     static let roleBoundary = dynamic(dark: srgb(0.694, 0.549, 0.973), light: srgb(0.486, 0.227, 0.929))
     static let roleWrapper = dynamic(dark: srgb(0.965, 0.694, 0.290), light: srgb(0.706, 0.325, 0.035))
     static let roleService = success
+    /// A process nothing will stop on its own. Yellower than `roleWrapper`, so
+    /// an orphan never reads as a process role.
+    static let warning = dynamic(dark: srgb(0.984, 0.749, 0.141), light: srgb(0.631, 0.384, 0.027))
 
     /// The listening process's row in the tree, a wash of `roleService` over the
     /// card. Alpha over near-black and alpha over white do not read the same: 6%
@@ -166,6 +169,8 @@ extension Font {
     static let portDetailStrong = Font.system(size: 12, weight: .semibold)
     static let portCaption = Font.system(size: 11)
     static let portBadge = Font.system(size: 11, weight: .medium)
+    /// Every version number: services, plugins, projects and Portfox itself.
+    static let portVersion = Font.mono(11)
 }
 
 extension View {

@@ -20,11 +20,6 @@ public struct ListenerClassifier: Sendable {
         return names.map { "\(home)/\($0)" } + ["/tmp", "/private/tmp"]
     }
 
-    /// Executables shipped by the OS. None of these is a dev server.
-    static let systemPrefixes = [
-        "/system/", "/usr/libexec/", "/usr/sbin/", "/usr/bin/", "/sbin/", "/bin/", "/library/apple/"
-    ]
-
     /// macOS allocates ephemeral source ports from here up.
     public static let ephemeralPortFloor = 49152
 
@@ -42,8 +37,8 @@ public struct ListenerClassifier: Sendable {
         // the forwarder for the whole machine.
         if isContainer { return .infrastructure }
 
-        // Nothing a developer opens lives only on an ephemeral port. This is what
-        // orphaned `workerd` children look like after their wrangler parent dies.
+        // Nothing a developer opens lives only on an ephemeral port. The caller
+        // passes no ports for an orphan, the one exception, see `Lineage`.
         if !ports.isEmpty, ports.allSatisfy({ $0 >= Self.ephemeralPortFloor }) { return .systemNoise }
 
         if detection.type != .unknown {
@@ -54,11 +49,10 @@ public struct ListenerClassifier: Sendable {
             }
         }
 
-        let executable = (process.executablePath ?? "").lowercased()
-        if Self.systemPrefixes.contains(where: executable.hasPrefix) { return .systemNoise }
-        // Menu bar apps, editors and Electron helpers all listen on local ports for
-        // their own reasons. Their executable always lives inside a bundle.
-        if executable.contains(".app/contents/") { return .systemNoise }
+        let executable = process.executablePath ?? ""
+        if SystemPaths.isShippedWithSystem(executable) || SystemPaths.isInsideAppBundle(executable) {
+            return .systemNoise
+        }
 
         if let project, project.rootKind != .directory { return .probableDeveloperProcess }
         if let directory = process.workingDirectory, isUserCode(directory) { return .probableDeveloperProcess }

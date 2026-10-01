@@ -65,6 +65,18 @@ extension ScanResult {
 }
 
 extension ScanResult {
+    /// Services that are in no group, not standalone and not an agent tool.
+    /// The split should leave none, but showing one beats silently dropping a
+    /// running server.
+    public var ungrouped: [RunningService] {
+        let placed = Set(
+            groups.flatMap { $0.services.map(\.id) } + standalone.map(\.id) + agentTools.map(\.id)
+        )
+        return services.filter { !placed.contains($0.id) }
+    }
+}
+
+extension ScanResult {
     /// Every listener the scan saw, whether or not the filter kept it.
     ///
     /// The union, not `services`, is what a diff has to run over. `hidden` holds
@@ -151,6 +163,20 @@ public actor ServiceRepository {
         let sockets: Set<ListeningSocket>
         let options: ScanOptions
         let result: ScanResult
+        /// Every service root as it was at scan time. A root can die or be
+        /// adopted by launchd without a single socket moving: an agent session
+        /// that ends kills the shell above a dev server, and a `pnpm` that exits
+        /// leaves its listening `node` behind. The socket set alone would miss
+        /// both, keep the row from turning orphaned, and leave Stop aimed at a
+        /// launcher that no longer exists.
+        let roots: [ProcessSnapshot]
+
+        init(sockets: Set<ListeningSocket>, options: ScanOptions, result: ScanResult) {
+            self.sockets = sockets
+            self.options = options
+            self.result = result
+            self.roots = Array(Set(result.everyService.filter(\.hasHostProcess).map(\.rootProcess)))
+        }
     }
 
     public init(
@@ -201,7 +227,8 @@ public actor ServiceRepository {
         let socketSet = Set(sockets)
         if reloadingFromDisk {
             await forgetEverything()
-        } else if let last = lastRun, last.sockets == socketSet, last.options == options {
+        } else if let last = lastRun, last.sockets == socketSet, last.options == options,
+                  !anyRootMoved(since: last) {
             return ScanUpdate(result: last.result, tree: lastTree, didRebuild: false)
         }
 
@@ -237,6 +264,19 @@ public actor ServiceRepository {
 
         lastRun = CompletedScan(sockets: socketSet, options: options, result: result)
         return ScanUpdate(result: result, tree: tree, didRebuild: true)
+    }
+
+    /// One `proc_pidinfo` per root per tick, a few microseconds each, paid
+    /// deliberately. A root that is gone, recycled or reparented forces a rebuild.
+    private func anyRootMoved(since last: CompletedScan) -> Bool {
+        last.roots.contains { root in
+            guard let info = inspector.bsdInfo(pid: root.pid) else { return true }
+            let identity = ProcessSnapshot.identity(
+                pid: root.pid,
+                startTime: Date(timeIntervalSince1970: TimeInterval(info.pbi_start_tvsec))
+            )
+            return identity != root.identity || pid_t(info.pbi_ppid) != root.parentPID
+        }
     }
 
     /// Memory and CPU for the pids the caller asked about, sampled fresh. One
@@ -281,7 +321,9 @@ public actor ServiceRepository {
         for pid in detailed {
             guard let light = tree.process(pid) else { continue }
             let key = light.identity
-            if let cached = processCache[key] {
+            // A cached parent goes stale when launchd adopts the process, and a
+            // stale one hides exactly the orphan `Lineage.isOrphaned` looks for.
+            if let cached = processCache[key], cached.parentPID == light.parentPID {
                 tree.replace(cached)
             } else if let full = inspector.snapshot(pid: pid) {
                 processCache[key] = full
@@ -386,7 +428,8 @@ public actor ServiceRepository {
     ) -> RunningService {
         let cwdProject = listener.workingDirectoryURL.flatMap { cachedProject(for: $0) }
         let ports = Set(sockets.map(\.port)).sorted()
-        let related = (tree.ancestors(of: listener.pid, limit: 4) + tree.descendants(of: listener.pid, limit: 12))
+        let ancestors = tree.ancestors(of: listener.pid, limit: Lineage.ancestorDepth)
+        let related = (ancestors.prefix(4) + tree.descendants(of: listener.pid, limit: 12))
             .map(\.command)
             .filter { !$0.isEmpty }
 
@@ -396,6 +439,27 @@ public actor ServiceRepository {
         // that directory says nothing about what the process belongs to.
         let project = detection.type == .claudeCodePlugin ? nil : cwdProject
         let primary = Self.primarySocket(from: sockets, type: detection.type)
+        let isOrphaned = Lineage.isOrphaned(
+            root: root,
+            category: detection.type.category,
+            tree: tree,
+            cwdProject: project,
+            executableProject: root.resolvedExecutablePath.flatMap {
+                cachedProject(for: URL(fileURLWithPath: $0).deletingLastPathComponent())
+            }
+        )
+        // An orphan skips the ephemeral-port rule: a `workerd` whose `wrangler`
+        // died binds nothing else, and it is exactly what this app exists to show.
+        let classification = classifier.classify(
+            process: listener, detection: detection, project: project, ports: isOrphaned ? [] : ports
+        )
+        let origin: ServiceOrigin? = if isOrphaned {
+            .orphaned
+        } else if classification.isUserManaged, let agent = Lineage.agent(among: ancestors) {
+            .agent(agent)
+        } else {
+            nil
+        }
 
         return RunningService(
             id: "\(listener.identity)-\(primary.port)",
@@ -404,8 +468,9 @@ public actor ServiceRepository {
             sockets: sockets.sorted { $0.port < $1.port },
             primarySocket: primary,
             detection: detection,
-            classification: classifier.classify(process: listener, detection: detection, project: project, ports: ports),
-            project: project
+            classification: classification,
+            project: project,
+            origin: origin
         )
     }
 

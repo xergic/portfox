@@ -52,6 +52,6 @@ public extension DetectionContext {
     /// so a detector that matches one of these promotes it before the classifier
     /// ever gets to look. Generic runtime rows have to refuse them here instead.
     var isInsideAppBundle: Bool {
-        executablePath.contains(".app/contents/")
+        SystemPaths.isInsideAppBundle(executablePath)
     }
 }

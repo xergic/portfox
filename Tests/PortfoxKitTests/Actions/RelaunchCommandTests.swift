@@ -153,7 +153,7 @@ struct RelaunchCommandTests {
 
     // MARK: - What a service is
 
-    private func service(_ classification: ServiceClass) -> RunningService {
+    private func service(_ classification: ServiceClass, origin: ServiceOrigin? = nil) -> RunningService {
         let process = root()
         let socket = ListeningSocket(pid: process.pid, port: 3000, host: "127.0.0.1", family: .ipv4)
         return RunningService(
@@ -164,7 +164,8 @@ struct RelaunchCommandTests {
             primarySocket: socket,
             detection: .unknown(),
             classification: classification,
-            project: nil
+            project: nil,
+            origin: origin
         )
     }
 
@@ -186,6 +187,16 @@ struct RelaunchCommandTests {
         #expect(make(service(.systemNoise)) == .failure(.managedService))
     }
 
+    /// The argv belongs to a child whose launcher died. `workerd` relaunched on
+    /// its own is a bare runtime with none of the setup `wrangler` gave it.
+    @Test("an orphaned dev server is refused, and the UI never offers it")
+    func refusesOrphans() {
+        let orphan = service(.developmentService, origin: .orphaned)
+        #expect(!orphan.canRestart)
+        #expect(make(orphan) == .failure(.orphaned))
+        #expect(service(.developmentService, origin: .agent(.claudeCode)).canRestart)
+    }
+
     @Test("every refusal explains itself, and reads as the tail of a sentence")
     func refusalsReadWell() {
         let refusals: [RelaunchRefusal] = [
@@ -194,7 +205,8 @@ struct RelaunchCommandTests {
             .noCommand,
             .executableGone("/gone/node"),
             .boundaryProcess,
-            .managedService
+            .managedService,
+            .orphaned
         ]
         for refusal in refusals {
             #expect(!refusal.reason.isEmpty)

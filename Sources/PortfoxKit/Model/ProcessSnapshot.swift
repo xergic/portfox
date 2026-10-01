@@ -49,6 +49,10 @@ public struct ProcessSnapshot: Identifiable, Hashable, Codable, Sendable {
 
     public let pid: pid_t
     public let parentPID: pid_t
+    /// Nil only for a hand-built snapshot. launchd `setsid`s every job it
+    /// starts, so a ppid 1 process whose group differs from its own pid was
+    /// left behind by a parent, not launched by launchd. See `Lineage`.
+    public let processGroupID: pid_t?
     public let uid: uid_t
     /// Boot-relative start time. Combined with `pid` it forms a stable identity
     /// across refreshes, so a recycled pid invalidates cached metadata.
@@ -60,6 +64,7 @@ public struct ProcessSnapshot: Identifiable, Hashable, Codable, Sendable {
     public init(
         pid: pid_t,
         parentPID: pid_t,
+        processGroupID: pid_t? = nil,
         uid: uid_t,
         startTime: Date? = nil,
         executablePath: String? = nil,
@@ -68,6 +73,7 @@ public struct ProcessSnapshot: Identifiable, Hashable, Codable, Sendable {
     ) {
         self.pid = pid
         self.parentPID = parentPID
+        self.processGroupID = processGroupID
         self.uid = uid
         self.startTime = startTime
         self.executablePath = executablePath

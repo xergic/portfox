@@ -11,6 +11,7 @@ public enum RelaunchRefusal: Error, Equatable, Sendable {
     case executableGone(String)
     case boundaryProcess
     case managedService
+    case orphaned
 
     public var reason: String {
         switch self {
@@ -26,6 +27,8 @@ public enum RelaunchRefusal: Error, Equatable, Sendable {
             "it is a shell or terminal session, not a service Portfox started"
         case .managedService:
             "it is a database or daemon, restarted by whatever installed it rather than from a terminal"
+        case .orphaned:
+            "the process that launched it has exited, so its command line is a child's, not the one you ran"
         }
     }
 }
@@ -64,7 +67,9 @@ public struct RelaunchCommand: Equatable, Sendable {
         directoryExists: (String) -> Bool = { FileManager.default.fileExists(atPath: $0) },
         fileExists: (String) -> Bool = { FileManager.default.fileExists(atPath: $0) }
     ) -> Result<RelaunchCommand, RelaunchRefusal> {
-        guard service.classification.isUserManaged else { return .failure(.managedService) }
+        guard service.canRestart else {
+            return .failure(service.origin == .orphaned ? .orphaned : .managedService)
+        }
         return make(forRoot: service.rootProcess, directoryExists: directoryExists, fileExists: fileExists)
     }
 

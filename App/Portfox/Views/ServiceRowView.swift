@@ -25,10 +25,10 @@ struct ServiceRowView: View {
                 switch effectiveLayout {
                 case .serviceFirst:
                     serviceLine
-                    HStack(spacing: 4) { folderLine; metrics }
+                    HStack(spacing: 4) { folderLine; metrics; originBadge }
                 case .projectFirst:
                     projectLine
-                    HStack(spacing: 4) { serviceLine; metrics }
+                    HStack(spacing: 4) { serviceLine; metrics; originBadge }
                 }
             }
             .layoutPriority(1)
@@ -102,9 +102,17 @@ struct ServiceRowView: View {
                 .lineLimit(1)
                 .truncationMode(.tail)
             if let version = service.version {
-                TrailingFact(text: version)
+                TrailingFact(text: version, font: .portVersion)
             }
         }
+    }
+
+    /// On the second line, not beside the name. Beside it the badge left room
+    /// for "Cl…" of "Cloudflare Workers" in a sidebar row, and the folder is the
+    /// fact that can best afford to truncate.
+    @ViewBuilder
+    private var originBadge: some View {
+        if let origin = service.origin { OriginBadge(origin: origin) }
     }
 
     private var projectLine: some View {
@@ -116,14 +124,13 @@ struct ServiceRowView: View {
                 .truncationMode(.tail)
                 .layoutPriority(1)
             if let version = service.project?.version {
-                TrailingFact(text: "@ \(version)", fixed: false)
+                TrailingFact(text: "@ \(version)", font: .portVersion, fixed: false)
             }
         }
     }
 
     // Two labels rather than one string, so the version reads as secondary to the
-    // folder in the same way it does beside the service name, and so the folder is
-    // what survives truncation.
+    // folder in the same way it does beside the service name.
     private var folderLine: some View {
         HStack(spacing: 4) {
             if let subtitle = service.subtitle {
@@ -134,8 +141,10 @@ struct ServiceRowView: View {
                     .truncationMode(.tail)
                     .layoutPriority(1)
             }
-            if let version = service.project?.version {
-                TrailingFact(text: "@ \(version)", fixed: false)
+            // Gives way to an origin badge. Squeezed beside one, the version
+            // shrank to a lone clipped "@", and the heading already names the project.
+            if let version = service.project?.version, service.origin == nil {
+                TrailingFact(text: "@ \(version)", font: .portVersion, fixed: false)
             }
         }
     }
@@ -193,13 +202,14 @@ struct ServiceRowView: View {
 /// how long it has been up.
 struct TrailingFact: View {
     let text: String
+    var font: Font = .portCaption
     /// Beside a service name the fact must never shrink, since the name can
     /// truncate instead. Beside a folder it is the fact that gives way.
     var fixed = true
 
     var body: some View {
         Text(text)
-            .font(.portCaption)
+            .font(font)
             .foregroundStyle(Theme.tertiaryText)
             .lineLimit(1)
             .truncationMode(.tail)

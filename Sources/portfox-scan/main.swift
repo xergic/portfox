@@ -177,11 +177,7 @@ struct CLI {
             print("")
         }
 
-        let ungrouped = result.services.filter { service in
-            !result.groups.contains { $0.services.contains(where: { $0.id == service.id }) }
-                && !result.standalone.contains(where: { $0.id == service.id })
-                && !result.agentTools.contains(where: { $0.id == service.id })
-        }
+        let ungrouped = result.ungrouped
         if !ungrouped.isEmpty {
             print("▸ UNGROUPED")
             for service in ungrouped { printService(service, indent: "    ") }
@@ -194,7 +190,9 @@ struct CLI {
         let subtitle = service.locationLabel.map { " · \($0)" } ?? ""
         let extra = service.secondaryPorts.isEmpty ? "" : "  (+\(service.secondaryPorts.map(String.init).joined(separator: ", ")))"
         print("\(indent):\(service.port)\t\(service.displayName)\(version) \(confidence)%\(subtitle)\(extra)")
-        print("\(indent)\tpid \(service.listenerProcess.pid) · stop \(service.rootProcess.pid) · \(service.classification.rawValue)")
+        let origin = service.origin.map { " · \($0.label.lowercased())" } ?? ""
+        let pids = "pid \(service.listenerProcess.pid) · stop \(service.rootProcess.pid)"
+        print("\(indent)\t\(pids) · \(service.classification.rawValue)\(origin)")
     }
 
     static func printJSON(_ result: ScanResult) {
@@ -214,7 +212,8 @@ struct CLI {
                 "command": service.listenerProcess.command,
                 "container": service.container?.name ?? "",
                 "image": service.container?.image ?? "",
-                "composeProject": service.container?.composeProject ?? ""
+                "composeProject": service.container?.composeProject ?? "",
+                "origin": service.origin?.label ?? ""
             ]
         }
         guard let data = try? JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted, .sortedKeys]) else {

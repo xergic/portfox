@@ -39,6 +39,7 @@ public struct ProcessInspector: Sendable {
             return ProcessSnapshot(
                 pid: pid,
                 parentPID: entry.kp_eproc.e_ppid,
+                processGroupID: entry.kp_eproc.e_pgid,
                 uid: entry.kp_eproc.e_ucred.cr_uid,
                 startTime: Date(timeIntervalSince1970: TimeInterval(started.tv_sec))
             )
@@ -50,6 +51,7 @@ public struct ProcessInspector: Sendable {
         return ProcessSnapshot(
             pid: pid,
             parentPID: pid_t(bsd.pbi_ppid),
+            processGroupID: pid_t(bsd.pbi_pgid),
             uid: bsd.pbi_uid,
             startTime: Date(timeIntervalSince1970: TimeInterval(bsd.pbi_start_tvsec)),
             executablePath: executablePath(pid: pid),

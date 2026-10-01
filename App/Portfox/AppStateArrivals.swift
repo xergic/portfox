@@ -25,7 +25,11 @@ extension AppState {
 
     /// System noise never surfaces, and neither does anything the user has
     /// explicitly told Portfox to stop showing them.
+    ///
+    /// Nor does an orphan. It turns up as a new row when its parent dies, a
+    /// `workerd` splitting off its `wrangler`, and announcing that as a start
+    /// would report the opposite of what happened.
     private func isWorthAnnouncing(_ service: RunningService) -> Bool {
-        service.classification != .systemNoise && !isIgnored(service)
+        service.classification != .systemNoise && service.origin != .orphaned && !isIgnored(service)
     }
 }

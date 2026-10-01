@@ -1,3 +1,4 @@
+import PortfoxKit
 import SwiftUI
 
 /// The app icon, name and a subtitle, then a summary line and trailing buttons.
@@ -56,6 +57,8 @@ struct SummaryCount: View {
                 .font(.portDetail)
                 .foregroundStyle(Theme.secondaryText)
         }
+        // A squeezed count wrapped "dev services" onto two lines.
+        .fixedSize()
     }
 }
 
@@ -84,6 +87,16 @@ struct ControlBackground: View {
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: Theme.Metrics.controlRadius, style: .continuous)
         shape.fill(isHovering ? Theme.cardHover : fill).overlay(shape.strokeBorder(Theme.separator, lineWidth: 1))
+    }
+}
+
+/// Who started a service: an agent, or nobody left alive.
+struct OriginBadge: View {
+    let origin: ServiceOrigin
+
+    var body: some View {
+        TintedBadge(text: origin.label, tint: origin == .orphaned ? Theme.warning : Theme.roleBoundary)
+            .fixedSize()
     }
 }
 

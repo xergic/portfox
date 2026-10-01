@@ -66,8 +66,8 @@ struct ListenerClassifierTests {
 
     @Test("a service bound only to ephemeral ports is system noise even when confidently detected")
     func ephemeralOnlyPortsAreSystemNoise() {
-        // The orphaned-workerd case: wrangler's parent died but the child kept
-        // listening on a port the OS handed out, not one the framework chose.
+        // A port the OS handed out, not one the framework chose. Only an orphan
+        // skips this rule, see `OrphanTests`.
         let result = classifier.classify(
             process: process(10),
             detection: detected(.wrangler),

@@ -14,7 +14,7 @@ struct MenuView: View {
     @State private var listHeight: CGFloat = Theme.Metrics.maximumListHeight
 
     var body: some View {
-        let ungrouped = ungroupedServices
+        let ungrouped = state.result.ungrouped
         VStack(spacing: 0) {
             header(ungrouped: ungrouped)
             Divider().overlay(Theme.separator)
@@ -62,7 +62,7 @@ struct MenuView: View {
     private func summary(ungrouped: [RunningService]) -> some View {
         let result = state.result
         let devServiceCount = result.services.count - result.standalone.count - result.agentTools.count - ungrouped.count
-        return HStack(spacing: 14) {
+        return HStack(spacing: 10) {
             if devServiceCount > 0 {
                 SummaryCount(count: devServiceCount, label: devServiceCount == 1 ? "dev service" : "dev services", dot: Theme.accent)
             }
@@ -75,6 +75,10 @@ struct MenuView: View {
             }
             if !ungrouped.isEmpty {
                 SummaryCount(count: ungrouped.count, label: "other", dot: Theme.tertiaryText)
+            }
+            let orphanedCount = result.services.count { $0.origin == .orphaned }
+            if orphanedCount > 0 {
+                SummaryCount(count: orphanedCount, label: "orphaned", dot: Theme.warning)
             }
         }
     }
@@ -118,16 +122,6 @@ struct MenuView: View {
             }
         .padding(.horizontal, 12)
         .padding(.vertical, 12)
-    }
-
-    /// Services with a project that the grouper did not place, plus anything the
-    /// split missed. Showing them beats silently dropping a running server.
-    private var ungroupedServices: [RunningService] {
-        let placed = Set(
-            state.result.groups.flatMap { $0.services.map(\.id) }
-                + state.result.standalone.map(\.id) + state.result.agentTools.map(\.id)
-        )
-        return state.result.services.filter { !placed.contains($0.id) }
     }
 
     private var emptyState: some View {
@@ -228,7 +222,7 @@ private struct VersionButton: View {
     var body: some View {
         Button(action: action) {
             Text(AppInfo.versionLabel)
-                .font(.portCaption)
+                .font(.portVersion)
                 .foregroundStyle(isHovering ? Theme.secondaryText : Theme.tertiaryText)
                 .contentShape(Rectangle())
         }
