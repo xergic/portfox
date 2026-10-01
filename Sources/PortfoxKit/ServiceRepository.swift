@@ -377,14 +377,17 @@ public actor ServiceRepository {
         sockets: [ListeningSocket],
         tree: ProcessTree
     ) -> RunningService {
-        let project = listener.workingDirectoryURL.flatMap { cachedProject(for: $0) }
+        let cwdProject = listener.workingDirectoryURL.flatMap { cachedProject(for: $0) }
         let ports = Set(sockets.map(\.port)).sorted()
         let related = (tree.ancestors(of: listener.pid, limit: 4) + tree.descendants(of: listener.pid, limit: 12))
             .map(\.command)
             .filter { !$0.isEmpty }
 
-        let context = DetectionContext(process: listener, project: project, ports: ports, relatedCommands: related)
+        let context = DetectionContext(process: listener, project: cwdProject, ports: ports, relatedCommands: related)
         let detection = engine.detect(context)
+        // A plugin worker inherits the cwd of whichever session spawned it, so
+        // that directory says nothing about what the process belongs to.
+        let project = detection.type == .claudeCodePlugin ? nil : cwdProject
         let primary = Self.primarySocket(from: sockets, type: detection.type)
 
         return RunningService(

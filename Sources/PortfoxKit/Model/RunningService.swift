@@ -119,6 +119,9 @@ public struct RunningService: Identifiable, Hashable, Sendable {
         // The compose project and service, because the installation label below
         // would read "Docker" on every row of an eight-container stack.
         if let container { return container.displayLabel }
+        if type == .claudeCodePlugin, let plugin = ClaudeCodePlugin(command: listenerProcess.command) {
+            return plugin.name
+        }
         if type.category == .database || type.category == .infrastructure {
             return Self.installationLabel(for: listenerProcess.resolvedExecutablePath)
                 ?? Self.packageLabel(for: listenerProcess.resolvedExecutablePath)

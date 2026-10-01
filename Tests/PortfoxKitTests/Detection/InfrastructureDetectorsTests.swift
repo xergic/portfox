@@ -286,3 +286,54 @@ struct InfrastructureDetectorsTests {
         }
     }
 }
+
+@Suite("Claude Code plugin detector")
+struct ClaudeCodePluginDetectorTests {
+    let engine = DetectionEngine()
+    static let workerCommand = "/Users/ondra/.bun/bin/bun "
+        + "/Users/ondra/.claude/plugins/cache/thedotmack/claude-mem/13.15.2/scripts/worker-service.cjs --daemon"
+
+    @Test("the claude-mem worker beats the Bun runtime it runs under")
+    func claudeMemWorker() {
+        let context = DetectionFixture.context(
+            command: Self.workerCommand,
+            executablePath: "/Users/ondra/.bun/bin/bun",
+            ports: [37701]
+        )
+
+        #expect(engine.detect(context).type == .claudeCodePlugin)
+    }
+
+    @Test("plugin name and version come from the cache path")
+    func parsesNameAndVersion() throws {
+        let plugin = try #require(ClaudeCodePlugin(command: Self.workerCommand))
+
+        #expect(plugin.name == "claude-mem")
+        #expect(plugin.version == "13.15.2")
+    }
+
+    @Test("a normal Bun dev server is still Bun")
+    func bunDevServer() {
+        let context = DetectionFixture.context(
+            command: "/Users/ondra/.bun/bin/bun run dev",
+            executablePath: "/Users/ondra/.bun/bin/bun",
+            ports: [3000]
+        )
+
+        #expect(engine.detect(context).type == .bun)
+    }
+
+    @Test("a .claude path outside plugins/cache is not a plugin")
+    func claudeDirectoryAlone() {
+        for command in [
+            "/Users/ondra/.bun/bin/bun /Users/ondra/.claude/scripts/server.ts",
+            "/Users/ondra/.bun/bin/bun /Users/ondra/.claude/plugins/marketplaces/thedotmack/server.ts",
+            "/Users/ondra/.bun/bin/bun /Users/ondra/.claude/plugins/cache/thedotmack/claude-mem",
+            "/Users/ondra/.bun/bin/bun /Users/ondra/work/.claude/plugins/cachex/a/b/1.0.0/x.js"
+        ] {
+            let context = DetectionFixture.context(command: command, executablePath: "/Users/ondra/.bun/bin/bun")
+
+            #expect(engine.detect(context).type != .claudeCodePlugin, "\(command) matched")
+        }
+    }
+}

@@ -78,6 +78,7 @@ ICONS = {
     "pocketbase": ("pocketbase", "PocketBase"),
     "temporal": ("temporal", "Temporal"),
     "prismaStudio": ("prisma", "Prisma"),
+    "claudeCodePlugin": ("claude", "Claude"),
 }
 
 # Types with no usable brand mark. They render `ServiceType.fallbackSymbol`.

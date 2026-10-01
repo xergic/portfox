@@ -101,6 +101,9 @@ public enum ServiceType: String, CaseIterable, Codable, Sendable {
     case pocketbase
     case prismaStudio
 
+    // Agent tooling
+    case claudeCodePlugin
+
     case unknown
 
     public var displayName: String {
@@ -173,6 +176,7 @@ public enum ServiceType: String, CaseIterable, Codable, Sendable {
         case .ollama: "Ollama"
         case .pocketbase: "PocketBase"
         case .prismaStudio: "Prisma Studio"
+        case .claudeCodePlugin: "Claude Code plugin"
         case .unknown: "Local Process"
         }
     }
@@ -193,7 +197,7 @@ public enum ServiceType: String, CaseIterable, Codable, Sendable {
         case .postgres, .mysql, .mongodb, .redis, .elasticsearch, .meilisearch,
              .memcached, .valkey, .clickhouse, .typesense, .qdrant:
             .database
-        case .minio, .mailpit, .mailhog, .rabbitmq, .kafka, .nats, .temporal, .docker:
+        case .minio, .mailpit, .mailhog, .rabbitmq, .kafka, .nats, .temporal, .docker, .claudeCodePlugin:
             .infrastructure
         case .unknown:
             .unknown
@@ -263,7 +267,8 @@ public enum ServiceType: String, CaseIterable, Codable, Sendable {
         case .qdrant: [6333, 6334]
         case .temporal: [8233, 7233]
         // A container publishes whatever it likes. There is no default to claim.
-        case .docker: []
+        // A plugin daemon picks its own port, so none identifies it.
+        case .docker, .claudeCodePlugin: []
         case .nginx: [80, 8080]
         case .caddy: [80, 443, 2019]
         case .ngrok: [4040]

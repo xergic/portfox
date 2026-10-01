@@ -8,6 +8,20 @@ public extension DetectorCatalog {
     /// Local daemons, queues, proxies and developer tooling. None of these needs
     /// project context: the executable name alone identifies them.
     static let daemons: [any ServiceDetector] = [
+        // A plugin's background worker runs under whatever runtime the plugin
+        // ships (bun, node), from a working directory inherited from the Claude
+        // Code session that spawned it. Identity is the cache path alone, and the
+        // row is infrastructure so that inherited directory never files it under
+        // an unrelated project.
+        RuleBasedDetector(
+            type: .claudeCodePlugin,
+            threshold: standardThreshold,
+            signals: [
+                .custom("command runs from the Claude Code plugin cache", 100, group: "command") { ctx in
+                    ClaudeCodePlugin(command: ctx.process.command) != nil
+                }
+            ]
+        ),
         RuleBasedDetector(
             type: .minio,
             threshold: standardThreshold,

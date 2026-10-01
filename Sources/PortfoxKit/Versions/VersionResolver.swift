@@ -72,6 +72,9 @@ public actor VersionResolver {
 
     private func resolveVersion(for service: RunningService) async -> String? {
         let listener = service.listenerProcess
+        if service.type == .claudeCodePlugin {
+            return ClaudeCodePlugin(command: listener.command).flatMap { Self.display($0.version) }
+        }
         if let framework = frameworkVersion(type: service.type, project: service.project, command: listener.command) {
             return framework
         }
