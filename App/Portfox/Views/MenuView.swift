@@ -63,9 +63,11 @@ struct MenuView: View {
         let result = state.result
         let devServiceCount = result.services.count - result.standalone.count - ungrouped.count
         return HStack(spacing: 14) {
-            SummaryCount(count: devServiceCount, label: devServiceCount == 1 ? "dev service" : "dev services", dot: Theme.accent)
-            if !state.result.standalone.isEmpty {
-                SummaryCount(count: state.result.standalone.count, label: "infrastructure", dot: Theme.pathDirectory)
+            if devServiceCount > 0 {
+                SummaryCount(count: devServiceCount, label: devServiceCount == 1 ? "dev service" : "dev services", dot: Theme.accent)
+            }
+            if !result.standalone.isEmpty {
+                SummaryCount(count: result.standalone.count, label: "infrastructure", dot: Theme.pathDirectory)
             }
             if !ungrouped.isEmpty {
                 SummaryCount(count: ungrouped.count, label: "other", dot: Theme.tertiaryText)
