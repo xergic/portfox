@@ -24,9 +24,7 @@ struct AboutSheet: View {
 
     private var identity: some View {
         VStack(spacing: 8) {
-            Image(nsImage: NSApp.applicationIconImage)
-                .resizable()
-                .frame(width: 64, height: 64)
+            AppIconView(size: 64)
                 .padding(.bottom, 2)
 
             Text(AppInfo.name)
@@ -97,5 +95,22 @@ struct AboutSheet: View {
                 RoundedRectangle(cornerRadius: 7, style: .continuous)
                     .strokeBorder(Theme.border, lineWidth: 1)
             )
+    }
+}
+
+/// `NSApplication.shared` rather than `NSApp`, which is nil while the scene builds.
+/// Not `NSImage(named: NSImage.applicationIconName)`: under `ImageRenderer` that
+/// image washes the whole snapshot out to grey.
+struct AppIconView: View {
+    private static let image = NSApplication.shared.applicationIconImage
+
+    let size: CGFloat
+
+    var body: some View {
+        if let image = Self.image {
+            Image(nsImage: image)
+                .resizable()
+                .frame(width: size, height: size)
+        }
     }
 }

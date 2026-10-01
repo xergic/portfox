@@ -14,14 +14,15 @@ struct MenuView: View {
     @State private var listHeight: CGFloat = Theme.Metrics.maximumListHeight
 
     var body: some View {
+        let ungrouped = ungroupedServices
         VStack(spacing: 0) {
-            header
+            header(ungrouped: ungrouped)
             Divider().overlay(Theme.separator)
 
             if state.result.services.isEmpty {
                 emptyState
             } else {
-                list
+                MeasuredScrollView(height: $listHeight, scrolls: scrolls) { listContent(ungrouped: ungrouped) }
             }
 
             Divider().overlay(Theme.separator)
@@ -34,42 +35,61 @@ struct MenuView: View {
         .onDisappear { state.popoverDidDisappear() }
     }
 
-    private var header: some View {
-        HStack(spacing: 8) {
-            Text("Portfox")
-                .font(.system(size: 15, weight: .bold))
-                .foregroundStyle(Theme.primaryText)
-
-            Text(String(state.serviceCount))
-                .font(.portCount)
-                .foregroundStyle(Theme.secondaryText)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(
-                    RoundedRectangle(cornerRadius: 5, style: .continuous).fill(Theme.pill)
-                )
-
-            Spacer()
-
-            IconButton(symbol: "arrow.trianglehead.2.clockwise", help: "Refresh") {
-                Task { await state.refresh(.userRequested) }
-            }
-            .rotationEffect(.degrees(state.isRefreshing ? 360 : 0))
-            .animation(
-                state.isRefreshing ? .linear(duration: 0.9).repeatForever(autoreverses: false) : .default,
-                value: state.isRefreshing
-            )
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-    }
-
-    private var list: some View {
-        MeasuredScrollView(height: $listHeight, scrolls: scrolls) { listContent }
-    }
-
-    private var listContent: some View {
+    private func header(ungrouped: [RunningService]) -> some View {
         VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                AppIconView(size: 34)
+
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(AppInfo.name)
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(Theme.primaryText)
+                    Text("Local services")
+                        .font(.portDetail)
+                        .foregroundStyle(Theme.secondaryText)
+                }
+
+                Spacer()
+
+                IconButton(
+                    symbol: "arrow.trianglehead.2.clockwise",
+                    help: "Refresh",
+                    symbolSize: 13,
+                    frameSize: 30,
+                    filled: true,
+                    spins: state.isRefreshing
+                ) {
+                    Task { await state.refresh(.userRequested) }
+                }
+            }
+
+            if !state.result.services.isEmpty {
+                summary(ungrouped: ungrouped)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.top, 12)
+        .padding(.bottom, 10)
+    }
+
+    /// Groups, standalone and ungrouped partition `services`, so the dev count
+    /// falls out by subtraction instead of another pass over the groups.
+    private func summary(ungrouped: [RunningService]) -> some View {
+        let result = state.result
+        let devServiceCount = result.services.count - result.standalone.count - ungrouped.count
+        return HStack(spacing: 14) {
+            SummaryCount(count: devServiceCount, label: devServiceCount == 1 ? "dev service" : "dev services", dot: Theme.accent)
+            if !state.result.standalone.isEmpty {
+                SummaryCount(count: state.result.standalone.count, label: "infrastructure", dot: Theme.pathDirectory)
+            }
+            if !ungrouped.isEmpty {
+                SummaryCount(count: ungrouped.count, label: "other", dot: Theme.tertiaryText)
+            }
+        }
+    }
+
+    private func listContent(ungrouped: [RunningService]) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
                 if let error = state.lastError {
                     ErrorBanner(message: error)
                 }
@@ -79,8 +99,8 @@ struct MenuView: View {
                 }
 
                 if !state.result.standalone.isEmpty {
-                    VStack(alignment: .leading, spacing: 0) {
-                        SectionHeader(title: "INFRASTRUCTURE & DAEMONS")
+                    VStack(alignment: .leading, spacing: 6) {
+                        SectionHeader(title: "Infrastructure & daemons")
                         ForEach(state.result.standalone) { service in
                             ServiceRowView(service: service, layout: state.cellLayout, forcedHover: forcesHover)
                         }
@@ -88,21 +108,22 @@ struct MenuView: View {
                 }
 
                 if !ungrouped.isEmpty {
-                    VStack(alignment: .leading, spacing: 0) {
-                        SectionHeader(title: "OTHER LISTENERS")
+                    VStack(alignment: .leading, spacing: 6) {
+                        SectionHeader(title: "Other listeners")
                         ForEach(ungrouped) { service in
                             ServiceRowView(service: service, layout: state.cellLayout)
                         }
                     }
                 }
             }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 12)
+        .environment(\.rowStyle, .card)
     }
 
     /// Services with a project that the grouper did not place, plus anything the
     /// split missed. Showing them beats silently dropping a running server.
-    private var ungrouped: [RunningService] {
+    private var ungroupedServices: [RunningService] {
         let placed = Set(
             state.result.groups.flatMap { $0.services.map(\.id) } + state.result.standalone.map(\.id)
         )
@@ -162,8 +183,8 @@ struct MenuView: View {
                 .foregroundStyle(Theme.secondaryText)
                 .keyboardShortcut("q")
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 9)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
     }
 }
 
@@ -195,6 +216,24 @@ private struct StopAllButton: View {
         }
         .onHover { hovering in
             if !hovering { isArmed = false }
+        }
+    }
+}
+
+private struct SummaryCount: View {
+    let count: Int
+    let label: String
+    let dot: Color
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Circle().fill(dot).frame(width: 6, height: 6)
+            Text(String(count))
+                .font(.portDetailStrong)
+                .foregroundStyle(Theme.primaryText)
+            Text(label)
+                .font(.portDetail)
+                .foregroundStyle(Theme.secondaryText)
         }
     }
 }

@@ -3,6 +3,7 @@ import SwiftUI
 
 struct ProjectSectionView: View {
     @Environment(AppState.self) private var state
+    @Environment(\.rowStyle) private var style
 
     let group: ProjectGroup
     var layout: ServiceCellLayout = .serviceFirst
@@ -17,7 +18,7 @@ struct ProjectSectionView: View {
     @State private var assets: [ProjectAsset] = []
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: style.sectionSpacing) {
             header
             services
         }
@@ -36,25 +37,25 @@ struct ProjectSectionView: View {
                 .lineLimit(1)
                 .fixedSize()
             Text(group.project.displayPath)
-                .font(.portSubtitle)
+                .font(style.subtitleFont)
                 .foregroundStyle(Theme.secondaryText)
                 .lineLimit(1)
                 .truncationMode(.head)
                 .padding(.trailing, showsHoverActions ? Theme.Metrics.projectActionsWidth : 0)
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
+        .padding(.horizontal, style.headerHorizontalPadding)
+        .padding(.vertical, style.headerVerticalPadding)
         .background(
             RoundedRectangle(cornerRadius: Theme.Metrics.cardRadius, style: .continuous)
-                .fill(Theme.card)
+                .fill(style.headerFill)
         )
         // An overlay rather than another element in the stack. Inserting the
         // buttons on hover would re-truncate the path and shift the row under
         // the pointer, which reads as the row jumping.
         .overlay(alignment: .trailing) {
             if showsHoverActions, showsActions {
-                actions.padding(.trailing, 8)
+                actions.padding(.trailing, style.headerActionsInset)
             }
         }
         .contentShape(Rectangle())
@@ -99,7 +100,7 @@ struct ProjectSectionView: View {
     }
 
     private var services: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: style.rowSpacing) {
             ForEach(group.services) { service in
                 ServiceRowView(
                     service: service,
@@ -111,7 +112,7 @@ struct ProjectSectionView: View {
                 )
             }
         }
-        .padding(.leading, 7)
+        .padding(.leading, style.rowIndent)
     }
 
     private var showsActions: Bool { isHovering || forcesHover }
@@ -125,15 +126,15 @@ struct ProjectSectionView: View {
 }
 
 struct SectionHeader: View {
+    @Environment(\.rowStyle) private var style
     let title: String
 
     var body: some View {
         Text(title)
-            .font(.portSection)
-            .kerning(0.8)
-            .foregroundStyle(Theme.tertiaryText)
-            .padding(.horizontal, 12)
-            .padding(.top, 8)
-            .padding(.bottom, 2)
+            .font(style.sectionFont)
+            .kerning(style.sectionKerning)
+            .textCase(style.sectionCase)
+            .foregroundStyle(style.sectionColor)
+            .padding(style.sectionInsets)
     }
 }

@@ -3,6 +3,7 @@ import SwiftUI
 
 struct ServiceRowView: View {
     @Environment(AppState.self) private var state
+    @Environment(\.rowStyle) private var style
 
     let service: RunningService
     var layout: ServiceCellLayout = .serviceFirst
@@ -40,14 +41,14 @@ struct ServiceRowView: View {
 
             PortPill(port: service.port)
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 7)
+        .padding(.horizontal, style.horizontalPadding)
+        .padding(.vertical, style.verticalPadding)
         // Overlaid beside the port pill rather than inserted into the stack, so
         // showing the actions never re-truncates the text under the pointer.
         .overlay(alignment: .trailing) {
             if showsActions {
                 HoverActionsView(service: service)
-                    .padding(.trailing, Theme.Metrics.portPillWidth + 14)
+                    .padding(.trailing, Theme.Metrics.portPillWidth + style.horizontalPadding + 4)
             }
         }
         .background(rowBackground)
@@ -70,17 +71,11 @@ struct ServiceRowView: View {
     /// In fast and out slow: the row has to announce itself, then get out of the
     /// way. Both fit inside `ServiceArrivals.flashDuration` with room to spare.
     private var rowBackground: some View {
-        RoundedRectangle(cornerRadius: Theme.Metrics.rowRadius, style: .continuous)
-            .fill(isHighlighted ? Theme.cardHover : .clear)
-            .overlay(
-                RoundedRectangle(cornerRadius: Theme.Metrics.rowRadius, style: .continuous)
-                    .fill(Theme.arrivalRow)
-                    .opacity(showsArrival ? 1 : 0)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: Theme.Metrics.rowRadius, style: .continuous)
-                    .strokeBorder(borderColor, lineWidth: isSelected ? 1.5 : 1)
-            )
+        let shape = RoundedRectangle(cornerRadius: style.radius, style: .continuous)
+        return shape
+            .fill(isHighlighted ? Theme.cardHover : style.restFill)
+            .overlay(shape.fill(Theme.arrivalRow).opacity(showsArrival ? 1 : 0))
+            .overlay(shape.strokeBorder(borderColor, lineWidth: isSelected ? 1.5 : 1))
             .animation(showsArrival ? .easeOut(duration: 0.2) : .easeIn(duration: 0.9), value: showsArrival)
     }
 
@@ -99,7 +94,7 @@ struct ServiceRowView: View {
                 ServiceIconView(type: service.type, size: Theme.Metrics.serviceIconSmall)
             }
             Text(service.displayName)
-                .font(effectiveLayout == .projectFirst ? .portSubtitle : .portName)
+                .font(effectiveLayout == .projectFirst ? style.subtitleFont : .portName)
                 .foregroundStyle(effectiveLayout == .projectFirst ? Theme.secondaryText : Theme.primaryText)
                 .lineLimit(1)
                 .truncationMode(.tail)
@@ -130,7 +125,7 @@ struct ServiceRowView: View {
         HStack(spacing: 4) {
             if let subtitle = service.subtitle {
                 Text(subtitle)
-                    .font(.portSubtitle)
+                    .font(style.subtitleFont)
                     .foregroundStyle(Theme.secondaryText)
                     .lineLimit(1)
                     .truncationMode(.tail)
@@ -187,13 +182,15 @@ struct ServiceRowView: View {
     private var isHighlighted: Bool { showsActions || isSelected || (isHovering && !showsHoverActions) }
     private var borderColor: Color {
         if isSelected { return Theme.accent }
-        return isHighlighted ? Theme.border : .clear
+        if isHighlighted { return Theme.border }
+        return style.restBorder
     }
 }
 
 /// A dim fact appended to a line: the version of the thing that is running, or
 /// how long it has been up.
 struct TrailingFact: View {
+    @Environment(\.rowStyle) private var style
     let text: String
     /// Beside a service name the fact must never shrink, since the name can
     /// truncate instead. Beside a folder it is the fact that gives way.
@@ -201,7 +198,7 @@ struct TrailingFact: View {
 
     var body: some View {
         Text(text)
-            .font(.portVersion)
+            .font(style.factFont)
             .foregroundStyle(Theme.tertiaryText)
             .lineLimit(1)
             .truncationMode(.tail)

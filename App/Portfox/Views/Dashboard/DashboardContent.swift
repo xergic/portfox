@@ -88,15 +88,11 @@ struct DashboardContent: View {
                 symbol: "arrow.trianglehead.2.clockwise",
                 help: "Refresh",
                 symbolSize: Theme.Metrics.dashboardSymbolSize,
-                frameSize: Theme.Metrics.dashboardButtonSize
+                frameSize: Theme.Metrics.dashboardButtonSize,
+                spins: state.isRefreshing
             ) {
                 Task { await state.refresh(.userRequested) }
             }
-            .rotationEffect(.degrees(state.isRefreshing ? 360 : 0))
-            .animation(
-                state.isRefreshing ? .linear(duration: 0.9).repeatForever(autoreverses: false) : .default,
-                value: state.isRefreshing
-            )
 
             IconButton(
                 symbol: "slider.horizontal.3",

@@ -148,7 +148,11 @@ extension Font {
     static let portPort = Font.mono(12, .medium)
     static let portVersion = Font.mono(10)
     static let portSection = Font.system(size: 10, weight: .semibold)
-    static let portCount = Font.mono(11, .medium)
+    static let portSectionLabel = Font.system(size: 12, weight: .medium)
+    /// Proportional secondary text in the popover: subtitles, summary labels.
+    static let portDetail = Font.system(size: 12)
+    static let portDetailStrong = Font.system(size: 12, weight: .semibold)
+    static let portCaption = Font.system(size: 11)
 }
 
 extension View {

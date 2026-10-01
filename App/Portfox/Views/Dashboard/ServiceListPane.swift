@@ -125,7 +125,7 @@ struct ServiceListPane: View {
 
             if !visible.standalone.isEmpty {
                 VStack(alignment: .leading, spacing: 0) {
-                    SectionHeader(title: "INFRASTRUCTURE & DAEMONS")
+                    SectionHeader(title: "Infrastructure & daemons")
                     ForEach(visible.standalone) { service in
                         row(service, selectedID: selectedID)
                     }
@@ -135,7 +135,7 @@ struct ServiceListPane: View {
             let ungrouped = ungrouped(in: visible)
             if !ungrouped.isEmpty {
                 VStack(alignment: .leading, spacing: 0) {
-                    SectionHeader(title: "OTHER LISTENERS")
+                    SectionHeader(title: "Other listeners")
                     ForEach(ungrouped) { service in
                         row(service, selectedID: selectedID)
                     }
