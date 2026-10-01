@@ -56,6 +56,13 @@ enum Theme {
         light: successLight.withAlphaComponent(0.55)
     )
 
+    /// Opaque, the accent mixed into `card`, so it can stand in for the card fill.
+    static let selectedRow = dynamic(dark: srgb(0.095, 0.174, 0.180), light: srgb(0.860, 0.970, 0.964))
+    static let selectedBorder = dynamic(
+        dark: accentBrand.withAlphaComponent(0.55),
+        light: accentBrand.withAlphaComponent(0.70)
+    )
+
     /// A row that appeared since the previous scan, washed for a few seconds.
     /// Same asymmetry as `listenerRow` and for the same measured reason: alpha
     /// over near-black and alpha over white do not read the same, so light gets
@@ -93,7 +100,15 @@ enum Theme {
         static let popoverWidth: CGFloat = 404
         static let maximumListHeight: CGFloat = 460
         static let cardRadius: CGFloat = 10
-        static let rowRadius: CGFloat = 9
+        /// Action buttons, the search field and the segmented filter.
+        static let controlRadius: CGFloat = 8
+        static let controlHeight: CGFloat = 28
+        static let badgeRadius: CGFloat = 5
+        static let rowPaddingH: CGFloat = 12
+        static let rowPaddingV: CGFloat = 9
+        /// The label column of a detail card, wide enough for "Working directory".
+        static let factLabelWidth: CGFloat = 118
+        static let treeIndent: CGFloat = 18
         static let serviceIcon: CGFloat = 22
         /// Beside a service name on the bottom line of a project-first cell.
         static let serviceIconSmall: CGFloat = 13
@@ -109,10 +124,9 @@ enum Theme {
         static let projectActionsWidth: CGFloat = 92
         static let projectIcon: CGFloat = 22
 
-        /// The dashboard top bar is 52 points tall, so its buttons can be far larger
-        /// than a 20 point row action without crowding anything.
-        static let dashboardButtonSize: CGFloat = 32
-        static let dashboardSymbolSize: CGFloat = 16
+        /// The filled buttons beside the app name, in the popover and the dashboard.
+        static let headerButtonSize: CGFloat = 30
+        static let headerSymbolSize: CGFloat = 13
         static let dashboardWidth: CGFloat = 1180
         static let dashboardHeight: CGFloat = 820
         static let sidebarWidth: CGFloat = 300
@@ -146,13 +160,12 @@ extension Font {
     static let portProject = Font.system(size: 13, weight: .bold)
     static let portSubtitle = Font.mono(11)
     static let portPort = Font.mono(12, .medium)
-    static let portVersion = Font.mono(10)
-    static let portSection = Font.system(size: 10, weight: .semibold)
     static let portSectionLabel = Font.system(size: 12, weight: .medium)
-    /// Proportional secondary text in the popover: subtitles, summary labels.
+    /// Proportional secondary text: subtitles, summary labels, fact labels.
     static let portDetail = Font.system(size: 12)
     static let portDetailStrong = Font.system(size: 12, weight: .semibold)
     static let portCaption = Font.system(size: 11)
+    static let portBadge = Font.system(size: 11, weight: .medium)
 }
 
 extension View {

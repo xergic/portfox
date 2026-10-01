@@ -3,7 +3,6 @@ import SwiftUI
 
 struct ServiceRowView: View {
     @Environment(AppState.self) private var state
-    @Environment(\.rowStyle) private var style
 
     let service: RunningService
     var layout: ServiceCellLayout = .serviceFirst
@@ -41,14 +40,14 @@ struct ServiceRowView: View {
 
             PortPill(port: service.port)
         }
-        .padding(.horizontal, style.horizontalPadding)
-        .padding(.vertical, style.verticalPadding)
+        .padding(.horizontal, Theme.Metrics.rowPaddingH)
+        .padding(.vertical, Theme.Metrics.rowPaddingV)
         // Overlaid beside the port pill rather than inserted into the stack, so
         // showing the actions never re-truncates the text under the pointer.
         .overlay(alignment: .trailing) {
             if showsActions {
                 HoverActionsView(service: service)
-                    .padding(.trailing, Theme.Metrics.portPillWidth + style.horizontalPadding + 4)
+                    .padding(.trailing, Theme.Metrics.portPillWidth + Theme.Metrics.rowPaddingH + 4)
             }
         }
         .background(rowBackground)
@@ -64,19 +63,23 @@ struct ServiceRowView: View {
         .opacity(state.isBusy(service) ? 0.5 : 1)
     }
 
-    /// The arrival wash sits over the hover fill and under the border, so a row
-    /// that is both flashing and hovered still lightens and still reveals its
-    /// actions, and nothing shifts when the flash ends.
+    /// The arrival wash sits over the hover fill, so a row that is both flashing
+    /// and hovered still lightens and still reveals its actions, and nothing
+    /// shifts when the flash ends.
     ///
     /// In fast and out slow: the row has to announce itself, then get out of the
     /// way. Both fit inside `ServiceArrivals.flashDuration` with room to spare.
     private var rowBackground: some View {
-        let shape = RoundedRectangle(cornerRadius: style.radius, style: .continuous)
-        return shape
-            .fill(isHighlighted ? Theme.cardHover : style.restFill)
-            .overlay(shape.fill(Theme.arrivalRow).opacity(showsArrival ? 1 : 0))
-            .overlay(shape.strokeBorder(borderColor, lineWidth: isSelected ? 1.5 : 1))
-            .animation(showsArrival ? .easeOut(duration: 0.2) : .easeIn(duration: 0.9), value: showsArrival)
+        CardBackground(
+            fill: isSelected ? Theme.selectedRow : (isHighlighted ? Theme.cardHover : Theme.card),
+            border: borderColor
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.Metrics.cardRadius, style: .continuous)
+                .fill(Theme.arrivalRow)
+                .opacity(showsArrival ? 1 : 0)
+        )
+        .animation(showsArrival ? .easeOut(duration: 0.2) : .easeIn(duration: 0.9), value: showsArrival)
     }
 
     /// Project-first leads with the project's own icon, which is usually its
@@ -94,7 +97,7 @@ struct ServiceRowView: View {
                 ServiceIconView(type: service.type, size: Theme.Metrics.serviceIconSmall)
             }
             Text(service.displayName)
-                .font(effectiveLayout == .projectFirst ? style.subtitleFont : .portName)
+                .font(effectiveLayout == .projectFirst ? .portDetail : .portName)
                 .foregroundStyle(effectiveLayout == .projectFirst ? Theme.secondaryText : Theme.primaryText)
                 .lineLimit(1)
                 .truncationMode(.tail)
@@ -125,7 +128,7 @@ struct ServiceRowView: View {
         HStack(spacing: 4) {
             if let subtitle = service.subtitle {
                 Text(subtitle)
-                    .font(style.subtitleFont)
+                    .font(.portDetail)
                     .foregroundStyle(Theme.secondaryText)
                     .lineLimit(1)
                     .truncationMode(.tail)
@@ -179,18 +182,16 @@ struct ServiceRowView: View {
     }
 
     private var showsActions: Bool { showsHoverActions && (isHovering || forcedHover) }
-    private var isHighlighted: Bool { showsActions || isSelected || (isHovering && !showsHoverActions) }
+    private var isHighlighted: Bool { showsActions || (isHovering && !showsHoverActions) }
     private var borderColor: Color {
-        if isSelected { return Theme.accent }
-        if isHighlighted { return Theme.border }
-        return style.restBorder
+        if isSelected { return Theme.selectedBorder }
+        return isHighlighted ? Theme.border : Theme.separator
     }
 }
 
 /// A dim fact appended to a line: the version of the thing that is running, or
 /// how long it has been up.
 struct TrailingFact: View {
-    @Environment(\.rowStyle) private var style
     let text: String
     /// Beside a service name the fact must never shrink, since the name can
     /// truncate instead. Beside a folder it is the fact that gives way.
@@ -198,7 +199,7 @@ struct TrailingFact: View {
 
     var body: some View {
         Text(text)
-            .font(style.factFont)
+            .font(.portCaption)
             .foregroundStyle(Theme.tertiaryText)
             .lineLimit(1)
             .truncationMode(.tail)

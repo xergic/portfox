@@ -43,7 +43,7 @@ struct ServiceDetailPane: View {
     }
 
     private var metadata: some View {
-        DetailCard(title: "PROCESS METADATA", systemImage: "terminal") {
+        DetailCard(title: "Process metadata", systemImage: "terminal") {
             VStack(spacing: 8) {
                 LabeledRow(label: "PID", value: String(service.listenerProcess.pid), layout: .inline)
                 LabeledRow(
@@ -77,16 +77,16 @@ struct ServiceDetailPane: View {
     }
 
     private var inspection: some View {
-        DetailCard(title: "HTTP INSPECTION", systemImage: "globe") {
+        DetailCard(title: "HTTP inspection", systemImage: "globe") {
             VStack(spacing: 8) {
                 switch dashboard.probeResult(for: service) {
                 case .success(let probe):
                     LabeledRow(
                         label: "Status",
                         value: nil,
-                        badge: StatusPill(text: statusText(probe.statusCode), tint: statusTint(probe.statusCode))
+                        badge: TintedBadge(text: statusText(probe.statusCode), tint: statusTint(probe.statusCode))
                     )
-                    LabeledRow(label: "Page title", value: probe.title)
+                    LabeledRow(label: "Page title", value: probe.title, valueFont: .portDetail)
                     if let location = probe.location {
                         LabeledRow(label: "Redirects to", value: location)
                     }
@@ -94,12 +94,12 @@ struct ServiceDetailPane: View {
                     LabeledRow(label: "Response latency", value: latency(probe.latency))
                 case .failure(let message):
                     Text(message)
-                        .font(.portSubtitle)
+                        .font(.portDetail)
                         .foregroundStyle(Theme.danger)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 case nil:
                     Text("Not inspected yet. Portfox never probes a server on its own.")
-                        .font(.portSubtitle)
+                        .font(.portDetail)
                         .foregroundStyle(Theme.tertiaryText)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -111,25 +111,9 @@ struct ServiceDetailPane: View {
     private var probeButton: some View {
         HStack {
             Spacer(minLength: 0)
-            Button {
+            ActionButton(symbol: "waveform.path.ecg", label: dashboard.isProbing(service) ? "Inspecting…" : inspectLabel) {
                 Task { await dashboard.runProbe(for: service) }
-            } label: {
-                Text(dashboard.isProbing(service) ? "Inspecting…" : inspectLabel)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(Theme.primaryText)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
-                            .fill(Theme.cardHover)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                    .strokeBorder(Theme.border, lineWidth: 1)
-                            )
-                    )
-                    .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
             .disabled(dashboard.isProbing(service))
         }
         .padding(.top, 2)
@@ -152,7 +136,8 @@ struct ServiceDetailPane: View {
     }
 
     private func statusText(_ code: Int) -> String {
-        "\(String(code)) \(HTTPURLResponse.localizedString(forStatusCode: code).uppercased())"
+        let reason = HTTPURLResponse.localizedString(forStatusCode: code)
+        return "\(String(code)) \(reason.prefix(1).localizedUppercase)\(reason.dropFirst())"
     }
 
     private func statusTint(_ code: Int) -> Color {

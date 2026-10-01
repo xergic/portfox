@@ -82,14 +82,7 @@ struct AppMenu: View {
             .fixedSize()
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
-            .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(Theme.pill)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .strokeBorder(Theme.border, lineWidth: 1)
-                    )
-            )
+            .background(ControlBackground(fill: Theme.pill))
         }
     }
 
@@ -97,43 +90,5 @@ struct AppMenu: View {
     /// app while Open in… launches another.
     private var currentName: String {
         ExternalApps.resolve(selection, among: apps)?.name ?? fallback
-    }
-}
-
-struct SegmentedControl<Value: Hashable>: View {
-    @Binding var selection: Value
-    let options: [(value: Value, label: String)]
-    var isEnabled = true
-
-    var body: some View {
-        HStack(spacing: 2) {
-            ForEach(options, id: \.value) { option in
-                Button {
-                    selection = option.value
-                } label: {
-                    Text(option.label)
-                        .font(.mono(11, .medium))
-                        .foregroundStyle(option.value == selection ? Theme.onAccent : Theme.secondaryText)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .fill(option.value == selection ? Theme.accent : Color.clear)
-                        )
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(2)
-        .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(Theme.pill)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .strokeBorder(Theme.border, lineWidth: 1)
-                )
-        )
-        .opacity(isEnabled ? 1 : 0.4)
-        .allowsHitTesting(isEnabled)
     }
 }

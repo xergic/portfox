@@ -25,14 +25,7 @@ struct ServiceHeaderView: View {
     private var iconBadge: some View {
         ServiceIconView(type: service.type, projectIconPath: projectIconPath, size: 32)
             .frame(width: 46, height: 46)
-            .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Theme.card)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .strokeBorder(Theme.border, lineWidth: 1)
-                    )
-            )
+            .background(CardBackground())
     }
 
     private var titleLine: some View {
@@ -61,7 +54,7 @@ struct ServiceHeaderView: View {
 
     private func pill(text: String) -> some View {
         Text(text)
-            .font(.mono(10))
+            .font(.portCaption)
             .foregroundStyle(Theme.secondaryText)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
@@ -71,18 +64,16 @@ struct ServiceHeaderView: View {
             )
     }
 
+    /// The address is the one part a user copies, so it alone stays monospace.
     private var socketLine: Text {
         // A port is an identifier, not a quantity. Locale grouping renders
         // 3111 as "3 111".
-        let host = Text("Listening on \(service.primarySocket.displayHost):")
-            .foregroundStyle(Theme.secondaryText)
+        let host = Text("\(service.primarySocket.displayHost):").foregroundStyle(Theme.secondaryText)
         let port = Text(String(service.port)).foregroundStyle(Theme.primaryText)
-        let socketKind = Text(" (TCP)").foregroundStyle(Theme.secondaryText)
-        let base = host + port + socketKind
-        let started = service.listenerProcess.startTime.map {
-            Text(" · Started \(Uptime.label(since: $0))").foregroundStyle(Theme.secondaryText)
-        }
-        return (started.map { base + $0 } ?? base).font(.portSubtitle)
+        let started = service.listenerProcess.startTime.map { " · Started \(Uptime.label(since: $0))" } ?? ""
+        return (Text("Listening on ") + (host + port).font(.portSubtitle) + Text(" (TCP)\(started)"))
+            .font(.portDetail)
+            .foregroundStyle(Theme.secondaryText)
     }
 
     private var actions: some View {
@@ -116,42 +107,5 @@ struct ServiceHeaderView: View {
             : ActionButton(symbol: "stop.fill", label: "Stop", tint: Theme.danger) {
                 Task { await state.stop(service) }
             }
-    }
-}
-
-/// Shared chrome for the header card's action buttons. The primary variant is
-/// filled with the accent colour; every other button shares the same
-/// secondary, outlined pill and is told apart by its icon and tint.
-private struct ActionButton: View {
-    let symbol: String
-    let label: String
-    var isPrimary = false
-    var tint: Color = Theme.primaryText
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 5) {
-                Image(systemName: symbol)
-                    .font(.system(size: 11, weight: .medium))
-                Text(label)
-                    .font(.system(size: 12, weight: .medium))
-                    .lineLimit(1)
-            }
-            .fixedSize()
-            .foregroundStyle(isPrimary ? Theme.onAccent : tint)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .fill(isPrimary ? Theme.accent : Theme.cardHover)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
-                            .strokeBorder(isPrimary ? .clear : Theme.border, lineWidth: 1)
-                    )
-            )
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
     }
 }

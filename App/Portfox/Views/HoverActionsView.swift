@@ -34,13 +34,6 @@ struct HoverActionsView: View {
         .fixedSize()
         .padding(.horizontal, 3)
         .padding(.vertical, 2)
-        .background(
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .fill(Theme.cardHover)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        .strokeBorder(Theme.border, lineWidth: 1)
-                )
-        )
+        .background(ControlBackground(fill: Theme.cardHover))
     }
 }

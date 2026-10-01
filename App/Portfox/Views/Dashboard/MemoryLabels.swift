@@ -8,15 +8,14 @@ import SwiftUI
 /// than the pane, the detail card or the whole process tree that would otherwise
 /// contain the read.
 
-/// Total for every visible service, shown beside the dashboard title.
+/// Total for every visible service, in the dashboard's summary line.
 struct WatchedMemoryLabel: View {
     @Environment(AppState.self) private var state
 
     var body: some View {
-        if state.watchedMemoryBytes > 0 {
-            Text("\(ByteFormat.short(state.watchedMemoryBytes)) watched")
-                .font(.portSubtitle)
-                .foregroundStyle(Theme.tertiaryText)
+        let bytes = state.watchedMemoryBytes
+        if bytes > 0 {
+            SummaryCount(value: ByteFormat.short(bytes), label: "watched", dot: Theme.tertiaryText)
         }
     }
 }
@@ -53,7 +52,7 @@ struct ServiceCPULabel: View {
     var body: some View {
         if let percent = state.cpu(ofServiceAt: pid) {
             Text(CPUFormat.short(percent))
-                .font(.portVersion)
+                .font(.portCaption)
                 .foregroundStyle(percent >= 100 ? Theme.danger : Theme.tertiaryText)
                 .lineLimit(1)
                 .fixedSize(horizontal: true, vertical: false)

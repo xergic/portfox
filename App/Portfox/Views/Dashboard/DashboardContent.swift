@@ -72,23 +72,22 @@ struct DashboardContent: View {
     }
 
     private var topBar: some View {
-        HStack(spacing: 10) {
-            Text("Portfox — Services & Process Inspector")
-                .font(.system(size: 15, weight: .bold))
-                .foregroundStyle(Theme.primaryText)
-                .lineLimit(1)
-
-            Spacer(minLength: 16)
-
-            StatusPill(text: "\(state.serviceCount) Active Services")
-
-            WatchedMemoryLabel()
-
+        AppHeader(subtitle: "Services and process inspector") {
+            HStack(spacing: 14) {
+                SummaryCount(
+                    count: state.serviceCount,
+                    label: state.serviceCount == 1 ? "active service" : "active services",
+                    dot: Theme.accent
+                )
+                WatchedMemoryLabel()
+            }
+        } trailing: {
             IconButton(
                 symbol: "arrow.trianglehead.2.clockwise",
                 help: "Refresh",
-                symbolSize: Theme.Metrics.dashboardSymbolSize,
-                frameSize: Theme.Metrics.dashboardButtonSize,
+                symbolSize: Theme.Metrics.headerSymbolSize,
+                frameSize: Theme.Metrics.headerButtonSize,
+                filled: true,
                 spins: state.isRefreshing
             ) {
                 Task { await state.refresh(.userRequested) }
@@ -97,14 +96,14 @@ struct DashboardContent: View {
             IconButton(
                 symbol: "slider.horizontal.3",
                 help: "Preferences",
-                symbolSize: Theme.Metrics.dashboardSymbolSize,
-                frameSize: Theme.Metrics.dashboardButtonSize
+                symbolSize: Theme.Metrics.headerSymbolSize,
+                frameSize: Theme.Metrics.headerButtonSize,
+                filled: true
             ) {
                 state.presentedSheet = .preferences
             }
         }
-        .padding(.horizontal, 14)
-        .frame(height: 52)
+        .padding(.horizontal, 16)
+        .frame(height: 60)
     }
-
 }

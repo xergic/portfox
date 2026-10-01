@@ -36,35 +36,20 @@ struct MenuView: View {
     }
 
     private func header(ungrouped: [RunningService]) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 10) {
-                AppIconView(size: 34)
-
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(AppInfo.name)
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(Theme.primaryText)
-                    Text("Local services")
-                        .font(.portDetail)
-                        .foregroundStyle(Theme.secondaryText)
-                }
-
-                Spacer()
-
-                IconButton(
-                    symbol: "arrow.trianglehead.2.clockwise",
-                    help: "Refresh",
-                    symbolSize: 13,
-                    frameSize: 30,
-                    filled: true,
-                    spins: state.isRefreshing
-                ) {
-                    Task { await state.refresh(.userRequested) }
-                }
-            }
-
+        AppHeader(subtitle: "Local services", stacksSummary: true) {
             if !state.result.services.isEmpty {
                 summary(ungrouped: ungrouped)
+            }
+        } trailing: {
+            IconButton(
+                symbol: "arrow.trianglehead.2.clockwise",
+                help: "Refresh",
+                symbolSize: Theme.Metrics.headerSymbolSize,
+                frameSize: Theme.Metrics.headerButtonSize,
+                filled: true,
+                spins: state.isRefreshing
+            ) {
+                Task { await state.refresh(.userRequested) }
             }
         }
         .padding(.horizontal, 14)
@@ -118,7 +103,6 @@ struct MenuView: View {
             }
         .padding(.horizontal, 12)
         .padding(.vertical, 12)
-        .environment(\.rowStyle, .card)
     }
 
     /// Services with a project that the grouper did not place, plus anything the
@@ -220,24 +204,6 @@ private struct StopAllButton: View {
     }
 }
 
-private struct SummaryCount: View {
-    let count: Int
-    let label: String
-    let dot: Color
-
-    var body: some View {
-        HStack(spacing: 5) {
-            Circle().fill(dot).frame(width: 6, height: 6)
-            Text(String(count))
-                .font(.portDetailStrong)
-                .foregroundStyle(Theme.primaryText)
-            Text(label)
-                .font(.portDetail)
-                .foregroundStyle(Theme.secondaryText)
-        }
-    }
-}
-
 private struct VersionButton: View {
     let action: () -> Void
 
@@ -246,7 +212,7 @@ private struct VersionButton: View {
     var body: some View {
         Button(action: action) {
             Text(AppInfo.versionLabel)
-                .font(.portVersion)
+                .font(.portCaption)
                 .foregroundStyle(isHovering ? Theme.secondaryText : Theme.tertiaryText)
                 .contentShape(Rectangle())
         }

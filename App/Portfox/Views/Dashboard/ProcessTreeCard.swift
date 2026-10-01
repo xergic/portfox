@@ -8,10 +8,10 @@ struct ProcessTreeCard: View {
     let service: RunningService
 
     var body: some View {
-        DetailCard(title: "PROCESS ANCESTRY & CHILD WORKERS", systemImage: "arrow.triangle.branch") {
+        DetailCard(title: "Process ancestry & child workers", systemImage: "arrow.triangle.branch") {
             if rows.isEmpty {
                 Text("The process tree is not available yet.")
-                    .font(.portSubtitle)
+                    .font(.portDetail)
                     .foregroundStyle(Theme.tertiaryText)
             } else {
                 VStack(alignment: .leading, spacing: 6) {
@@ -109,8 +109,9 @@ struct ProcessLine: Identifiable {
     }
 }
 
-/// One process, drawn as a nested card so the ancestry reads as containment
-/// rather than as a list of indented sentences.
+/// One process, indented under its parent so the ancestry reads as containment
+/// rather than as a list of indented sentences. Only the listener is boxed; the
+/// rest hang off the indent guide, so the nesting does not stack boxes on boxes.
 private struct ProcessLineView: View {
     let line: ProcessLine
 
@@ -120,7 +121,7 @@ private struct ProcessLineView: View {
                 Rectangle()
                     .fill(Theme.border)
                     .frame(width: 1)
-                    .padding(.leading, CGFloat(line.depth) * 18)
+                    .padding(.leading, CGFloat(line.depth) * Theme.Metrics.treeIndent)
                     .padding(.trailing, 11)
             }
             card
@@ -129,42 +130,35 @@ private struct ProcessLineView: View {
     }
 
     private var card: some View {
-        VStack(alignment: .leading, spacing: 7) {
+        VStack(alignment: .leading, spacing: 6) {
             titleRow
             commandBox
         }
-        .padding(10)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 9, style: .continuous)
-                .fill(line.isListener ? Theme.listenerRow : Theme.cardHover)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        .strokeBorder(line.isListener ? Theme.listenerBorder : Theme.border, lineWidth: 1)
-                )
-        )
+        .background {
+            if line.isListener {
+                CardBackground(fill: Theme.listenerRow, border: Theme.listenerBorder)
+            }
+        }
     }
 
     private var titleRow: some View {
-        HStack(spacing: 7) {
+        HStack(spacing: 8) {
             Text("PID \(String(line.process.pid))")
-                .font(.mono(10, .medium))
-                .foregroundStyle(Theme.secondaryText)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(
-                    RoundedRectangle(cornerRadius: 5, style: .continuous).fill(Theme.pill)
-                )
+                .font(.mono(11, .medium))
+                .foregroundStyle(Theme.tertiaryText)
 
             if let name = line.name {
                 Text(name)
-                    .font(.mono(12, .medium))
+                    .font(.mono(12, .semibold))
                     .foregroundStyle(Theme.primaryText)
             }
 
-            tag(line.roleLabel.uppercased(), tint: line.roleColor)
+            TintedBadge(text: line.roleLabel, tint: line.roleColor)
             if line.isStopTarget {
-                tag("STOPS HERE", tint: Theme.danger)
+                TintedBadge(text: "Stops here", tint: Theme.danger)
             }
 
             Spacer(minLength: 8)
@@ -174,18 +168,6 @@ private struct ProcessLineView: View {
         }
     }
 
-    private func tag(_ text: String, tint: Color) -> some View {
-        Text(text)
-            .font(.system(size: 9, weight: .semibold))
-            .kerning(0.5)
-            .foregroundStyle(tint)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(
-                RoundedRectangle(cornerRadius: 5, style: .continuous).fill(tint.opacity(0.14))
-            )
-    }
-
     private var commandBox: some View {
         Text(line.commandText)
             .font(.portSubtitle)
@@ -193,11 +175,10 @@ private struct ProcessLineView: View {
             .lineLimit(1)
             .truncationMode(.middle)
             .padding(.horizontal, 8)
-            .padding(.vertical, 6)
+            .padding(.vertical, 5)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(Theme.background)
+                RoundedRectangle(cornerRadius: Theme.Metrics.badgeRadius, style: .continuous).fill(Theme.pill)
             )
     }
 }

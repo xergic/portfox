@@ -16,14 +16,7 @@ struct PortPill: View {
         .lineLimit(1)
         .fixedSize()
         .frame(width: Theme.Metrics.portPillWidth, height: 21)
-        .background(
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .fill(Theme.pill)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        .strokeBorder(Theme.border, lineWidth: 1)
-                )
-        )
+        .background(ControlBackground(fill: Theme.pill))
     }
 }
 
@@ -54,11 +47,7 @@ struct IconButton: View {
                 )
                 .frame(width: frameSize, height: frameSize)
                 .background {
-                    if filled {
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(isHovering ? Theme.cardHover : Theme.card)
-                            .strokeBorder(Theme.separator, lineWidth: 1)
-                    }
+                    if filled { ControlBackground(isHovering: isHovering) }
                 }
                 .contentShape(Rectangle())
         }

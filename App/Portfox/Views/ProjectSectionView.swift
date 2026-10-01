@@ -3,7 +3,6 @@ import SwiftUI
 
 struct ProjectSectionView: View {
     @Environment(AppState.self) private var state
-    @Environment(\.rowStyle) private var style
 
     let group: ProjectGroup
     var layout: ServiceCellLayout = .serviceFirst
@@ -18,7 +17,7 @@ struct ProjectSectionView: View {
     @State private var assets: [ProjectAsset] = []
 
     var body: some View {
-        VStack(alignment: .leading, spacing: style.sectionSpacing) {
+        VStack(alignment: .leading, spacing: 4) {
             header
             services
         }
@@ -37,25 +36,22 @@ struct ProjectSectionView: View {
                 .lineLimit(1)
                 .fixedSize()
             Text(group.project.displayPath)
-                .font(style.subtitleFont)
+                .font(.portDetail)
                 .foregroundStyle(Theme.secondaryText)
                 .lineLimit(1)
                 .truncationMode(.head)
                 .padding(.trailing, showsHoverActions ? Theme.Metrics.projectActionsWidth : 0)
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, style.headerHorizontalPadding)
-        .padding(.vertical, style.headerVerticalPadding)
-        .background(
-            RoundedRectangle(cornerRadius: Theme.Metrics.cardRadius, style: .continuous)
-                .fill(style.headerFill)
-        )
+        // Bare on the background, because a card header above cards would read
+        // as one more row.
+        .padding(4)
         // An overlay rather than another element in the stack. Inserting the
         // buttons on hover would re-truncate the path and shift the row under
         // the pointer, which reads as the row jumping.
         .overlay(alignment: .trailing) {
             if showsHoverActions, showsActions {
-                actions.padding(.trailing, style.headerActionsInset)
+                actions.padding(.trailing, 12)
             }
         }
         .contentShape(Rectangle())
@@ -89,18 +85,11 @@ struct ProjectSectionView: View {
         .fixedSize()
         .padding(.horizontal, 3)
         .padding(.vertical, 2)
-        .background(
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .fill(Theme.cardHover)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        .strokeBorder(Theme.border, lineWidth: 1)
-                )
-        )
+        .background(ControlBackground(fill: Theme.cardHover))
     }
 
     private var services: some View {
-        VStack(spacing: style.rowSpacing) {
+        VStack(spacing: 6) {
             ForEach(group.services) { service in
                 ServiceRowView(
                     service: service,
@@ -112,7 +101,6 @@ struct ProjectSectionView: View {
                 )
             }
         }
-        .padding(.leading, style.rowIndent)
     }
 
     private var showsActions: Bool { isHovering || forcesHover }
@@ -126,15 +114,12 @@ struct ProjectSectionView: View {
 }
 
 struct SectionHeader: View {
-    @Environment(\.rowStyle) private var style
     let title: String
 
     var body: some View {
         Text(title)
-            .font(style.sectionFont)
-            .kerning(style.sectionKerning)
-            .textCase(style.sectionCase)
-            .foregroundStyle(style.sectionColor)
-            .padding(style.sectionInsets)
+            .font(.portSectionLabel)
+            .foregroundStyle(Theme.secondaryText)
+            .padding(EdgeInsets(top: 6, leading: 4, bottom: 4, trailing: 4))
     }
 }

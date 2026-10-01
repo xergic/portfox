@@ -66,7 +66,7 @@ struct AboutSheet: View {
             .foregroundStyle(Theme.primaryText)
             .padding(.horizontal, 14)
             .padding(.vertical, 6)
-            .background(pillBackground)
+            .background(ControlBackground(fill: Theme.pill))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -82,19 +82,10 @@ struct AboutSheet: View {
                 .foregroundStyle(Theme.primaryText)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 6)
-                .background(pillBackground)
+                .background(ControlBackground(fill: Theme.pill))
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
-    }
-
-    private var pillBackground: some View {
-        RoundedRectangle(cornerRadius: 7, style: .continuous)
-            .fill(Theme.pill)
-            .overlay(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .strokeBorder(Theme.border, lineWidth: 1)
-            )
     }
 }
 
