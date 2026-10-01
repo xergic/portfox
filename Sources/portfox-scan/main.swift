@@ -171,9 +171,16 @@ struct CLI {
             print("")
         }
 
+        if !result.agentTools.isEmpty {
+            print("▸ AGENT TOOLS")
+            for service in result.agentTools { printService(service, indent: "    ") }
+            print("")
+        }
+
         let ungrouped = result.services.filter { service in
             !result.groups.contains { $0.services.contains(where: { $0.id == service.id }) }
                 && !result.standalone.contains(where: { $0.id == service.id })
+                && !result.agentTools.contains(where: { $0.id == service.id })
         }
         if !ungrouped.isEmpty {
             print("▸ UNGROUPED")

@@ -6,6 +6,7 @@ public enum ServiceCategory: String, Codable, Sendable, CaseIterable {
     case api
     case database
     case infrastructure
+    case agent
     case tooling
     case unknown
 }
@@ -197,8 +198,10 @@ public enum ServiceType: String, CaseIterable, Codable, Sendable {
         case .postgres, .mysql, .mongodb, .redis, .elasticsearch, .meilisearch,
              .memcached, .valkey, .clickhouse, .typesense, .qdrant:
             .database
-        case .minio, .mailpit, .mailhog, .rabbitmq, .kafka, .nats, .temporal, .docker, .claudeCodePlugin:
+        case .minio, .mailpit, .mailhog, .rabbitmq, .kafka, .nats, .temporal, .docker:
             .infrastructure
+        case .claudeCodePlugin:
+            .agent
         case .unknown:
             .unknown
         }
@@ -294,7 +297,7 @@ public enum ServiceType: String, CaseIterable, Codable, Sendable {
         switch category {
         case .web, .api, .tooling: true
         case .database, .infrastructure: Self.webInterfaces.contains(self)
-        case .unknown: false
+        case .agent, .unknown: false
         }
     }
 
@@ -308,6 +311,7 @@ public enum ServiceType: String, CaseIterable, Codable, Sendable {
         case .api: "server.rack"
         case .database: "cylinder.split.1x2"
         case .infrastructure: "shippingbox"
+        case .agent: "sparkles"
         case .tooling: "hammer"
         case .unknown: "questionmark.app.dashed"
         }

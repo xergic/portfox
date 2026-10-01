@@ -52,6 +52,18 @@ struct ListenerClassifierTests {
         #expect(result == .infrastructure)
     }
 
+    @Test("a Claude Code plugin daemon is an agent tool that Stop All and Restart skip")
+    func pluginDaemonIsAgentTool() {
+        let result = classifier.classify(
+            process: process(10), detection: detected(.claudeCodePlugin), project: nil, ports: [37701]
+        )
+
+        #expect(result == .agentTool)
+        #expect(!result.isUserManaged)
+        #expect(ServiceClass.infrastructure < .agentTool)
+        #expect(ServiceClass.agentTool < .probableDeveloperProcess)
+    }
+
     @Test("a service bound only to ephemeral ports is system noise even when confidently detected")
     func ephemeralOnlyPortsAreSystemNoise() {
         // The orphaned-workerd case: wrangler's parent died but the child kept

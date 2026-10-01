@@ -60,6 +60,19 @@ struct ScanResultTests {
 
     /// Both describe the machine, not the view, which is why the sidebar footer
     /// can keep counting sockets off a narrowed result.
+    @Test("agent tools are filtered and counted among every service")
+    func agentToolsAreFiltered() {
+        let worker = service("worker", port: 37701)
+        let original = ScanResult(
+            services: [worker], groups: [], standalone: [], agentTools: [worker], allSockets: [], hidden: []
+        )
+
+        #expect(original.keeping { _ in true } == original)
+        #expect(original.keeping { $0.id != "worker" }.agentTools.isEmpty)
+        #expect(original.everyService.map(\.id) == ["worker"])
+        #expect(original.appeared(since: .empty).map(\.id) == ["worker"])
+    }
+
     @Test("allSockets and hidden are carried through untouched")
     func machineFactsSurvive() {
         let original = result()

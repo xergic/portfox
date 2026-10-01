@@ -125,6 +125,15 @@ struct ServiceListPane: View {
                 }
             }
 
+            if !visible.agentTools.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    SectionHeader(title: "Agent tools")
+                    ForEach(visible.agentTools) { service in
+                        row(service, selectedID: selectedID)
+                    }
+                }
+            }
+
             let ungrouped = ungrouped(in: visible)
             if !ungrouped.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
@@ -157,7 +166,8 @@ struct ServiceListPane: View {
     /// running server.
     private func ungrouped(in visible: ScanResult) -> [RunningService] {
         let placed = Set(
-            visible.groups.flatMap { $0.services.map(\.id) } + visible.standalone.map(\.id)
+            visible.groups.flatMap { $0.services.map(\.id) }
+                + visible.standalone.map(\.id) + visible.agentTools.map(\.id)
         )
         return visible.services.filter { !placed.contains($0.id) }
     }

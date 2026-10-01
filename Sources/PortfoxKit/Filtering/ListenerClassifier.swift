@@ -49,6 +49,7 @@ public struct ListenerClassifier: Sendable {
         if detection.type != .unknown {
             switch detection.type.category {
             case .database, .infrastructure: return .infrastructure
+            case .agent: return .agentTool
             default: return .developmentService
             }
         }

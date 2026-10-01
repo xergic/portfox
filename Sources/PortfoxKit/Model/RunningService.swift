@@ -6,6 +6,8 @@ public enum ServiceClass: String, Codable, Sendable, Comparable {
     case developmentService
     /// A detector claimed it as a database or daemon.
     case infrastructure
+    /// A detector claimed it as tooling for an AI agent, such as a Claude Code plugin daemon.
+    case agentTool
     /// No detector claimed it, but it is owned by the user and rooted in a code directory.
     case probableDeveloperProcess
     /// Apple daemons, agents and helpers.
@@ -15,8 +17,9 @@ public enum ServiceClass: String, Codable, Sendable, Comparable {
         switch self {
         case .developmentService: 0
         case .infrastructure: 1
-        case .probableDeveloperProcess: 2
-        case .systemNoise: 3
+        case .agentTool: 2
+        case .probableDeveloperProcess: 3
+        case .systemNoise: 4
         }
     }
 
@@ -25,11 +28,12 @@ public enum ServiceClass: String, Codable, Sendable, Comparable {
     /// Databases and daemons are not. Homebrew, DBngin and Docker each supervise
     /// their own, so stopping one by hand either brings it straight back or leaves
     /// the supervisor believing it is up, and relaunching one leaves an unmanaged
-    /// copy beside the supervised one. Restart and Stop All both draw the line here.
+    /// copy beside the supervised one. An agent tool is the same, its plugin
+    /// restarts it. Restart and Stop All both draw the line here.
     public var isUserManaged: Bool {
         switch self {
         case .developmentService, .probableDeveloperProcess: true
-        case .infrastructure, .systemNoise: false
+        case .infrastructure, .agentTool, .systemNoise: false
         }
     }
 
@@ -141,7 +145,7 @@ public struct RunningService: Identifiable, Hashable, Sendable {
     public var projectIdentifiesService: Bool {
         guard let project, project.rootKind != .directory else { return false }
         switch type.category {
-        case .database, .infrastructure, .unknown: return false
+        case .database, .infrastructure, .agent, .unknown: return false
         case .web, .api, .tooling: return true
         }
     }

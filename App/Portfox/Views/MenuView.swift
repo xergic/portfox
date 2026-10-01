@@ -57,17 +57,21 @@ struct MenuView: View {
         .padding(.bottom, 10)
     }
 
-    /// Groups, standalone and ungrouped partition `services`, so the dev count
+    /// Groups, standalone, agent tools and ungrouped partition `services`, so the dev count
     /// falls out by subtraction instead of another pass over the groups.
     private func summary(ungrouped: [RunningService]) -> some View {
         let result = state.result
-        let devServiceCount = result.services.count - result.standalone.count - ungrouped.count
+        let devServiceCount = result.services.count - result.standalone.count - result.agentTools.count - ungrouped.count
         return HStack(spacing: 14) {
             if devServiceCount > 0 {
                 SummaryCount(count: devServiceCount, label: devServiceCount == 1 ? "dev service" : "dev services", dot: Theme.accent)
             }
             if !result.standalone.isEmpty {
                 SummaryCount(count: result.standalone.count, label: "infrastructure", dot: Theme.pathDirectory)
+            }
+            if !result.agentTools.isEmpty {
+                let count = result.agentTools.count
+                SummaryCount(count: count, label: count == 1 ? "agent tool" : "agent tools", dot: Theme.roleBoundary)
             }
             if !ungrouped.isEmpty {
                 SummaryCount(count: ungrouped.count, label: "other", dot: Theme.tertiaryText)
@@ -94,6 +98,15 @@ struct MenuView: View {
                     }
                 }
 
+                if !state.result.agentTools.isEmpty {
+                    VStack(alignment: .leading, spacing: 6) {
+                        SectionHeader(title: "Agent tools")
+                        ForEach(state.result.agentTools) { service in
+                            ServiceRowView(service: service, layout: state.cellLayout, forcedHover: forcesHover)
+                        }
+                    }
+                }
+
                 if !ungrouped.isEmpty {
                     VStack(alignment: .leading, spacing: 6) {
                         SectionHeader(title: "Other listeners")
@@ -111,7 +124,8 @@ struct MenuView: View {
     /// split missed. Showing them beats silently dropping a running server.
     private var ungroupedServices: [RunningService] {
         let placed = Set(
-            state.result.groups.flatMap { $0.services.map(\.id) } + state.result.standalone.map(\.id)
+            state.result.groups.flatMap { $0.services.map(\.id) }
+                + state.result.standalone.map(\.id) + state.result.agentTools.map(\.id)
         )
         return state.result.services.filter { !placed.contains($0.id) }
     }

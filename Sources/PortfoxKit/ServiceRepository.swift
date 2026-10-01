@@ -7,6 +7,8 @@ public struct ScanResult: Sendable, Equatable {
     public let groups: [ProjectGroup]
     /// Databases, daemons and anything without a project.
     public let standalone: [RunningService]
+    /// Agent tooling such as plugin daemons. Never in a project group.
+    public let agentTools: [RunningService]
     /// Every listener seen, including the ones filtered out.
     public let allSockets: [ListeningSocket]
     /// Services rejected by the filter. Shown when "Show all listeners" is on.
@@ -16,17 +18,19 @@ public struct ScanResult: Sendable, Equatable {
         services: [RunningService],
         groups: [ProjectGroup],
         standalone: [RunningService],
+        agentTools: [RunningService] = [],
         allSockets: [ListeningSocket],
         hidden: [RunningService]
     ) {
         self.services = services
         self.groups = groups
         self.standalone = standalone
+        self.agentTools = agentTools
         self.allSockets = allSockets
         self.hidden = hidden
     }
 
-    public static let empty = ScanResult(services: [], groups: [], standalone: [], allSockets: [], hidden: [])
+    public static let empty = ScanResult(services: [], groups: [], standalone: [], agentTools: [], allSockets: [], hidden: [])
 }
 
 extension ScanResult {
@@ -53,6 +57,7 @@ extension ScanResult {
                 .map { ProjectGroup(project: $0.project, services: $0.services.filter { allowed.contains($0.id) }) }
                 .filter { !$0.services.isEmpty },
             standalone: standalone.filter { allowed.contains($0.id) },
+            agentTools: agentTools.filter { allowed.contains($0.id) },
             allSockets: allSockets,
             hidden: hidden
         )
@@ -217,13 +222,15 @@ public actor ServiceRepository {
         let visible = services.filter { options.showAllListeners || $0.classification != .systemNoise }
         let hidden = services.filter { !options.showAllListeners && $0.classification == .systemNoise }
 
-        let (projectServices, standalone) = split(visible)
+        let agentTools = visible.filter { $0.classification == .agentTool }
+        let (projectServices, standalone) = split(visible.filter { $0.classification != .agentTool })
         let grouper = ProjectGrouper(groupSiblingRepositories: options.groupSiblingRepositories)
 
         let result = ScanResult(
             services: visible,
             groups: grouper.group(projectServices),
             standalone: standalone,
+            agentTools: agentTools,
             allSockets: sockets,
             hidden: hidden
         )
