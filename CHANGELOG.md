@@ -2,6 +2,11 @@
 
 Notable changes to Portfox. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.3.1] - 2026-10-02
+
+### Fixed
+- A Claude Code or Codex badge no longer cuts off the service name or folder. When a row is too narrow for both, the badge moves to its own line.
+
 ## [1.3.0] - 2026-10-02
 
 ### Changed
