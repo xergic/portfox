@@ -2,6 +2,12 @@
 
 Notable changes to Portfox. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.3.0] - 2026-10-02
+
+### Changed
+- The preferences are redesigned to match the popover and dashboard. Settings sit in cards with sentence-case titles, and long descriptions wrap instead of being cut off.
+- The ignored services list uses the same style.
+
 ## [1.2.0] - 2026-10-01
 
 ### Added
