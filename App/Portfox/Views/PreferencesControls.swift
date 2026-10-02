@@ -11,10 +11,46 @@ struct PreferencesCard<Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0, content: content)
-            .background(
-                RoundedRectangle(cornerRadius: Theme.Metrics.cardRadius, style: .continuous)
-                    .fill(Theme.card)
-            )
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(CardBackground())
+    }
+}
+
+/// A titled group of rows in a card, the preferences twin of `DetailCard`.
+struct PreferencesSection<Content: View>: View {
+    let title: String
+    let symbol: String
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: symbol)
+                    .foregroundStyle(Theme.tertiaryText)
+                Text(title)
+                    .foregroundStyle(Theme.secondaryText)
+            }
+            .font(.portDetailStrong)
+            .padding(.leading, 2)
+            PreferencesCard(content: content)
+        }
+    }
+}
+
+struct PreferenceDivider: View {
+    var body: some View {
+        Divider().overlay(Theme.separator)
+    }
+}
+
+struct PreferenceCheckbox: View {
+    @Binding var isOn: Bool
+
+    var body: some View {
+        Toggle("", isOn: $isOn)
+            .labelsHidden()
+            .toggleStyle(.checkbox)
+            .tint(Theme.accent)
     }
 }
 
@@ -29,21 +65,20 @@ struct PreferenceRow<Leading: View, Control: View>: View {
             leading()
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.portSectionLabel)
                     .foregroundStyle(Theme.primaryText)
                 if let subtitle {
                     Text(subtitle)
-                        .font(.system(size: 10))
+                        .font(.portCaption)
                         .foregroundStyle(Theme.secondaryText)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
             Spacer(minLength: 12)
             control()
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.horizontal, Theme.Metrics.rowPaddingH)
+        .padding(.vertical, Theme.Metrics.rowPaddingV)
     }
 }
 
@@ -66,7 +101,7 @@ struct AppMenu: View {
     var body: some View {
         if apps.isEmpty {
             Text(fallback)
-                .font(.mono(11))
+                .font(.portCaption)
                 .foregroundStyle(Theme.tertiaryText)
         } else {
             Menu {
@@ -75,13 +110,13 @@ struct AppMenu: View {
                 }
             } label: {
                 Text(currentName)
-                    .font(.mono(11, .medium))
-                    .foregroundStyle(Theme.secondaryText)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(Theme.primaryText)
             }
             .menuStyle(.borderlessButton)
             .fixedSize()
             .padding(.horizontal, 8)
-            .padding(.vertical, 3)
+            .frame(height: Theme.Metrics.controlHeight)
             .background(ControlBackground(fill: Theme.pill))
         }
     }
