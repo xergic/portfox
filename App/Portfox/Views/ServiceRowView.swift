@@ -25,10 +25,10 @@ struct ServiceRowView: View {
                 switch effectiveLayout {
                 case .serviceFirst:
                     serviceLine
-                    HStack(spacing: 4) { folderLine; metrics; originBadge }
+                    detailLine { folderLine }
                 case .projectFirst:
                     projectLine
-                    HStack(spacing: 4) { serviceLine; metrics; originBadge }
+                    detailLine { serviceLine }
                 }
             }
             .layoutPriority(1)
@@ -107,12 +107,23 @@ struct ServiceRowView: View {
         }
     }
 
-    /// On the second line, not beside the name. Beside it the badge left room
-    /// for "Cl…" of "Cloudflare Workers" in a sidebar row, and the folder is the
-    /// fact that can best afford to truncate.
+    /// The origin badge rides the second line only when the whole line fits.
+    /// Beside the name it left "Cl…" of "Cloudflare Workers", and beside the
+    /// folder or a project-first service name it left "N…" of "Nuxt", so a row
+    /// too narrow for both drops the badge to a line of its own.
     @ViewBuilder
-    private var originBadge: some View {
-        if let origin = service.origin { OriginBadge(origin: origin) }
+    private func detailLine(@ViewBuilder _ lead: () -> some View) -> some View {
+        if let origin = service.origin {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 4) { lead(); metrics; OriginBadge(origin: origin) }
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 4) { lead(); metrics }
+                    OriginBadge(origin: origin)
+                }
+            }
+        } else {
+            HStack(spacing: 4) { lead(); metrics }
+        }
     }
 
     private var projectLine: some View {
