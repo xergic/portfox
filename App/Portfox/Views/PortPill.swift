@@ -2,6 +2,9 @@ import SwiftUI
 
 struct PortPill: View {
     let port: Int
+    /// Counted in a corner badge rather than listed, so a row with two ports is
+    /// no wider than a row with one and the hover actions keep their place.
+    var extraPorts: [Int] = []
 
     var body: some View {
         HStack(spacing: 3) {
@@ -17,6 +20,21 @@ struct PortPill: View {
         .fixedSize()
         .frame(width: Theme.Metrics.portPillWidth, height: 21)
         .background(ControlBackground(fill: Theme.pill))
+        .overlay(alignment: .topTrailing) {
+            if !extraPorts.isEmpty {
+                Text("+\(extraPorts.count)")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(Theme.secondaryText)
+                    .padding(.horizontal, 3)
+                    .background(
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .fill(Theme.cardHover)
+                            .stroke(Theme.border, lineWidth: 0.5)
+                    )
+                    .offset(x: 5, y: -6)
+                    .help("Also on " + extraPorts.map(String.init).joined(separator: ", "))
+            }
+        }
     }
 }
 

@@ -17,6 +17,16 @@ public enum ContainerRuntime {
     /// is not guaranteed on either side.
     public static let forwarderPathFragments = ["orbstack", "/colima/", "limactl"]
 
+    /// The product a container row runs under, for its badge. Docker Desktop is
+    /// the fallback because its forwarders carry no product name in their path.
+    public static func displayName(of forwarder: ProcessSnapshot) -> String {
+        let path = (forwarder.resolvedExecutablePath ?? "").lowercased()
+        if path.contains("orbstack") { return "OrbStack" }
+        if path.contains("/colima/") { return "Colima" }
+        if path.contains("limactl") { return "Lima" }
+        return "Docker"
+    }
+
     public static func isForwarder(_ process: ProcessSnapshot) -> Bool {
         let name = process.executableName.lowercased()
         if forwarderNames.contains(name) { return true }

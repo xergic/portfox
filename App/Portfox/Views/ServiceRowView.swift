@@ -38,7 +38,7 @@ struct ServiceRowView: View {
 
             Spacer(minLength: 0)
 
-            PortPill(port: service.port)
+            PortPill(port: service.port, extraPorts: service.secondaryPorts)
         }
         .padding(.horizontal, Theme.Metrics.rowPaddingH)
         .padding(.vertical, Theme.Metrics.rowPaddingV)
@@ -113,22 +113,36 @@ struct ServiceRowView: View {
         }
     }
 
-    /// The origin badge rides the second line only when the whole line fits.
-    /// Beside the name it left "Cl…" of "Cloudflare Workers", and beside the
+    /// The badges ride the second line only when the whole line fits. Beside
+    /// the name an origin badge left "Cl…" of "Cloudflare Workers", and beside the
     /// folder or a project-first service name it left "N…" of "Nuxt", so a row
-    /// too narrow for both drops the badge to a line of its own.
+    /// too narrow for both drops the badges to a line of their own.
     @ViewBuilder
     private func detailLine(@ViewBuilder _ lead: () -> some View) -> some View {
-        if let origin = service.origin {
+        if hasBadges {
             ViewThatFits(in: .horizontal) {
-                HStack(spacing: 4) { lead(); metrics; OriginBadge(origin: origin) }
+                HStack(spacing: 4) { lead(); metrics; badges }
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 4) { lead(); metrics }
-                    OriginBadge(origin: origin)
+                    badges
                 }
             }
         } else {
             HStack(spacing: 4) { lead(); metrics }
+        }
+    }
+
+    private var hasBadges: Bool { service.origin != nil || service.container != nil }
+
+    private var badges: some View {
+        HStack(spacing: 4) {
+            if let origin = service.origin {
+                OriginBadge(origin: origin)
+            }
+            if service.container != nil {
+                TintedBadge(text: ContainerRuntime.displayName(of: service.listenerProcess), tint: Theme.pathDirectory)
+                    .fixedSize()
+            }
         }
     }
 
