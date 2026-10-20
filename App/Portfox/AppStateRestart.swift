@@ -40,8 +40,17 @@ extension AppState {
 
     /// Relaunches a service that already died, from the argv it was last seen
     /// with. Unlike `restart` there is nothing to stop first.
+    ///
+    /// The banner can be answered long after it was posted, so the machine is
+    /// read again first. A second copy beside one the user already brought back
+    /// would quietly take the next free port.
     func startAgain(_ service: RunningService) async {
         guard let terminal = relaunchTerminal(for: service), let command = relaunchCommand(for: service) else { return }
+        await refresh(.afterAction)
+        guard !isRunningAgain(service) else {
+            report("\(service.displayName) is already running again, so Portfox did not start a second copy.")
+            return
+        }
         arrivals.expectReturn(of: service)
         if let problem = await launch(command, for: service, in: terminal) { report(problem) }
     }

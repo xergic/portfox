@@ -396,6 +396,14 @@ final class AppState {
     /// Only the ones actually listening. What the dashboard chip can show.
     var hasRunningIgnoredServices: Bool { !ignoredResult.services.isEmpty }
 
+    /// The same kind of service from the same project or binary, on any port. A
+    /// Vite started again by hand may have taken the next port, so the port is
+    /// not part of the question.
+    func isRunningAgain(_ service: RunningService) -> Bool {
+        guard let anchor = ServiceKey(service)?.anchor else { return false }
+        return rawResult.everyService.contains { $0.type == service.type && ServiceKey($0)?.anchor == anchor }
+    }
+
     /// Why the list is empty, when nothing is running. Shared by the popover and
     /// the dashboard so the two never explain the same state differently.
     ///
