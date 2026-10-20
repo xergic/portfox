@@ -74,7 +74,7 @@ final class AppState {
     var checksHealth: Bool {
         didSet {
             defaults.set(checksHealth, forKey: Key.checksHealth)
-            if checksHealth { checkHealthOfVisibleServices() } else { health.forget() }
+            if checksHealth { checkHealthOfVisibleServices() } else { health.clear() }
         }
     }
 

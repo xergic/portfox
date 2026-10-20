@@ -24,6 +24,9 @@ final class HealthChecks {
     /// Stamped before the request goes out, so a second trigger while one is in
     /// flight is already inside the interval. The probe times out long before it.
     @ObservationIgnored private var lastChecked: [String: ContinuousClock.Instant] = [:]
+    /// Bumped when checks are switched off, so a probe in flight at that moment
+    /// cannot write its answer back and bring a pill back with them off.
+    @ObservationIgnored private var generation = 0
     private static let interval = Duration.seconds(30)
     private let probe = HTTPProbe()
 
@@ -34,12 +37,18 @@ final class HealthChecks {
             if let last = lastChecked[service.id], now - last < Self.interval { continue }
 
             lastChecked[service.id] = now
+            let started = generation
             Task { [probe] in
+                let reading: Reading
                 do {
-                    record(try await probe.probe(url, readsBody: false), for: service)
+                    let result = try await probe.probe(url, readsBody: false)
+                    reading = .status(code: result.statusCode, latency: result.latency)
                 } catch {
-                    store(.unreachable, for: service.id)
+                    reading = .unreachable
                 }
+                // A service that went away mid-probe has lost its stamp in `forget`.
+                guard generation == started, lastChecked[service.id] != nil else { return }
+                store(reading, for: service.id)
             }
         }
     }
@@ -57,9 +66,14 @@ final class HealthChecks {
 
     /// A restarted server has a new id, so its old reading would describe a
     /// process that never answered it.
-    func forget(missingFrom live: Set<String> = []) {
+    func forget(missingFrom live: Set<String>) {
         lastChecked = lastChecked.filter { live.contains($0.key) }
         let kept = readings.filter { live.contains($0.key) }
         if kept.count != readings.count { readings = kept }
+    }
+
+    func clear() {
+        generation += 1
+        forget(missingFrom: [])
     }
 }
