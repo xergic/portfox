@@ -12,17 +12,36 @@ struct MenuView: View {
     var scrolls = true
 
     @State private var listHeight: CGFloat = Theme.Metrics.maximumListHeight
+    @State private var query = ""
+    /// Moved by the arrow keys. Nil until one is pressed, so a fresh query
+    /// highlights its first match rather than whatever was picked before.
+    @State private var keyboardSelectionID: String?
 
     var body: some View {
-        let ungrouped = state.result.ungrouped
+        let visible = state.result.matching(query)
+        let ordered = visible.drawingOrder
+        let selectedID = selection(in: ordered)?.id
         VStack(spacing: 0) {
-            header(ungrouped: ungrouped)
+            header(ungrouped: state.result.ungrouped)
             Divider().overlay(Theme.separator)
 
             if state.result.services.isEmpty {
                 emptyState
             } else {
-                MeasuredScrollView(height: $listHeight, scrolls: scrolls) { listContent(ungrouped: ungrouped) }
+                searchField
+                if ordered.isEmpty {
+                    noMatches
+                } else {
+                    ScrollViewReader { proxy in
+                        MeasuredScrollView(height: $listHeight, scrolls: scrolls) {
+                            ServiceSections(result: visible, selectedID: selectedID, forcesHover: forcesHover)
+                        }
+                        .onChange(of: selectedID) {
+                            guard let selectedID else { return }
+                            proxy.scrollTo(selectedID)
+                        }
+                    }
+                }
             }
 
             Divider().overlay(Theme.separator)
@@ -31,8 +50,62 @@ struct MenuView: View {
         .frame(width: Theme.Metrics.popoverWidth)
         .background(Theme.background)
         .themedSurface(state.appearance.colorScheme)
+        // On the root rather than the field, so the keys still work after a
+        // click lands on a row and the field loses focus.
+        .onKeyPress { press in handle(press, in: ordered) }
         .onAppear { state.popoverDidAppear() }
-        .onDisappear { state.popoverDidDisappear() }
+        .onDisappear {
+            query = ""
+            state.popoverDidDisappear()
+        }
+        .onChange(of: query) { keyboardSelectionID = nil }
+    }
+
+    private var searchField: some View {
+        SearchField(
+            text: $query,
+            prompt: "Search ports, projects, containers",
+            focusesOnAppear: true,
+            isLive: scrolls
+        )
+        .padding(.horizontal, 12)
+        .padding(.top, 10)
+    }
+
+    private func handle(_ press: KeyPress, in ordered: [RunningService]) -> KeyPress.Result {
+        switch press.key {
+        case .downArrow:
+            return moveSelection(by: 1, in: ordered)
+        case .upArrow:
+            return moveSelection(by: -1, in: ordered)
+        case .return:
+            guard let service = selection(in: ordered), service.localURL != nil else { return .ignored }
+            state.open(service)
+            return .handled
+        case .delete where press.modifiers.contains(.command):
+            guard let service = selection(in: ordered), service.hasHostProcess else { return .ignored }
+            Task { await state.stop(service) }
+            return .handled
+        default:
+            return .ignored
+        }
+    }
+
+    /// The row Return and Cmd-Delete act on. A typed query always has one, so
+    /// "5173, Return" opens it without touching the arrows.
+    private func selection(in ordered: [RunningService]) -> RunningService? {
+        if let keyboardSelectionID, let match = ordered.first(where: { $0.id == keyboardSelectionID }) {
+            return match
+        }
+        return query.isEmpty ? nil : ordered.first
+    }
+
+    private func moveSelection(by step: Int, in ordered: [RunningService]) -> KeyPress.Result {
+        guard !ordered.isEmpty else { return .ignored }
+        let current = selection(in: ordered).flatMap { selected in ordered.firstIndex { $0.id == selected.id } }
+        let next = current.map { ($0 + step + ordered.count) % ordered.count } ?? (step > 0 ? 0 : ordered.count - 1)
+        keyboardSelectionID = ordered[next].id
+        return .handled
     }
 
     private func header(ungrouped: [RunningService]) -> some View {
@@ -83,45 +156,12 @@ struct MenuView: View {
         }
     }
 
-    private func listContent(ungrouped: [RunningService]) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-                if let error = state.lastError {
-                    ErrorBanner(message: error)
-                }
-
-                ForEach(state.result.groups) { group in
-                    ProjectSectionView(group: group, layout: state.cellLayout, forcesHover: forcesHover)
-                }
-
-                if !state.result.standalone.isEmpty {
-                    VStack(alignment: .leading, spacing: 6) {
-                        SectionHeader(title: "Infrastructure & daemons")
-                        ForEach(state.result.standalone) { service in
-                            ServiceRowView(service: service, layout: state.cellLayout, forcedHover: forcesHover)
-                        }
-                    }
-                }
-
-                if !state.result.agentTools.isEmpty {
-                    VStack(alignment: .leading, spacing: 6) {
-                        SectionHeader(title: "Agent tools")
-                        ForEach(state.result.agentTools) { service in
-                            ServiceRowView(service: service, layout: state.cellLayout, forcedHover: forcesHover)
-                        }
-                    }
-                }
-
-                if !ungrouped.isEmpty {
-                    VStack(alignment: .leading, spacing: 6) {
-                        SectionHeader(title: "Other listeners")
-                        ForEach(ungrouped) { service in
-                            ServiceRowView(service: service, layout: state.cellLayout)
-                        }
-                    }
-                }
-            }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 12)
+    private var noMatches: some View {
+        Text("No services match \u{201C}\(query)\u{201D}")
+            .font(.system(size: 12))
+            .foregroundStyle(Theme.secondaryText)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 28)
     }
 
     private var emptyState: some View {

@@ -73,9 +73,7 @@ final class DashboardState {
     /// The result narrowed by the chip and the search box, with its project
     /// headings rebuilt so none of them names a service the filter dropped.
     func filtered(_ result: ScanResult) -> ScanResult {
-        // Normalised once per pass, not once per service.
-        let needle = search.trimmingCharacters(in: .whitespaces).lowercased()
-        return result.keeping { filter.accepts($0) && matches(needle, $0) }
+        result.matching(search).keeping(filter.accepts)
     }
 
     /// Everything the sidebar shows, after the chip and the search box.
@@ -84,20 +82,6 @@ final class DashboardState {
     func groups(in result: ScanResult) -> [ProjectGroup] { filtered(result).groups }
 
     func standalone(in result: ScanResult) -> [RunningService] { filtered(result).standalone }
-
-    /// `needle` is already trimmed and lowercased by `filtered`.
-    private func matches(_ needle: String, _ service: RunningService) -> Bool {
-        guard !needle.isEmpty else { return true }
-
-        let haystack = [
-            String(service.port),
-            service.displayName,
-            service.project?.name,
-            service.subtitle,
-            service.listenerProcess.executableName
-        ]
-        return haystack.compactMap { $0?.lowercased() }.contains { $0.contains(needle) }
-    }
 
     // MARK: - HTTP probe
 

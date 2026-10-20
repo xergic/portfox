@@ -25,30 +25,11 @@ struct ServiceListPane: View {
     }
 
     private var searchField: some View {
-        HStack(spacing: 7) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(Theme.tertiaryText)
-            if scrolls {
-                TextField("Search by port, framework, path", text: $dashboard.search)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 13))
-                    .foregroundStyle(Theme.primaryText)
-            } else {
-                // A TextField is NSTextField-backed and renders as a placeholder
-                // block under ImageRenderer, so snapshots draw its contents flat.
-                Text(dashboard.search.isEmpty ? "Search by port, framework, path" : dashboard.search)
-                    .font(.system(size: 13))
-                    .foregroundStyle(dashboard.search.isEmpty ? Theme.tertiaryText : Theme.primaryText)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            if !dashboard.search.isEmpty {
-                IconButton(symbol: "xmark.circle.fill", help: "Clear") { dashboard.search = "" }
-            }
-        }
-        .padding(.horizontal, 10)
-        .frame(height: Theme.Metrics.controlHeight)
-        .background(ControlBackground(fill: Theme.pill))
+        SearchField(
+            text: $dashboard.search,
+            prompt: "Search by port, framework, path",
+            isLive: scrolls
+        )
         .padding(.horizontal, 12)
         .padding(.top, 12)
         .padding(.bottom, 8)
@@ -95,66 +76,14 @@ struct ServiceListPane: View {
     }
 
     private var listContent: some View {
-        // Narrowed once. Every section below reads off these, because each call to
-        // `dashboard.filtered` is a full pass over the services.
+        // Narrowed once. Each call to `dashboard.filtered` is a full pass.
         let visible = dashboard.filtered(result)
-        let selectedID = dashboard.selection(among: visible.services)?.id
-
-        return VStack(alignment: .leading, spacing: 12) {
-            if let error = state.lastError {
-                ErrorBanner(message: error)
-            }
-
-            ForEach(visible.groups) { group in
-                ProjectSectionView(
-                    group: group,
-                    layout: state.cellLayout,
-                    showsHoverActions: false,
-                    selectedServiceID: selectedID,
-                    onSelect: select,
-                    forcesHover: forcesHover
-                )
-            }
-
-            if !visible.standalone.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
-                    SectionHeader(title: "Infrastructure & daemons")
-                    ForEach(visible.standalone) { service in
-                        row(service, selectedID: selectedID)
-                    }
-                }
-            }
-
-            if !visible.agentTools.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
-                    SectionHeader(title: "Agent tools")
-                    ForEach(visible.agentTools) { service in
-                        row(service, selectedID: selectedID)
-                    }
-                }
-            }
-
-            let ungrouped = visible.ungrouped
-            if !ungrouped.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
-                    SectionHeader(title: "Other listeners")
-                    ForEach(ungrouped) { service in
-                        row(service, selectedID: selectedID)
-                    }
-                }
-            }
-        }
-        .padding(12)
-    }
-
-    private func row(_ service: RunningService, selectedID: String?) -> some View {
-        ServiceRowView(
-            service: service,
-            layout: state.cellLayout,
+        return ServiceSections(
+            result: visible,
+            selectedID: dashboard.selection(among: visible.services)?.id,
             showsHoverActions: false,
-            isSelected: service.id == selectedID,
-            onTap: select,
-            forcedHover: forcesHover
+            onSelect: select,
+            forcesHover: forcesHover
         )
     }
 
