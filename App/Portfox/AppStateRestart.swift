@@ -50,7 +50,7 @@ extension AppState {
     /// successful refresh clears `lastError`, so reporting here would be lost.
     private func launch(_ command: RelaunchCommand, for service: RunningService, in terminal: ExternalApp) async -> String? {
         do {
-            try await RelaunchRunner.run(command, in: terminal)
+            try await RelaunchRunner.run(command, named: service.project?.name ?? service.displayName, in: terminal)
             Telemetry.send(.serviceRestarted(service))
             return nil
         } catch {

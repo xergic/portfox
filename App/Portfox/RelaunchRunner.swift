@@ -14,8 +14,8 @@ enum RelaunchRunner {
     private static let directoryName = "Portfox-Relaunch"
 
     @MainActor
-    static func run(_ command: RelaunchCommand, in terminal: ExternalApp) async throws {
-        let script = try write(command)
+    static func run(_ command: RelaunchCommand, named name: String, in terminal: ExternalApp) async throws {
+        let script = try write(command, named: name)
         try await ExternalApps.open([script], with: terminal)
     }
 
@@ -30,13 +30,17 @@ enum RelaunchRunner {
         for script in contents { try? manager.removeItem(at: script) }
     }
 
-    private static func write(_ command: RelaunchCommand) throws -> URL {
+    /// Named after the service, because the terminal shows the file name in its
+    /// tab title. A folder per run keeps two restarts of one service apart.
+    private static func write(_ command: RelaunchCommand, named name: String) throws -> URL {
         let manager = FileManager.default
-        try manager.createDirectory(at: directory, withIntermediateDirectories: true)
+        let folder = directory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try manager.createDirectory(at: folder, withIntermediateDirectories: true)
 
         // `.command` is the extension Terminal and its imitators recognise as a
         // script to run. Without it the file opens in a text editor.
-        let script = directory.appendingPathComponent("restart-\(UUID().uuidString).command")
+        let safeName = String(name.map { $0.isLetter || $0.isNumber || "-_. ".contains($0) ? $0 : "-" })
+        let script = folder.appendingPathComponent("\(safeName.isEmpty ? "restart" : safeName).command")
         try command.script.write(to: script, atomically: true, encoding: .utf8)
         try manager.setAttributes([.posixPermissions: 0o700], ofItemAtPath: script.path)
         return script

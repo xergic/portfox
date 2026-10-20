@@ -45,9 +45,15 @@ public struct RelaunchCommand: Equatable, Sendable {
     /// What a terminal is handed: a login shell, so nvm, direnv, asdf and mise are
     /// back in place. A plain respawn inherits Portfox's environment instead, and
     /// a version-managed runtime is then simply missing.
+    ///
+    /// The screen and scrollback are cleared first, because the terminal echoes
+    /// the temporary script's path as the command it ran, and that path is noise.
     public var script: String {
-        """
+        let banner = "Started by Portfox in \((directory as NSString).abbreviatingWithTildeInPath)"
+        return """
         #!/bin/zsh -l
+        printf '\\033[2J\\033[3J\\033[H'
+        printf '%s\\n\\n' \(Self.quote(banner))
         cd \(Self.quote(directory)) || exit 1
         exec \(arguments.map(Self.quote).joined(separator: " "))
         """

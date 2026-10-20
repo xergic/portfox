@@ -9,6 +9,9 @@ Notable changes to Portfox. The format follows [Keep a Changelog](https://keepac
 - "Notify When It Stops" on a service, from its right-click menu or the dashboard detail pane. When it stops without you pressing Stop, a banner says so. If Portfox can relaunch it, the banner has a Start Again button. Watched rows show a small bell.
 - A global shortcut opens the popover from any app. The default is ⌃⌥P, and you can change it in Preferences › General.
 
+### Changed
+- Restart and Start Again open a clean terminal. The script clears the screen, prints "Started by Portfox in ~/your/project", and is named after the project instead of a random id.
+
 ## [1.3.1] - 2026-10-02
 
 ### Fixed

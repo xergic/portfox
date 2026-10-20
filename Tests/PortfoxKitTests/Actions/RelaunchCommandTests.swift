@@ -31,6 +31,8 @@ struct RelaunchCommandTests {
         let command = try make(root()).get()
         #expect(command.script == """
         #!/bin/zsh -l
+        printf '\\033[2J\\033[3J\\033[H'
+        printf '%s\\n\\n' 'Started by Portfox in /Users/dev/app'
         cd '/Users/dev/app' || exit 1
         exec '/opt/homebrew/bin/node' '/opt/homebrew/lib/pnpm.cjs' 'dev'
         """)
