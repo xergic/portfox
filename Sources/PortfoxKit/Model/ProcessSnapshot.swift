@@ -26,6 +26,13 @@ public struct ListeningSocket: Identifiable, Hashable, Codable, Sendable {
         host == "127.0.0.1" || host == "::1" || host == "0.0.0.0" || host == "::" || host == "localhost"
     }
 
+    /// Bound to loopback, so nothing off this machine can connect. Any other bind,
+    /// a wildcard or a specific interface address, answers the network. Wider
+    /// than `isLocallyReachable`'s loopback half: all of `127/8` is loopback.
+    public var isLoopbackOnly: Bool {
+        host == "localhost" || host == "::1" || host.hasPrefix("127.")
+    }
+
     /// Host to put in a `http://` URL.
     public var displayHost: String {
         switch host {

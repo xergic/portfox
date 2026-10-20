@@ -214,6 +214,24 @@ public struct RunningService: Identifiable, Hashable, Sendable {
         return URL(string: "http://\(primarySocket.displayHost):\(primarySocket.port)")
     }
 
+    /// The port another device on the network can reach, or nil when every
+    /// socket is loopback only. The primary port wins when it is exposed, which
+    /// is the common case of one server bound to `0.0.0.0`. Otherwise the lowest
+    /// exposed port, the same choice `secondaryPorts` would list first.
+    public var networkPort: Int? {
+        if !primarySocket.isLoopbackOnly { return primarySocket.port }
+        return sockets
+            .filter { !$0.isLoopbackOnly && $0.port < ListenerClassifier.ephemeralPortFloor }
+            .map(\.port)
+            .min()
+    }
+
+    /// What a phone on the same network opens, given this Mac's address on it.
+    public func networkURL(host: String) -> URL? {
+        guard type.isHTTP, let networkPort else { return nil }
+        return URL(string: "http://\(host):\(networkPort)")
+    }
+
     /// Directory to reveal in Finder.
     public var revealDirectory: URL? {
         // A container has no host working directory, and the forwarder's is inside

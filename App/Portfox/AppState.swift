@@ -461,6 +461,16 @@ final class AppState {
         copy(service.localURL?.absoluteString ?? String(service.port))
     }
 
+    /// The URL for a web service, `host:port` for anything else, so a database on
+    /// `0.0.0.0` can be pasted into a client on another machine.
+    func copyNetworkAddress(_ service: RunningService) {
+        guard let host = LocalNetwork.ipv4Address(), let port = service.networkPort else {
+            report("This Mac is not on a network another device can reach.")
+            return
+        }
+        copy(service.networkURL(host: host)?.absoluteString ?? "\(host):\(port)")
+    }
+
     func copy(_ value: String) {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(value, forType: .string)

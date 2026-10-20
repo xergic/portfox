@@ -9,6 +9,7 @@ Notable changes to Portfox. The format follows [Keep a Changelog](https://keepac
 - "Notify When It Stops" on a service, from its right-click menu or the dashboard detail pane. When it stops without you pressing Stop, a banner says so. If Portfox can relaunch it, the banner has a Start Again button. Watched rows show a small bell.
 - A service that listens on more than one port shows a "+1" count on its port. Hover it to see the other ports.
 - Container rows carry a badge naming their runtime, such as Docker or OrbStack.
+- A "LAN" badge marks a service other devices on your network can reach, meaning it binds `0.0.0.0` or a network address rather than `127.0.0.1`. On a web service, clicking the badge shows a QR code that opens it on your phone. "Copy LAN Address" is in the right-click menu.
 - A global shortcut opens the popover from any app. The default is ⌃⌥P, and you can change it in Preferences › General.
 
 ### Fixed

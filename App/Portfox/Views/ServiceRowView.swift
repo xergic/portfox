@@ -132,7 +132,7 @@ struct ServiceRowView: View {
         }
     }
 
-    private var hasBadges: Bool { service.origin != nil || service.container != nil }
+    private var hasBadges: Bool { service.origin != nil || service.container != nil || service.networkPort != nil }
 
     private var badges: some View {
         HStack(spacing: 4) {
@@ -142,6 +142,9 @@ struct ServiceRowView: View {
             if service.container != nil {
                 TintedBadge(text: ContainerRuntime.displayName(of: service.listenerProcess), tint: Theme.pathDirectory)
                     .fixedSize()
+            }
+            if service.networkPort != nil {
+                LANBadge(service: service)
             }
         }
     }
@@ -258,6 +261,9 @@ private struct ServiceContextMenu: View {
             Button("Copy URL") { state.copyURL(service) }
         } else {
             Button("Copy Port") { state.copyURL(service) }
+        }
+        if service.networkPort != nil {
+            Button("Copy LAN Address") { state.copyNetworkAddress(service) }
         }
         if service.revealDirectory != nil {
             Button("Reveal in Finder") { state.reveal(service) }

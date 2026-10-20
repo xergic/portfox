@@ -42,7 +42,8 @@ func makeService(
     id: String? = nil,
     detection: DetectionResult = .unknown(),
     classification: ServiceClass = .developmentService,
-    container: ContainerSnapshot? = nil
+    container: ContainerSnapshot? = nil,
+    hosts: [(host: String, port: Int)]? = nil
 ) -> RunningService {
     let process = ProcessSnapshot(
         pid: pid,
@@ -51,13 +52,14 @@ func makeService(
         executablePath: executable,
         arguments: arguments
     )
-    let socket = ListeningSocket(pid: pid, port: port, host: "127.0.0.1", family: .ipv4)
+    let sockets = (hosts ?? [("127.0.0.1", port)])
+        .map { ListeningSocket(pid: pid, port: $0.port, host: $0.host, family: .ipv4) }
     return RunningService(
         id: id ?? "\(pid)",
         listenerProcess: process,
         rootProcess: process,
-        sockets: [socket],
-        primarySocket: socket,
+        sockets: sockets,
+        primarySocket: sockets[0],
         detection: detection,
         classification: classification,
         project: project,
