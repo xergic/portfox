@@ -9,7 +9,8 @@ import Foundation
 /// undifferentiated Docker row it would have got anyway.
 public enum ContainerRuntime {
     /// Matched against the executable's last path component, exactly.
-    public static let forwarderNames = ["com.docker.backend", "docker-proxy", "vpnkit"]
+    /// `gvproxy` is the forwarder of Podman and of Dory.
+    public static let forwarderNames = ["com.docker.backend", "docker-proxy", "vpnkit", "gvproxy"]
 
     /// Matched anywhere in the executable path. A raw `contains`, not
     /// `containsToken`: these sit inside path segments such as
@@ -22,6 +23,8 @@ public enum ContainerRuntime {
     public static func displayName(of forwarder: ProcessSnapshot) -> String {
         let path = (forwarder.resolvedExecutablePath ?? "").lowercased()
         if path.contains("orbstack") { return "OrbStack" }
+        if path.contains("/dory.app/") { return "Dory" }
+        if path.contains("podman") { return "Podman" }
         if path.contains("/colima/") { return "Colima" }
         if path.contains("limactl") { return "Lima" }
         return "Docker"

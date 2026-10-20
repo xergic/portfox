@@ -28,6 +28,8 @@ public struct ContainerLister: Sendable {
             "\(home)/.orbstack/bin/docker",
             "/Applications/Docker.app/Contents/Resources/bin/docker",
             "\(home)/.docker/bin/docker",
+            "/Applications/Dory.app/Contents/Helpers/docker",
+            "\(home)/.dory/bin/docker",
             "/opt/homebrew/bin/docker",
             "/usr/local/bin/docker"
         ]

@@ -11,6 +11,9 @@ Notable changes to Portfox. The format follows [Keep a Changelog](https://keepac
 - Container rows carry a badge naming their runtime, such as Docker or OrbStack.
 - A global shortcut opens the popover from any app. The default is ⌃⌥P, and you can change it in Preferences › General.
 
+### Fixed
+- Containers run by Dory show up. Its port forwarder, `gvproxy`, was not recognised, and its `docker` CLI was not on the list Portfox runs. Podman uses the same forwarder, so it should benefit too, but that is untested.
+
 ### Changed
 - Restart and Start Again open a clean terminal. The script clears the screen, prints "Started by Portfox in ~/your/project", and is named after the project instead of a random id.
 
