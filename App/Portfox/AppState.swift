@@ -136,7 +136,11 @@ final class AppState {
     let projectIcons = ProjectIcons()
     let appearance = Appearance()
     /// Which rows just appeared, and whether that is worth telling the user about.
-    let arrivals = ServiceArrivals()
+    /// Posts every banner: arrivals, and watched services stopping.
+    let notifier = ServiceNotifier()
+    let arrivals: ServiceArrivals
+    /// Which services the user wants a banner for when they stop.
+    let watched = WatchedServices()
     private let ignoredServices = IgnoredServices()
     private let defaults = UserDefaults.standard
 
@@ -144,6 +148,9 @@ final class AppState {
     /// With every window closed the count badge is the only live element, and a
     /// badge that is a minute stale costs nobody anything.
     private let hiddenInterval = Duration.seconds(60)
+    /// A watched service promises a banner when it stops, and a minute late is
+    /// too late to be useful. One `lsof` every ten seconds is the price.
+    private let watchingInterval = Duration.seconds(10)
 
     /// A set rather than a counter, so a repeated appear or a missed disappear
     /// cannot leave the app stuck on the fast interval forever.
@@ -161,6 +168,7 @@ final class AppState {
     var serviceCount: Int { result.services.count }
 
     init() {
+        arrivals = ServiceArrivals(notifier: notifier)
         defaults.register(defaults: [
             Key.groupSiblingRepositories: true,
             Key.automaticRefresh: true,
@@ -183,6 +191,9 @@ final class AppState {
         terminalBundleID = defaults.string(forKey: Key.terminalBundleID)
         Task.detached { RelaunchRunner.sweepLeftovers() }
         Telemetry.setEnabled(sharesUsageData)
+        notifier.onStartAgain = { [weak self] service in
+            Task { await self?.startAgain(service) }
+        }
         start()
     }
 
@@ -198,8 +209,12 @@ final class AppState {
     }
 
     /// Clamped, because a stored zero would turn the loop into a spin.
+    private var isWatchingLiveService: Bool {
+        !watched.keys.isEmpty && rawResult.everyService.contains(where: watched.contains)
+    }
+
     private var currentInterval: Duration {
-        guard !visibleSurfaces.isEmpty else { return hiddenInterval }
+        guard !visibleSurfaces.isEmpty else { return isWatchingLiveService ? watchingInterval : hiddenInterval }
         return .seconds(max(1, pollingSeconds))
     }
 
@@ -267,12 +282,14 @@ final class AppState {
             // both scans exist as values, and reported after them, because the
             // ignore filter it consults is applied in `applyFilters`.
             var appeared: [RunningService] = []
+            var departed: [RunningService] = []
             if update.didRebuild {
                 // Against `rawResult`, never `result`. A fresh scan compared to the
                 // filtered value would differ forever once anything is ignored,
                 // and the whole point of this branch is to skip a redraw.
                 if update.result != rawResult {
                     appeared = update.result.appeared(since: rawResult)
+                    departed = update.result.departed(since: rawResult, watching: watched.keys)
                     rawResult = update.result
                     let relaunchable = Set(update.result.services.filter(canRelaunch).map(\.id))
                     if relaunchable != relaunchableServiceIDs { relaunchableServiceIDs = relaunchable }
@@ -284,6 +301,7 @@ final class AppState {
             // Unconditional, so a machine with no listeners at launch still settles
             // and the first service to start afterwards is announced properly.
             noteArrivals(appeared, kind: kind)
+            noteDepartures(departed)
             await sampleTasks()
             if lastError != nil { lastError = nil }
         } catch {
@@ -387,7 +405,7 @@ final class AppState {
         applyFilters()
     }
 
-    func stopIgnoring(_ key: IgnoreKey) {
+    func stopIgnoring(_ key: ServiceKey) {
         ignoredServices.remove(key)
         applyFilters()
     }
@@ -449,7 +467,7 @@ final class AppState {
     }
 
     func stop(_ service: RunningService) async {
-        busyServiceIDs.insert(service.id)
+        markStopping(service)
         defer { busyServiceIDs.remove(service.id) }
 
         let tree = await repository.processTree()
@@ -488,7 +506,7 @@ final class AppState {
     private func stopEach(_ services: [RunningService]) async {
         guard !services.isEmpty else { return }
 
-        busyServiceIDs.formUnion(services.map(\.id))
+        services.forEach(markStopping)
         defer { busyServiceIDs.subtract(services.map(\.id)) }
 
         let tree = await repository.processTree()
@@ -538,7 +556,7 @@ final class AppState {
     }
 
     func forceStop(_ service: RunningService) async {
-        busyServiceIDs.insert(service.id)
+        markStopping(service)
         defer { busyServiceIDs.remove(service.id) }
 
         guard let tree = await repository.processTree() else { return }
@@ -558,6 +576,12 @@ final class AppState {
 
     /// The only way another file marks a row mid-action. `busyServiceIDs` stays
     /// `private(set)` so a view cannot dim a row it does not own.
-    func markBusy(_ service: RunningService) { busyServiceIDs.insert(service.id) }
+    ///
+    /// Every path that signals a service goes through here, so the stop it causes
+    /// is never announced back to the user as a watched service dying.
+    func markStopping(_ service: RunningService) {
+        busyServiceIDs.insert(service.id)
+        watched.expectDeparture(of: service)
+    }
     func clearBusy(_ service: RunningService) { busyServiceIDs.remove(service.id) }
 }

@@ -3,14 +3,14 @@ import PortfoxKit
 import SwiftUI
 import UserNotifications
 
-/// Posts a banner when services appear.
+/// Posts a banner when services appear, and when a watched one stops.
 ///
 /// Thin wrapper over one OS API that can refuse, reporting the refusal through
 /// `lastError` the way `LaunchAtLogin` does, because a toggle that silently does
 /// nothing is worse than one that says why.
 @MainActor
 @Observable
-final class ArrivalNotifier {
+final class ServiceNotifier {
     private(set) var lastError: String?
     private(set) var isAuthorized = false
 
@@ -33,6 +33,16 @@ final class ArrivalNotifier {
     /// notification delegate is AppKit. `PortfoxApp` watches this instead.
     private(set) var dashboardRequests = 0
 
+    /// Runs when the user presses Start Again on a stop banner. Set by `AppState`,
+    /// which owns the relaunch.
+    var onStartAgain: ((RunningService) -> Void)?
+
+    /// The last stop of each watched service that offered Start Again. In memory
+    /// only, because the relaunch needs the dead process's argv, which no banner
+    /// can carry. Keyed by service rather than banner, so dismissed banners
+    /// cannot pile up.
+    @ObservationIgnored private var departures: [ServiceKey: RunningService] = [:]
+
     private var launchGate: LaunchGate?
     private var delegate: Delegate?
     private let defaults: UserDefaults
@@ -40,6 +50,11 @@ final class ArrivalNotifier {
 
     /// Repeats group under one heading in Notification Center.
     private static let threadIdentifier = "net.kandera.Portfox.arrivals"
+    private static let departureThreadIdentifier = "net.kandera.Portfox.departures"
+    private static let departureCategory = "departure"
+    private static let startAgainAction = "startAgain"
+    fileprivate nonisolated static let portInfoKey = "port"
+    fileprivate nonisolated static let anchorInfoKey = "anchor"
 
     private static let deniedMessage = "macOS is not delivering notifications from Portfox. "
         + "Turn them on in System Settings › Notifications."
@@ -65,11 +80,16 @@ final class ArrivalNotifier {
         // a real window during one.
         guard SnapshotRenderer.requestedPath == nil else { return }
 
-        let delegate = Delegate { [weak self] in
-            Task { @MainActor in self?.requestDashboard() }
+        let delegate = Delegate { [weak self] action, key in
+            Task { @MainActor in self?.respond(to: action, key: key) }
         }
         self.delegate = delegate
-        UNUserNotificationCenter.current().delegate = delegate
+        let center = UNUserNotificationCenter.current()
+        center.delegate = delegate
+        let startAgain = UNNotificationAction(identifier: Self.startAgainAction, title: "Start Again")
+        center.setNotificationCategories([
+            UNNotificationCategory(identifier: Self.departureCategory, actions: [startAgain], intentIdentifiers: [])
+        ])
 
         Task { await readSettings() }
     }
@@ -89,24 +109,48 @@ final class ArrivalNotifier {
     }
 
     func post(_ digest: ServiceArrivalDigest) {
-        guard isAuthorized else {
-            report(Self.deniedMessage)
-            return
-        }
-
         let content = UNMutableNotificationContent()
         content.title = digest.title
         content.body = digest.body
         content.threadIdentifier = Self.threadIdentifier
+        add(content)
+    }
 
-        // A fresh identifier every time, so a second arrival adds a banner rather
-        // than silently replacing one the user has not read.
-        let request = UNNotificationRequest(
-            identifier: UUID().uuidString,
-            content: content,
-            trigger: nil
+    /// One banner per service, unlike arrivals, because each carries its own
+    /// Start Again and a watched server stopping is rare.
+    func postDeparture(of service: RunningService, offersStartAgain: Bool) {
+        let content = UNMutableNotificationContent()
+        content.title = "\(service.displayName) stopped"
+        content.body = ["Port \(service.port)", service.project?.name ?? service.subtitle]
+            .compactMap { $0 }
+            .joined(separator: " · ")
+        content.threadIdentifier = Self.departureThreadIdentifier
+        if offersStartAgain, let key = ServiceKey(service) {
+            content.categoryIdentifier = Self.departureCategory
+            content.userInfo = [Self.portInfoKey: key.port, Self.anchorInfoKey: key.anchor]
+            departures[key] = service
+        }
+        add(content)
+    }
+
+    /// A fresh identifier every time, so a second banner adds to the first rather
+    /// than silently replacing one the user has not read.
+    private func add(_ content: UNNotificationContent) {
+        guard isAuthorized else {
+            report(Self.deniedMessage)
+            return
+        }
+        UNUserNotificationCenter.current().add(
+            UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
         )
-        UNUserNotificationCenter.current().add(request)
+    }
+
+    private func respond(to action: String, key: ServiceKey?) {
+        if action == Self.startAgainAction, let key, let service = departures.removeValue(forKey: key) {
+            onStartAgain?(service)
+        } else if action == UNNotificationDefaultActionIdentifier {
+            requestDashboard()
+        }
     }
 
     private func readSettings() async {
@@ -130,10 +174,10 @@ final class ArrivalNotifier {
         /// A closure rather than a back reference, because the callbacks arrive
         /// nonisolated and the delegate itself is not `Sendable`. The hop to the
         /// main actor is written once, at the point where the owner is known.
-        private let onDefaultAction: @Sendable () -> Void
+        private let onResponse: @Sendable (_ action: String, _ key: ServiceKey?) -> Void
 
-        init(onDefaultAction: @escaping @Sendable () -> Void) {
-            self.onDefaultAction = onDefaultAction
+        init(onResponse: @escaping @Sendable (_ action: String, _ key: ServiceKey?) -> Void) {
+            self.onResponse = onResponse
         }
 
         /// Without this, macOS suppresses the banner whenever Portfox is
@@ -149,8 +193,13 @@ final class ArrivalNotifier {
             _ center: UNUserNotificationCenter,
             didReceive response: UNNotificationResponse
         ) async {
-            guard response.actionIdentifier == UNNotificationDefaultActionIdentifier else { return }
-            onDefaultAction()
+            // Unpacked here, because `userInfo` is not `Sendable` and cannot cross
+            // to the main actor as it is.
+            let info = response.notification.request.content.userInfo
+            let key = (info[ServiceNotifier.portInfoKey] as? Int).flatMap { port in
+                (info[ServiceNotifier.anchorInfoKey] as? String).map { ServiceKey(port: port, anchor: $0) }
+            }
+            onResponse(response.actionIdentifier, key)
         }
     }
 }

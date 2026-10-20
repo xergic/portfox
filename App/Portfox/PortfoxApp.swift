@@ -19,7 +19,7 @@ struct PortfoxApp: App {
                 // On the label rather than on the scene, because the label is the
                 // one view that is always instantiated: it draws the status item.
                 // A notification can be clicked with no window open at all.
-                .onChange(of: state.arrivals.dashboardRequests) {
+                .onChange(of: state.notifier.dashboardRequests) {
                     WindowPresenter.showDashboard(openWindow)
                 }
         }

@@ -104,6 +104,12 @@ struct ServiceRowView: View {
             if let version = service.version {
                 TrailingFact(text: version, font: .portVersion)
             }
+            if state.isWatched(service) {
+                Image(systemName: "bell.fill")
+                    .font(.system(size: 9))
+                    .foregroundStyle(Theme.tertiaryText)
+                    .help("Notifies when it stops")
+            }
         }
     }
 
@@ -263,6 +269,10 @@ private struct ServiceContextMenu: View {
             } else {
                 Button("Stop and Copy Command") { Task { await state.stopAndCopyCommand(service) } }
             }
+        }
+        if state.canWatch(service) {
+            Divider()
+            Toggle("Notify When It Stops", isOn: state.watchBinding(for: service))
         }
         if state.canIgnore(service) {
             Divider()

@@ -244,6 +244,24 @@ records the expected port with a deadline instead, before anything is signalled.
 how "no lingering closed rows" falls out, and why `recentIDs` is not intersected
 with the live set the way `stubbornServiceIDs` is.
 
+## Watched services
+
+`ScanResult.departed(since:watching:)` is the mirror of `appeared`, but keyed by
+`ServiceKey`, not by id. A restart under a new pid is the same server, so it must
+not read as a stop.
+
+**Every signal goes through `markStopping`.** It is what excuses the stop Portfox
+caused, so the user never gets a "stopped" banner for their own Stop. A new stop
+path that skips it fires that banner.
+
+**Start Again needs the dead process's argv**, so `ServiceNotifier` keeps the last
+departed `RunningService` per key in memory. A relaunch shares
+`AppStateRestart.launch` with Restart.
+
+**A watched service that is running drops the hidden refresh interval from 60s
+to 10s.** A banner a minute late is useless. Nothing watched, or nothing watched
+running, keeps 60s.
+
 ## Appearance
 
 `Theme` carries two literal palettes. Every colour token is a dynamic `NSColor`

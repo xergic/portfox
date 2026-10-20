@@ -3,7 +3,7 @@ import Testing
 @testable import PortfoxKit
 
 @Suite("durable ignore keys")
-struct IgnoreKeyTests {
+struct ServiceKeyTests {
     private func project(_ path: String) -> ProjectSnapshot {
         let url = URL(fileURLWithPath: path, isDirectory: true)
         return makeSnapshot(root: url, name: url.lastPathComponent)
@@ -16,13 +16,13 @@ struct IgnoreKeyTests {
             project: project("/Users/me/work/shop"),
             executable: "/opt/homebrew/bin/node"
         )
-        #expect(IgnoreKey(service)?.anchor == "/Users/me/work/shop")
+        #expect(ServiceKey(service)?.anchor == "/Users/me/work/shop")
     }
 
     @Test("a daemon with no project keys on its executable path")
     func daemonKeysOnExecutable() {
         let service = makeService(port: 5432, project: nil, executable: "/opt/homebrew/bin/postgres")
-        #expect(IgnoreKey(service)?.anchor == "/opt/homebrew/bin/postgres")
+        #expect(ServiceKey(service)?.anchor == "/opt/homebrew/bin/postgres")
     }
 
     /// `resolvedExecutablePath` falls back to argv[0] when the binary's vnode is
@@ -34,18 +34,18 @@ struct IgnoreKeyTests {
             project: nil,
             arguments: ["/usr/local/bin/redis-server", "--port", "6379"]
         )
-        #expect(IgnoreKey(service)?.anchor == "/usr/local/bin/redis-server")
+        #expect(ServiceKey(service)?.anchor == "/usr/local/bin/redis-server")
     }
 
     @Test("a relative argv[0] falls back to the executable name")
     func fallsBackToExecutableName() {
         let service = makeService(port: 8080, project: nil, arguments: ["caddy", "run"])
-        #expect(IgnoreKey(service)?.anchor == "caddy")
+        #expect(ServiceKey(service)?.anchor == "caddy")
     }
 
     @Test("a service with no project, no path and no arguments has no durable key")
     func noDurableIdentityYieldsNil() {
-        #expect(IgnoreKey(makeService(port: 1234, project: nil)) == nil)
+        #expect(ServiceKey(makeService(port: 1234, project: nil)) == nil)
     }
 
     /// The whole point of the type. `RunningService.id` embeds the pid and the
@@ -57,34 +57,34 @@ struct IgnoreKeyTests {
         let after = makeService(port: 3000, project: snapshot, pid: 9114, executable: "/opt/homebrew/bin/node")
 
         #expect(before.id != after.id)
-        #expect(IgnoreKey(before) == IgnoreKey(after))
+        #expect(ServiceKey(before) == ServiceKey(after))
     }
 
     @Test("two projects sharing a binary and a port get different keys")
     func projectsSharingBinaryStayDistinct() {
         let one = makeService(port: 3000, project: project("/Users/me/work/shop"), executable: "/opt/homebrew/bin/node")
         let two = makeService(port: 3000, project: project("/Users/me/work/blog"), executable: "/opt/homebrew/bin/node")
-        #expect(IgnoreKey(one) != IgnoreKey(two))
+        #expect(ServiceKey(one) != ServiceKey(two))
     }
 
     @Test("the same anchor on a different port is a different key")
     func portParticipatesInTheKey() {
         let snapshot = project("/Users/me/work/shop")
-        #expect(IgnoreKey(makeService(port: 3000, project: snapshot)) != IgnoreKey(makeService(port: 3001, project: snapshot)))
+        #expect(ServiceKey(makeService(port: 3000, project: snapshot)) != ServiceKey(makeService(port: 3001, project: snapshot)))
     }
 
     @Test("a redundant path separator does not make a second key")
     func pathsAreStandardised() {
         #expect(
-            IgnoreKey(port: 3000, anchor: "/opt//homebrew/bin/node")
-                == IgnoreKey(port: 3000, anchor: "/opt/homebrew/bin/node")
+            ServiceKey(port: 3000, anchor: "/opt//homebrew/bin/node")
+                == ServiceKey(port: 3000, anchor: "/opt/homebrew/bin/node")
         )
     }
 
     @Test("an entry round-trips through JSON, because that is how it is stored")
     func entryRoundTrips() throws {
         let entry = IgnoredService(
-            key: IgnoreKey(port: 5432, anchor: "/opt/homebrew/bin/postgres"),
+            key: ServiceKey(port: 5432, anchor: "/opt/homebrew/bin/postgres"),
             name: "PostgreSQL",
             detail: "Homebrew"
         )

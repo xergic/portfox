@@ -22,7 +22,7 @@ final class IgnoredServices {
     /// Keyed rather than a list, so `contains` is O(1) on the scan path and there
     /// is only one collection to keep correct. Order is not kept because the only
     /// reader, the Preferences list, sorts by port.
-    private var store: [IgnoreKey: IgnoredService]
+    private var store: [ServiceKey: IgnoredService]
     private let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
@@ -39,13 +39,13 @@ final class IgnoredServices {
     /// The empty check comes first because it is the usual answer, and building a
     /// key means standardising a path once per service on every scan tick.
     func contains(_ service: RunningService) -> Bool {
-        guard !store.isEmpty, let key = IgnoreKey(service) else { return false }
+        guard !store.isEmpty, let key = ServiceKey(service) else { return false }
         return store[key] != nil
     }
 
     /// False when the service gave up nothing durable to key on, which is why the
     /// Ignore action is hidden rather than offered and silently ignored.
-    func canIgnore(_ service: RunningService) -> Bool { IgnoreKey(service) != nil }
+    func canIgnore(_ service: RunningService) -> Bool { ServiceKey(service) != nil }
 
     func ignore(_ service: RunningService) {
         guard let entry = IgnoredService(service) else { return }
@@ -54,11 +54,11 @@ final class IgnoredServices {
     }
 
     func stopIgnoring(_ service: RunningService) {
-        guard let key = IgnoreKey(service) else { return }
+        guard let key = ServiceKey(service) else { return }
         remove(key)
     }
 
-    func remove(_ key: IgnoreKey) {
+    func remove(_ key: ServiceKey) {
         guard store.removeValue(forKey: key) != nil else { return }
         commit()
     }

@@ -155,12 +155,12 @@ struct PreferencesSheet: View {
     /// on now so it works when the loop comes back is a reasonable thing to want,
     /// and only the polling control is genuinely inert without the loop.
     private var arrivalNotificationRow: some View {
-        @Bindable var notifier = state.arrivals.notifier
+        @Bindable var notifier = state.notifier
         return VStack(spacing: 0) {
             PreferenceRow(title: "Notify when a service appears", subtitle: arrivalSubtitle) {
                 PreferenceCheckbox(isOn: $notifier.isEnabled)
             }
-            if let error = state.arrivals.notifier.lastError {
+            if let error = state.notifier.lastError {
                 Text(error)
                     .font(.portCaption)
                     .foregroundStyle(Theme.danger)

@@ -2,6 +2,7 @@ import PortfoxKit
 import SwiftUI
 
 struct ServiceDetailPane: View {
+    @Environment(AppState.self) private var state
     let service: RunningService
     @Bindable var dashboard: DashboardState
     var scrolls = true
@@ -86,7 +87,21 @@ struct ServiceDetailPane: View {
                     ResidentMemoryRow(pid: service.listenerProcess.pid)
                     CPUUsageRow(pid: service.listenerProcess.pid)
                 }
+                if state.canWatch(service) {
+                    CardDivider()
+                    watchRow
+                }
             }
+        }
+    }
+
+    private var watchRow: some View {
+        HStack {
+            Text("Notify when it stops")
+                .font(.portDetail)
+                .foregroundStyle(Theme.secondaryText)
+            Spacer(minLength: 8)
+            PreferenceCheckbox(isOn: state.watchBinding(for: service))
         }
     }
 

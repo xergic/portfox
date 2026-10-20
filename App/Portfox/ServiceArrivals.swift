@@ -16,13 +16,15 @@ final class ServiceArrivals {
     /// That is how "no lingering closed rows" falls out for free.
     private(set) var recentIDs: Set<String> = []
 
-    let notifier = ArrivalNotifier()
+    private let notifier: ServiceNotifier
 
     /// The first scan diffs against an empty result, so every listener on the
     /// machine reads as new. Per instance rather than persisted, which is also
     /// what keeps the snapshot renderer's second `AppState` silent: it scans once
     /// and exits, so this is never true there.
     private var hasSettled = false
+
+    init(notifier: ServiceNotifier) { self.notifier = notifier }
 
     private var decayTask: Task<Void, Never>?
     private static let flashDuration = Duration.seconds(4)
@@ -34,8 +36,7 @@ final class ServiceArrivals {
     /// handed to a terminal and boot takes seconds. The id in it would be the old
     /// one in any case: a restart gives the process a new pid and start time, so
     /// the row that comes back is genuinely new to any id diff.
-    private var expectedReturns: [Int: ContinuousClock.Instant] = [:]
-    private static let returnWindow = Duration.seconds(90)
+    private var expectedReturns = Expectations<Int>(window: .seconds(90))
 
     func isRecent(_ service: RunningService) -> Bool { recentIDs.contains(service.id) }
 
@@ -62,28 +63,17 @@ final class ServiceArrivals {
     /// Recorded before anything is signalled, so a server that comes straight back
     /// is already accounted for by the time the scan notices it.
     func expectReturn(of service: RunningService) {
-        let deadline = ContinuousClock.now + Self.returnWindow
-        for socket in service.sockets { expectedReturns[socket.port] = deadline }
+        for socket in service.sockets { expectedReturns.expect(socket.port) }
     }
 
     /// Snapshots only. `Task.sleep` never fires under `ImageRenderer` and the
     /// snapshot process exits, so this sets the state without arming the decay.
     func force(_ id: String) { recentIDs = [id] }
 
-    var dashboardRequests: Int { notifier.dashboardRequests }
-
     // MARK: - Internals
 
     private func consumeExpectedReturns(matching arrivals: [RunningService]) -> Set<String> {
-        let now = ContinuousClock.now
-        expectedReturns = expectedReturns.filter { $0.value > now }
-
-        var matched: Set<String> = []
-        for service in arrivals where expectedReturns[service.port] != nil {
-            matched.insert(service.id)
-            expectedReturns.removeValue(forKey: service.port)
-        }
-        return matched
+        Set(arrivals.filter { expectedReturns.consume($0.port) }.map(\.id))
     }
 
     /// One task for the whole set rather than one per row. A second arrival inside

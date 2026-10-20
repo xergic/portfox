@@ -15,16 +15,10 @@ extension AppState {
     /// only then discovering it cannot be brought back is the one outcome worth
     /// designing away.
     func restart(_ service: RunningService) async {
-        guard let terminal = terminalApp, terminal.runsHandedOverScript else {
-            let name = terminalApp?.name ?? "This terminal"
-            report("\(name) cannot be asked to run a command, "
-                + "so Portfox cannot restart \(service.displayName).")
-            return
-        }
-        guard let command = relaunchCommand(for: service) else { return }
+        guard let terminal = relaunchTerminal(for: service), let command = relaunchCommand(for: service) else { return }
 
         arrivals.expectReturn(of: service)
-        markBusy(service)
+        markStopping(service)
         defer { clearBusy(service) }
 
         let tree = await repository.processTree()
@@ -39,16 +33,39 @@ extension AppState {
             return
         }
 
-        var launchProblem: String?
-        do {
-            try await RelaunchRunner.run(command, in: terminal)
-        } catch {
-            launchProblem = "\(service.displayName) stopped but could not be restarted. \(error.localizedDescription)"
-        }
-
-        if launchProblem == nil { Telemetry.send(.serviceRestarted(service)) }
+        let launchProblem = await launch(command, for: service, in: terminal)
         await refresh(.afterAction)
         if let message = launchProblem ?? problem { report(message) }
+    }
+
+    /// Relaunches a service that already died, from the argv it was last seen
+    /// with. Unlike `restart` there is nothing to stop first.
+    func startAgain(_ service: RunningService) async {
+        guard let terminal = relaunchTerminal(for: service), let command = relaunchCommand(for: service) else { return }
+        arrivals.expectReturn(of: service)
+        if let problem = await launch(command, for: service, in: terminal) { report(problem) }
+    }
+
+    /// Returns what went wrong, for the caller to report after its refresh. A
+    /// successful refresh clears `lastError`, so reporting here would be lost.
+    private func launch(_ command: RelaunchCommand, for service: RunningService, in terminal: ExternalApp) async -> String? {
+        do {
+            try await RelaunchRunner.run(command, in: terminal)
+            Telemetry.send(.serviceRestarted(service))
+            return nil
+        } catch {
+            return "\(service.displayName) could not be started again. \(error.localizedDescription)"
+        }
+    }
+
+    private func relaunchTerminal(for service: RunningService) -> ExternalApp? {
+        guard let terminal = terminalApp, terminal.runsHandedOverScript else {
+            let name = terminalApp?.name ?? "This terminal"
+            report("\(name) cannot be asked to run a command, "
+                + "so Portfox cannot restart \(service.displayName).")
+            return nil
+        }
+        return terminal
     }
 
     /// For a terminal that cannot be handed a script: stop the service and leave
