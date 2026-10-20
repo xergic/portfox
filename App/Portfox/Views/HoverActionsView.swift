@@ -1,17 +1,25 @@
 import PortfoxKit
 import SwiftUI
 
-/// The action cluster that appears on row hover. Two further slots, detection
-/// evidence and the process tree, are laid out in the design and deliberately
-/// deferred past the MVP.
+/// The actions a hovered row shows in place of its pills.
 struct HoverActionsView: View {
     @Environment(AppState.self) private var state
     let service: RunningService
+    @Binding var isSharing: Bool
 
     var body: some View {
         HStack(spacing: 1) {
             if service.localURL != nil {
                 IconButton(symbol: "globe", help: "Open in browser") { state.open(service) }
+            }
+            IconButton(symbol: "doc.on.doc", help: service.localURL == nil ? "Copy port" : "Copy URL") {
+                state.copyURL(service)
+            }
+            // Only for a web service another device can reach. A phone camera opens
+            // a URL, and nothing else on this row means anything to it.
+            if service.type.isHTTP, service.networkPort != nil {
+                IconButton(symbol: "qrcode", help: "Open on your phone") { isSharing = true }
+                    .popover(isPresented: $isSharing, arrowEdge: .bottom) { LANShareView(service: service) }
             }
             if service.revealDirectory != nil {
                 IconButton(symbol: "folder", help: "Reveal in Finder") { state.reveal(service) }

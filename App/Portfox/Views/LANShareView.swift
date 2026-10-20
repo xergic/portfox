@@ -1,26 +1,8 @@
 import PortfoxKit
 import SwiftUI
 
-/// Marks a service other devices on the network can reach. On a web service it
-/// opens a QR code, so the page is one camera away on a phone.
-struct LANBadge: View {
-    let service: RunningService
-
-    @State private var isSharing = false
-
-    var body: some View {
-        Button { isSharing = true } label: {
-            TintedBadge(text: "LAN", tint: Theme.accentText)
-                .fixedSize()
-                .help("Reachable from other devices on your network")
-        }
-        .buttonStyle(.plain)
-        .disabled(!service.type.isHTTP)
-        .popover(isPresented: $isSharing, arrowEdge: .bottom) { LANShareView(service: service) }
-    }
-}
-
-private struct LANShareView: View {
+/// A QR code and the URL a phone on the same network opens.
+struct LANShareView: View {
     @Environment(AppState.self) private var state
 
     /// Read once when the popover opens, so it neither flickers through an empty

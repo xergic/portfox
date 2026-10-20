@@ -16,6 +16,9 @@ struct ServiceRowView: View {
 
     @State private var isHovering = false
     @State private var hasAppeared = false
+    /// Holds the actions on screen while the QR popover is open, because the
+    /// pointer leaves the row to reach it and the button would vanish under it.
+    @State private var isSharing = false
 
     var body: some View {
         HStack(spacing: 10) {
@@ -32,28 +35,10 @@ struct ServiceRowView: View {
                 }
             }
             .layoutPriority(1)
-            // Reserved only where the actions can actually appear. The dashboard
-            // selects rather than hovers, so there it is 72 points of wasted width.
-            .padding(.trailing, showsHoverActions ? Theme.Metrics.rowActionsWidth : 0)
 
             Spacer(minLength: 0)
 
-            HStack(spacing: 10) {
-                HealthPill(service: service)
-                PortPill(port: service.port, extraPorts: service.secondaryPorts)
-            }
-            // An overlay rather than another element in the stack, so showing the
-            // actions never re-truncates the text under the pointer. Pinned to the
-            // pills, so a status pill appearing moves the actions with it.
-            .overlay(alignment: .leading) {
-                if showsActions {
-                    // A zero-width frame at the pills' leading edge, with the
-                    // actions hung off its trailing side.
-                    HoverActionsView(service: service)
-                        .padding(.trailing, 4)
-                        .frame(width: 0, alignment: .trailing)
-                }
-            }
+            trailingSlot
         }
         .padding(.horizontal, Theme.Metrics.rowPaddingH)
         .padding(.vertical, Theme.Metrics.rowPaddingV)
@@ -87,6 +72,26 @@ struct ServiceRowView: View {
                 .opacity(showsArrival ? 1 : 0)
         )
         .animation(showsArrival ? .easeOut(duration: 0.2) : .easeIn(duration: 0.9), value: showsArrival)
+    }
+
+    /// On hover the actions take the pills' place, so they never cover the name,
+    /// project or version. Both are always laid out in one slot as wide as the
+    /// wider of them, so the text beside it never re-truncates as the pointer
+    /// moves across rows.
+    private var trailingSlot: some View {
+        ZStack(alignment: .trailing) {
+            HStack(spacing: 10) {
+                HealthPill(service: service)
+                PortPill(port: service.port, extraPorts: service.secondaryPorts)
+            }
+            .opacity(showsActions ? 0 : 1)
+
+            if showsHoverActions {
+                HoverActionsView(service: service, isSharing: $isSharing)
+                    .opacity(showsActions ? 1 : 0)
+                    .allowsHitTesting(showsActions)
+            }
+        }
     }
 
     /// Project-first leads with the project's own icon, which is usually its
@@ -139,7 +144,7 @@ struct ServiceRowView: View {
         }
     }
 
-    private var hasBadges: Bool { service.origin != nil || service.container != nil || service.networkPort != nil }
+    private var hasBadges: Bool { service.origin != nil || service.container != nil }
 
     private var badges: some View {
         HStack(spacing: 4) {
@@ -149,9 +154,6 @@ struct ServiceRowView: View {
             if service.container != nil {
                 TintedBadge(text: ContainerRuntime.displayName(of: service.listenerProcess), tint: Theme.pathDirectory)
                     .fixedSize()
-            }
-            if service.networkPort != nil {
-                LANBadge(service: service)
             }
         }
     }
@@ -231,7 +233,7 @@ struct ServiceRowView: View {
         isArriving && (hasAppeared || SnapshotRenderer.requestedPath != nil)
     }
 
-    private var showsActions: Bool { showsHoverActions && (isHovering || forcedHover) }
+    private var showsActions: Bool { showsHoverActions && (isHovering || forcedHover || isSharing) }
     private var isHighlighted: Bool { showsActions || (isHovering && !showsHoverActions) }
     private var borderColor: Color {
         if isSelected { return Theme.selectedBorder }
