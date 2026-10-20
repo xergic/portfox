@@ -33,6 +33,9 @@ public struct ListeningSocket: Identifiable, Hashable, Codable, Sendable {
         host == "localhost" || host == "::1" || host.hasPrefix("127.")
     }
 
+    /// Bound to every interface, so it answers on whichever address is dialled.
+    public var isWildcard: Bool { host == "0.0.0.0" || host == "::" || host == "*" }
+
     /// Host to put in a `http://` URL.
     public var displayHost: String {
         switch host {

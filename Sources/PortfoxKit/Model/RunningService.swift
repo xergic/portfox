@@ -218,18 +218,28 @@ public struct RunningService: Identifiable, Hashable, Sendable {
     /// socket is loopback only. The primary port wins when it is exposed, which
     /// is the common case of one server bound to `0.0.0.0`. Otherwise the lowest
     /// exposed port, the same choice `secondaryPorts` would list first.
-    public var networkPort: Int? {
-        if !primarySocket.isLoopbackOnly { return primarySocket.port }
+    public var networkPort: Int? { networkSocket?.port }
+
+    private var networkSocket: ListeningSocket? {
+        if !primarySocket.isLoopbackOnly { return primarySocket }
         return sockets
             .filter { !$0.isLoopbackOnly && $0.port < ListenerClassifier.ephemeralPortFloor }
-            .map(\.port)
-            .min()
+            .min { $0.port < $1.port }
     }
 
-    /// What a phone on the same network opens, given this Mac's address on it.
-    public func networkURL(host: String) -> URL? {
-        guard type.isHTTP, let networkPort else { return nil }
-        return URL(string: "http://\(host):\(networkPort)")
+    /// `host:port` another device dials. `macAddress` stands in only for a
+    /// wildcard bind: a server bound to one interface answers on that address
+    /// alone, and the Mac's preferred address may be a different interface.
+    public func networkAddress(macAddress: String) -> String? {
+        guard let socket = networkSocket else { return nil }
+        let host = socket.isWildcard ? macAddress : socket.host
+        return "\(host.contains(":") ? "[\(host)]" : host):\(socket.port)"
+    }
+
+    /// What a phone on the same network opens.
+    public func networkURL(macAddress: String) -> URL? {
+        guard type.isHTTP, let address = networkAddress(macAddress: macAddress) else { return nil }
+        return URL(string: "http://\(address)")
     }
 
     /// Directory to reveal in Finder.

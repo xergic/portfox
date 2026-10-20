@@ -26,6 +26,18 @@ struct NetworkExposureTests {
 
     @Test("a service that does not speak HTTP has no network URL")
     func nonHTTP() {
-        #expect(service([("0.0.0.0", 5432)]).networkURL(host: "192.168.1.5") == nil)
+        #expect(service([("0.0.0.0", 5432)]).networkURL(macAddress: "192.168.1.5") == nil)
+    }
+
+    @Test("a wildcard bind is reached on the Mac's address")
+    func wildcardAddress() {
+        #expect(service([("0.0.0.0", 5432)]).networkAddress(macAddress: "192.168.1.5") == "192.168.1.5:5432")
+    }
+
+    /// A server bound to one interface answers there alone, and the Mac's
+    /// preferred address may belong to another interface.
+    @Test("a server bound to one interface keeps that address")
+    func specificBind() {
+        #expect(service([("10.0.0.2", 3000)]).networkAddress(macAddress: "192.168.1.2") == "10.0.0.2:3000")
     }
 }

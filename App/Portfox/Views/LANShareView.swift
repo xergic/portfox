@@ -11,7 +11,7 @@ struct LANShareView: View {
     @State private var code: NSImage?
 
     init(service: RunningService) {
-        let url = LocalNetwork.ipv4Address().flatMap(service.networkURL)
+        let url = LocalNetwork.ipv4Address().flatMap { service.networkURL(macAddress: $0) }
         _url = State(initialValue: url)
         _code = State(initialValue: url.flatMap { LocalNetwork.qrCode(for: $0) })
     }
