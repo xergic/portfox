@@ -39,4 +39,18 @@ extension AppState {
             }
         }
     }
+
+    func open(_ service: RunningService) {
+        guard let url = service.localURL else { return }
+        NSWorkspace.shared.open(url)
+    }
+
+    func reveal(_ service: RunningService) {
+        guard let directory = service.revealDirectory else { return }
+        NSWorkspace.shared.activateFileViewerSelecting([directory])
+    }
+
+    func reveal(_ directory: URL) {
+        NSWorkspace.shared.activateFileViewerSelecting([directory])
+    }
 }

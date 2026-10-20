@@ -10,6 +10,7 @@ Notable changes to Portfox. The format follows [Keep a Changelog](https://keepac
 - A service that listens on more than one port shows a "+1" count on its port. Hover it to see the other ports.
 - Container rows carry a badge naming their runtime, such as Docker or OrbStack.
 - A "LAN" badge marks a service other devices on your network can reach, meaning it binds `0.0.0.0` or a network address rather than `127.0.0.1`. On a web service, clicking the badge shows a QR code that opens it on your phone. "Copy LAN Address" is in the right-click menu.
+- Web services show their HTTP status beside the port: green for 2xx, teal for redirects, orange for 4xx, red for 5xx. Hover it for the response time. Portfox sends one request when a service starts and when you open the popover or dashboard, never on a timer. Turn it off with "Check HTTP status" in Preferences.
 - A global shortcut opens the popover from any app. The default is ⌃⌥P, and you can change it in Preferences › General.
 
 ### Fixed

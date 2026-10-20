@@ -117,6 +117,25 @@ struct HTTPProbeEndToEndTests {
         #expect(result.latency > .zero)
     }
 
+    /// The health check's mode: it needs the status, and reading the page would
+    /// only inflate the latency it reports.
+    @Test("a status-only probe returns the status without reading the title")
+    func statusOnly() async throws {
+        let body = "<html><head><title>Skipped</title></head></html>"
+        let response = "HTTP/1.1 503 Service Unavailable\r\nContent-Length: \(body.utf8.count)\r\n"
+            + "Connection: close\r\n\r\n\(body)"
+
+        let server = try LoopbackHTTPServer(response: response)
+        let port = try await server.start()
+        defer { server.stop() }
+
+        let url = try #require(URL(string: "http://127.0.0.1:\(port)/"))
+        let result = try await HTTPProbe(timeout: .seconds(2)).probe(url, readsBody: false)
+
+        #expect(result.statusCode == 503)
+        #expect(result.title == nil)
+    }
+
     @Test("a redirect is reported rather than followed")
     func redirectIsReportedNotFollowed() async throws {
         let response = """

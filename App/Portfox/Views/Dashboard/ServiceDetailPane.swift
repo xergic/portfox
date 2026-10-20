@@ -113,14 +113,17 @@ struct ServiceDetailPane: View {
                     LabeledRow(
                         label: "Status",
                         value: nil,
-                        badge: TintedBadge(text: statusText(probe.statusCode), tint: statusTint(probe.statusCode))
+                        badge: TintedBadge(
+                            text: HTTPStatusStyle.text(probe.statusCode),
+                            tint: HTTPStatusStyle.tint(probe.statusCode)
+                        )
                     )
                     LabeledRow(label: "Page title", value: probe.title, valueFont: .portDetail)
                     if let location = probe.location {
                         LabeledRow(label: "Redirects to", value: location)
                     }
                     LabeledRow(label: "Server header", value: probe.server)
-                    LabeledRow(label: "Response latency", value: latency(probe.latency))
+                    LabeledRow(label: "Response latency", value: HTTPStatusStyle.milliseconds(probe.latency))
                 case .failure(let message):
                     Text(message)
                         .font(.portDetail)
@@ -141,7 +144,12 @@ struct ServiceDetailPane: View {
         HStack {
             Spacer(minLength: 0)
             ActionButton(symbol: "waveform.path.ecg", label: dashboard.isProbing(service) ? "Inspecting…" : inspectLabel) {
-                Task { await dashboard.runProbe(for: service) }
+                Task {
+                    await dashboard.runProbe(for: service)
+                    if case .success(let probe) = dashboard.probeResult(for: service) {
+                        state.health.record(probe, for: service)
+                    }
+                }
             }
             .disabled(dashboard.isProbing(service))
         }
@@ -156,24 +164,5 @@ struct ServiceDetailPane: View {
         guard let path = service.listenerProcess.workingDirectory else { return nil }
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         return path.hasPrefix(home) ? "~" + path.dropFirst(home.count) : path
-    }
-
-    private func latency(_ duration: Duration) -> String {
-        let milliseconds = Double(duration.components.seconds) * 1000
-            + Double(duration.components.attoseconds) / 1e15
-        return "\(Int(milliseconds.rounded())) ms"
-    }
-
-    private func statusText(_ code: Int) -> String {
-        let reason = HTTPURLResponse.localizedString(forStatusCode: code)
-        return "\(String(code)) \(reason.prefix(1).localizedUppercase)\(reason.dropFirst())"
-    }
-
-    private func statusTint(_ code: Int) -> Color {
-        switch code {
-        case 200..<300: Theme.success
-        case 300..<400: Theme.roleWrapper
-        default: Theme.danger
-        }
     }
 }

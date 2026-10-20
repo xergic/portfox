@@ -147,6 +147,13 @@ struct PreferencesSheet: View {
             }
             .opacity(state.automaticRefresh ? 1 : 0.4)
             PreferenceDivider()
+            PreferenceRow(
+                title: "Check HTTP status",
+                subtitle: "One request to each web service when it starts and when you open Portfox, never on a timer"
+            ) {
+                PreferenceCheckbox(isOn: $state.checksHealth)
+            }
+            PreferenceDivider()
             arrivalNotificationRow
         }
     }

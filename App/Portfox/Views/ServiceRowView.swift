@@ -38,18 +38,25 @@ struct ServiceRowView: View {
 
             Spacer(minLength: 0)
 
-            PortPill(port: service.port, extraPorts: service.secondaryPorts)
+            HStack(spacing: 10) {
+                HealthPill(service: service)
+                PortPill(port: service.port, extraPorts: service.secondaryPorts)
+            }
+            // An overlay rather than another element in the stack, so showing the
+            // actions never re-truncates the text under the pointer. Pinned to the
+            // pills, so a status pill appearing moves the actions with it.
+            .overlay(alignment: .leading) {
+                if showsActions {
+                    // A zero-width frame at the pills' leading edge, with the
+                    // actions hung off its trailing side.
+                    HoverActionsView(service: service)
+                        .padding(.trailing, 4)
+                        .frame(width: 0, alignment: .trailing)
+                }
+            }
         }
         .padding(.horizontal, Theme.Metrics.rowPaddingH)
         .padding(.vertical, Theme.Metrics.rowPaddingV)
-        // Overlaid beside the port pill rather than inserted into the stack, so
-        // showing the actions never re-truncates the text under the pointer.
-        .overlay(alignment: .trailing) {
-            if showsActions {
-                HoverActionsView(service: service)
-                    .padding(.trailing, Theme.Metrics.portPillWidth + Theme.Metrics.rowPaddingH + 4)
-            }
-        }
         .background(rowBackground)
         .contentShape(Rectangle())
         .onHover { hovering in

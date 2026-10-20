@@ -107,9 +107,12 @@ after enabling it shows nothing, and why it stays blank with the refresh loop of
 ignore-filtered projection, so comparing to it differs forever once anything is
 ignored, and the skip-the-redraw branch stops working.
 
-**Nothing touches a user's dev server on the refresh tick.** `HTTPProbe` runs
-only when the user presses Inspect. It refuses any host other than `localhost`,
-`127.0.0.1` or `::1`, and never follows a redirect.
+**Nothing touches a user's dev server on the refresh tick.** A probe every tick
+would log a request every two seconds, and `next dev` compiles a page on its first
+hit. `HealthChecks` probes a web service when it appears and when a window opens,
+never twice inside 30s, and only while "Check HTTP status" is on. Inspect probes
+on demand. `HTTPProbe` refuses any host other than `localhost`, `127.0.0.1` or
+`::1`, and never follows a redirect.
 
 **A relaunch is built from the logical root, the same process Stop signals.**
 `RelaunchCommand` quotes every argv entry into a `zsh -l` script, because the

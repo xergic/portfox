@@ -70,6 +70,14 @@ final class AppState {
         }
     }
 
+    /// One request per web service when it appears and when a window opens.
+    var checksHealth: Bool {
+        didSet {
+            defaults.set(checksHealth, forKey: Key.checksHealth)
+            if checksHealth { checkHealthOfVisibleServices() } else { health.forget() }
+        }
+    }
+
     var showsUptime: Bool {
         didSet { defaults.set(showsUptime, forKey: Key.showsUptime) }
     }
@@ -126,6 +134,7 @@ final class AppState {
         static let showsMenuBarCount = "showsMenuBarCount"
         static let hidesDaemons = "hidesDaemons"
         static let showsUptime = "showsUptime"
+        static let checksHealth = "checksHealth"
         static let showsCPU = "showsCPU"
         static let editorBundleID = "editorBundleID"
         static let terminalBundleID = "terminalBundleID"
@@ -141,6 +150,7 @@ final class AppState {
     let arrivals: ServiceArrivals
     /// Which services the user wants a banner for when they stop.
     let watched = WatchedServices()
+    let health = HealthChecks()
     private let ignoredServices = IgnoredServices()
     private let defaults = UserDefaults.standard
 
@@ -175,6 +185,7 @@ final class AppState {
             Key.pollingSeconds: 2,
             Key.showsMenuBarCount: true,
             Key.showsUptime: true,
+            Key.checksHealth: true,
             Telemetry.defaultsKey: true
         ])
         showAllListeners = defaults.bool(forKey: Key.showAllListeners)
@@ -185,6 +196,7 @@ final class AppState {
         showsMenuBarCount = defaults.bool(forKey: Key.showsMenuBarCount)
         hidesDaemons = defaults.bool(forKey: Key.hidesDaemons)
         showsUptime = defaults.bool(forKey: Key.showsUptime)
+        checksHealth = defaults.bool(forKey: Key.checksHealth)
         sharesUsageData = defaults.bool(forKey: Telemetry.defaultsKey)
         showsCPU = defaults.bool(forKey: Key.showsCPU)
         editorBundleID = defaults.string(forKey: Key.editorBundleID)
@@ -228,7 +240,10 @@ final class AppState {
 
     private func surfaceDidAppear(_ surface: Surface) {
         visibleSurfaces.insert(surface)
-        Task { await refresh() }
+        Task {
+            await refresh()
+            checkHealthOfVisibleServices()
+        }
     }
 
     private func surfaceDidDisappear(_ surface: Surface) {
@@ -295,6 +310,7 @@ final class AppState {
                     if relaunchable != relaunchableServiceIDs { relaunchableServiceIDs = relaunchable }
                     applyFilters()
                     stubbornServiceIDs.formIntersection(Set(update.result.services.map(\.id)))
+                    health.forget(missingFrom: Set(update.result.services.map(\.id)))
                 }
                 processTree = update.tree
             }
@@ -302,6 +318,7 @@ final class AppState {
             // and the first service to start afterwards is announced properly.
             noteArrivals(appeared, kind: kind)
             noteDepartures(departed)
+            checkHealth(ofArrivals: appeared)
             await sampleTasks()
             if lastError != nil { lastError = nil }
         } catch {
@@ -439,36 +456,12 @@ final class AppState {
 
     // MARK: - Actions
 
-    func open(_ service: RunningService) {
-        guard let url = service.localURL else { return }
-        NSWorkspace.shared.open(url)
-    }
-
-    func reveal(_ service: RunningService) {
-        guard let directory = service.revealDirectory else { return }
-        NSWorkspace.shared.activateFileViewerSelecting([directory])
-    }
-
-    func reveal(_ directory: URL) {
-        NSWorkspace.shared.activateFileViewerSelecting([directory])
-    }
-
     /// The one way anything outside this file puts a message in front of the user.
     /// `lastError` stays `private(set)` so a view cannot write one directly.
     func report(_ problem: String) { lastError = problem }
 
     func copyURL(_ service: RunningService) {
         copy(service.localURL?.absoluteString ?? String(service.port))
-    }
-
-    /// The URL for a web service, `host:port` for anything else, so a database on
-    /// `0.0.0.0` can be pasted into a client on another machine.
-    func copyNetworkAddress(_ service: RunningService) {
-        guard let host = LocalNetwork.ipv4Address(), let port = service.networkPort else {
-            report("This Mac is not on a network another device can reach.")
-            return
-        }
-        copy(service.networkURL(host: host)?.absoluteString ?? "\(host):\(port)")
     }
 
     func copy(_ value: String) {

@@ -49,7 +49,10 @@ public struct HTTPProbe: Sendable {
         self.timeout = timeout
     }
 
-    public func probe(_ url: URL) async throws -> HTTPProbeResult {
+    /// `readsBody` false returns as soon as the headers arrive: the status and a
+    /// time to first byte, without the page title. That is all a health check
+    /// needs, and reading a slow page to its end would inflate the latency.
+    public func probe(_ url: URL, readsBody: Bool = true) async throws -> HTTPProbeResult {
         try Self.validate(url)
 
         let session = Self.makeSession(timeout: timeout)
@@ -69,12 +72,13 @@ public struct HTTPProbe: Sendable {
                 throw HTTPProbeError.transport("The server did not return an HTTP response.")
             }
 
-            let body = try await Self.read(byteStream, upTo: Self.maxBodyBytes)
-            let latency = clock.now - start
+            let firstByte = clock.now - start
+            let body = readsBody ? try await Self.read(byteStream, upTo: Self.maxBodyBytes) : Data()
+            let latency = readsBody ? clock.now - start : firstByte
 
             return HTTPProbeResult(
                 statusCode: httpResponse.statusCode,
-                title: Self.extractTitle(from: Self.decodeBody(body)),
+                title: readsBody ? Self.extractTitle(from: Self.decodeBody(body)) : nil,
                 server: httpResponse.value(forHTTPHeaderField: "Server"),
                 location: httpResponse.value(forHTTPHeaderField: "Location"),
                 latency: latency

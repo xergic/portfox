@@ -118,6 +118,7 @@ enum Theme {
         /// Fixed so four and five digit ports align, and so the hover actions can
         /// be positioned beside the pill without measuring it.
         static let portPillWidth: CGFloat = 66
+        static let statusPillWidth: CGFloat = 38
         /// Space the hover actions occupy. Reserved even at rest, so revealing
         /// them never re-truncates the text or shifts the row under the pointer.
         static let rowActionsWidth: CGFloat = 72
