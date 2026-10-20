@@ -2,7 +2,7 @@
 
 Notable changes to Portfox. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.4.0] - 2026-10-20
 
 ### Added
 - The popover has a search field. It matches port, name, project, folder, binary and container, and it takes the keyboard when the popover opens. ↑ and ↓ move through the list, Return opens the selected service, ⌘⌫ stops it, and Escape clears the search. The dashboard search also matches container names and images.
