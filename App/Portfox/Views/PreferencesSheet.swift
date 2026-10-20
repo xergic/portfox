@@ -1,3 +1,4 @@
+import KeyboardShortcuts
 import PortfoxKit
 import SwiftUI
 
@@ -365,6 +366,14 @@ struct PreferencesSheet: View {
                     .foregroundStyle(Theme.danger)
                     .padding(.horizontal, Theme.Metrics.rowPaddingH)
                     .padding(.bottom, 10)
+            }
+            PreferenceDivider()
+            PreferenceRow(
+                title: "Open Portfox",
+                subtitle: "A shortcut that opens the menu from any app"
+            ) {
+                KeyboardShortcuts.Recorder(for: .togglePopover)
+                    .frame(width: 140)
             }
             PreferenceDivider()
             @Bindable var state = state

@@ -6,6 +6,7 @@ Notable changes to Portfox. The format follows [Keep a Changelog](https://keepac
 
 ### Added
 - The popover has a search field. It matches port, name, project, folder, binary and container, and it takes the keyboard when the popover opens. ↑ and ↓ move through the list, Return opens the selected service, ⌘⌫ stops it, and Escape clears the search. The dashboard search also matches container names and images.
+- A global shortcut opens the popover from any app. The default is ⌃⌥P, and you can change it in Preferences › General.
 
 ## [1.3.1] - 2026-10-02
 

@@ -1,3 +1,5 @@
+import KeyboardShortcuts
+import MenuBarExtraAccess
 import PortfoxKit
 import SwiftUI
 
@@ -6,6 +8,7 @@ struct PortfoxApp: App {
     @State private var state = AppState()
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @Environment(\.openWindow) private var openWindow
+    @State private var isMenuPresented = false
 
     var body: some Scene {
         MenuBarExtra {
@@ -20,10 +23,22 @@ struct PortfoxApp: App {
                     WindowPresenter.showDashboard(openWindow)
                 }
         }
+        // SwiftUI has no API to open its own menu bar window, and on macOS 27
+        // clicking the status button from code no longer does it either.
+        .menuBarExtraAccess(isPresented: $isMenuPresented)
         .menuBarExtraStyle(.window)
         .onChange(of: delegate.isReady, initial: true) {
-            guard delegate.isReady, let request = SnapshotRenderer.request else { return }
-            Task { await SnapshotRenderer.run(request, state: state) }
+            guard delegate.isReady else { return }
+            if let request = SnapshotRenderer.request {
+                Task { await SnapshotRenderer.run(request, state: state) }
+            } else {
+                KeyboardShortcuts.onKeyUp(for: .togglePopover) { [$isMenuPresented] in
+                    // An `LSUIElement` app is never active on its own, and an
+                    // inactive app's window cannot take the search field's keys.
+                    NSApp.activate()
+                    $isMenuPresented.wrappedValue.toggle()
+                }
+            }
         }
 
         Window("Portfox", id: WindowPresenter.dashboardSceneID) {

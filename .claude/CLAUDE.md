@@ -6,7 +6,10 @@ Project instructions for Portfox. Read `README.md` for the user-facing descripti
 
 A macOS 15+ menu bar app that lists local TCP listeners, identifies which dev
 service each one is, resolves its project, and can stop it. Swift 6, SwiftUI,
-strict concurrency. The one dependency is TelemetryDeck, in the app target only.
+strict concurrency. The app target has three dependencies and the kit none:
+TelemetryDeck, KeyboardShortcuts for the global hotkey, and MenuBarExtraAccess,
+because on macOS 27 the `MenuBarExtra` status button has no target and nothing
+else can open the popover from code.
 
 ## Commands
 
