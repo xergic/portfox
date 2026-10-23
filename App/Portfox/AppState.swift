@@ -14,6 +14,9 @@ final class AppState {
     /// The ignored services that happen to be running, grouped the same way, so
     /// the dashboard's Ignored chip renders through the existing sections.
     private(set) var ignoredResult: ScanResult = .empty
+    /// Judged against `rawResult`, so a running service that is ignored or hidden
+    /// never reads as a stopped pin.
+    private(set) var stoppedPins: [Pin] = []
     private(set) var lastError: String?
     /// Services whose Stop was delivered but which are still alive.
     private(set) var stubbornServiceIDs: Set<String> = []
@@ -144,6 +147,7 @@ final class AppState {
     let controller = ProcessController()
     let projectIcons = ProjectIcons()
     let projectNames = ProjectNames()
+    let pins = PinnedItems()
     let appearance = Appearance()
     /// Which rows just appeared, and whether that is worth telling the user about.
     /// Posts every banner: arrivals, and watched services stopping.
@@ -462,6 +466,9 @@ final class AppState {
         // Ignored screen and the user can still un-ignore it.
         let hidden = renamed.keeping { ignoredIDs.contains($0.id) }
         if hidden != ignoredResult { ignoredResult = hidden }
+
+        let stopped = pins.stopped(in: rawResult)
+        if stopped != stoppedPins { stoppedPins = stopped }
     }
 
     // MARK: - Actions
@@ -469,15 +476,6 @@ final class AppState {
     /// The one way anything outside this file puts a message in front of the user.
     /// `lastError` stays `private(set)` so a view cannot write one directly.
     func report(_ problem: String) { lastError = problem }
-
-    func copyURL(_ service: RunningService) {
-        copy(service.localURL?.absoluteString ?? String(service.port))
-    }
-
-    func copy(_ value: String) {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(value, forType: .string)
-    }
 
     func stop(_ service: RunningService) async {
         markStopping(service)

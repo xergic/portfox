@@ -5,6 +5,7 @@ Notable changes to Portfox. The format follows [Keep a Changelog](https://keepac
 ## [Unreleased]
 
 ### Added
+- Pin a project from the pin on its heading, or a single service from its right-click menu. Pinned services sit under a Pinned heading at the top, and pinned projects lead the project list. A pin whose service is not running stays as a dimmed row, so you can see what is missing.
 - Rename a project from the pencil on its heading, for example `wishfox-api` to "Wishfox API". The name shows in the popover, the dashboard, search and banners. Save an empty name to bring the detected one back.
 - Search matches every port a service binds, a pid, and the full command line. Type a range such as `3000-3999` to find anything listening inside it.
 

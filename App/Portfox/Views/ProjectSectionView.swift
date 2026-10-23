@@ -43,6 +43,12 @@ struct ProjectSectionView: View {
                         state.rename(group, to: name)
                     }
                 }
+            if state.isPinned(group) {
+                Image(systemName: "pin.fill")
+                    .font(.system(size: 9))
+                    .foregroundStyle(Theme.tertiaryText)
+                    .help("Pinned to the top")
+            }
             Text(group.project.displayPath)
                 .font(.portDetail)
                 .foregroundStyle(Theme.secondaryText)
@@ -79,6 +85,10 @@ struct ProjectSectionView: View {
 
     private var actions: some View {
         HStack(spacing: 1) {
+            IconButton(
+                symbol: state.isPinned(group) ? "pin.slash" : "pin",
+                help: state.isPinned(group) ? "Unpin" : "Pin to top"
+            ) { state.togglePin(group) }
             IconButton(symbol: "pencil", help: "Rename") { isRenaming = true }
             IconButton(symbol: "photo", help: "Change icon") { presentIconPicker() }
             if state.projectIcons.hasIconOverride(for: group) {

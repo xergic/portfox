@@ -2,12 +2,21 @@ import AppKit
 import Foundation
 import PortfoxKit
 
-/// Pointing another app at a service's directory.
+/// Pointing another app at a service: the clipboard, an editor, a terminal.
 ///
 /// An extension in its own file, because `AppState` had grown past what one file
 /// should hold. Nothing here reads the scan, only the two app preferences.
 @MainActor
 extension AppState {
+    func copyURL(_ service: RunningService) {
+        copy(service.localURL?.absoluteString ?? String(service.port))
+    }
+
+    func copy(_ value: String) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(value, forType: .string)
+    }
+
     var editorApp: ExternalApp? { ExternalApps.editor(id: editorBundleID) }
     var terminalApp: ExternalApp? { ExternalApps.terminal(id: terminalBundleID) }
 

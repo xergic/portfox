@@ -79,12 +79,17 @@ struct ServiceListPane: View {
         // Narrowed once. Each call to `dashboard.filtered` is a full pass.
         let visible = dashboard.filtered(result)
         return ServiceSections(
-            result: visible,
+            sections: state.sections(of: visible, showsStoppedPins: showsStoppedPins),
             selectedID: dashboard.selection(among: visible.services)?.id,
             showsHoverActions: false,
             onSelect: select,
             forcesHover: forcesHover
         )
+    }
+
+    /// Placeholders cannot match a search or a category chip.
+    private var showsStoppedPins: Bool {
+        dashboard.search.isEmpty && dashboard.filter == .all
     }
 
     private func select(_ service: RunningService) {

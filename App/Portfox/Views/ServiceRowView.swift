@@ -301,6 +301,7 @@ private struct ServiceContextMenu: View {
         }
         if state.canWatch(service) {
             Divider()
+            Button(state.isPinned(service) ? "Unpin" : "Pin to Top") { state.togglePin(service) }
             Toggle("Notify When It Stops", isOn: state.watchBinding(for: service))
         }
         if state.canIgnore(service) {

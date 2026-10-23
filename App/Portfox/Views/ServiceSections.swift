@@ -1,13 +1,13 @@
 import PortfoxKit
 import SwiftUI
 
-/// Project groups, then infrastructure, agent tools and the rest, in the order
-/// `ScanResult.drawingOrder` walks. Shared by the popover and the dashboard
-/// sidebar so the two lists can never disagree on what goes where.
+/// Pinned rows, then project groups with the pinned ones first, infrastructure, agent tools and the rest,
+/// in the order `ListSections.drawingOrder` walks. Shared by the popover and
+/// the dashboard sidebar so the two lists can never disagree on what goes where.
 struct ServiceSections: View {
     @Environment(AppState.self) private var state
 
-    let result: ScanResult
+    let sections: ListSections
     var selectedID: String?
     var showsHoverActions = true
     /// Nil opens the service in a browser, which is what the popover wants.
@@ -20,22 +20,40 @@ struct ServiceSections: View {
                 ErrorBanner(message: error)
             }
 
-            ForEach(result.groups) { group in
-                ProjectSectionView(
-                    group: group,
-                    layout: state.cellLayout,
-                    showsHoverActions: showsHoverActions,
-                    selectedServiceID: selectedID,
-                    onSelect: onSelect,
-                    forcesHover: forcesHover
-                )
+            if sections.hasPinnedRows {
+                pinnedRows
             }
 
-            section("Infrastructure & daemons", result.standalone)
-            section("Agent tools", result.agentTools)
-            section("Other listeners", result.ungrouped)
+            ForEach(sections.pinnedGroups + sections.rest.groups) { group in
+                projectSection(group)
+            }
+
+            section("Infrastructure & daemons", sections.rest.standalone)
+            section("Agent tools", sections.rest.agentTools)
+            section("Other listeners", sections.rest.ungrouped)
         }
         .padding(12)
+    }
+
+    private var pinnedRows: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            SectionHeader(title: "Pinned")
+            rows(sections.pinnedServices)
+            ForEach(sections.stoppedPins) { pin in
+                PinPlaceholderRow(pin: pin, showsHoverActions: showsHoverActions, forcedHover: forcesHover)
+            }
+        }
+    }
+
+    private func projectSection(_ group: ProjectGroup) -> some View {
+        ProjectSectionView(
+            group: group,
+            layout: state.cellLayout,
+            showsHoverActions: showsHoverActions,
+            selectedServiceID: selectedID,
+            onSelect: onSelect,
+            forcesHover: forcesHover
+        )
     }
 
     @ViewBuilder
@@ -43,17 +61,21 @@ struct ServiceSections: View {
         if !services.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
                 SectionHeader(title: title)
-                ForEach(services) { service in
-                    ServiceRowView(
-                        service: service,
-                        layout: state.cellLayout,
-                        showsHoverActions: showsHoverActions,
-                        isSelected: service.id == selectedID,
-                        onTap: onSelect,
-                        forcedHover: forcesHover
-                    )
-                }
+                rows(services)
             }
+        }
+    }
+
+    private func rows(_ services: [RunningService]) -> some View {
+        ForEach(services) { service in
+            ServiceRowView(
+                service: service,
+                layout: state.cellLayout,
+                showsHoverActions: showsHoverActions,
+                isSelected: service.id == selectedID,
+                onTap: onSelect,
+                forcedHover: forcesHover
+            )
         }
     }
 }

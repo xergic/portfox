@@ -18,23 +18,24 @@ struct MenuView: View {
     @State private var keyboardSelectionID: String?
 
     var body: some View {
-        let visible = state.result.matching(query)
-        let ordered = visible.drawingOrder
+        // A stopped pin cannot match a query, it has no service to search.
+        let sections = state.sections(of: state.result.matching(query), showsStoppedPins: query.isEmpty)
+        let ordered = sections.drawingOrder
         let selectedID = selection(in: ordered)?.id
         VStack(spacing: 0) {
             header(ungrouped: state.result.ungrouped)
             Divider().overlay(Theme.separator)
 
-            if state.result.services.isEmpty {
+            if state.result.services.isEmpty, sections.stoppedPins.isEmpty {
                 emptyState
             } else {
                 searchField
-                if ordered.isEmpty {
+                if sections.isEmpty {
                     noMatches
                 } else {
                     ScrollViewReader { proxy in
                         MeasuredScrollView(height: $listHeight, scrolls: scrolls) {
-                            ServiceSections(result: visible, selectedID: selectedID, forcesHover: forcesHover)
+                            ServiceSections(sections: sections, selectedID: selectedID, forcesHover: forcesHover)
                         }
                         .onChange(of: selectedID) {
                             guard let selectedID else { return }
