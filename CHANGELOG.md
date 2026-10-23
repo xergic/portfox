@@ -2,7 +2,7 @@
 
 Notable changes to Portfox. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.5.0] - 2026-10-23
 
 ### Added
 - "Notify When It Is Up" sends one banner when something you are waiting on starts, then turns itself off. Set it on a stopped pinned row, on a port number you searched for that nothing is using, or with the bell in the popover header for the next server an agent starts. Click the banner to open the server. Portfox checks every 2 seconds while you wait, even with automatic refresh off, and gives up after 15 minutes. It works with "Notify when a service appears" off.
