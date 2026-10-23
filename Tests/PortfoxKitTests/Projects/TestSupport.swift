@@ -43,6 +43,7 @@ func makeService(
     detection: DetectionResult = .unknown(),
     classification: ServiceClass = .developmentService,
     container: ContainerSnapshot? = nil,
+    origin: ServiceOrigin? = nil,
     hosts: [(host: String, port: Int)]? = nil
 ) -> RunningService {
     let process = ProcessSnapshot(
@@ -63,7 +64,8 @@ func makeService(
         detection: detection,
         classification: classification,
         project: project,
-        container: container
+        container: container,
+        origin: origin
     )
 }
 

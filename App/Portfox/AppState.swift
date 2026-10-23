@@ -155,8 +155,10 @@ final class AppState {
     let arrivals: ServiceArrivals
     /// Which services the user wants a banner for when they stop.
     let watched = WatchedServices()
+    /// What the user is waiting on to come up.
+    let starts = StartWatches()
     let health = HealthChecks()
-    private let ignoredServices = IgnoredServices()
+    let ignoredServices = IgnoredServices()
     private let defaults = UserDefaults.standard
 
     /// Refreshing on the polling interval only matters while the user is looking.
@@ -166,6 +168,9 @@ final class AppState {
     /// A watched service promises a banner when it stops, and a minute late is
     /// too late to be useful. One `lsof` every ten seconds is the price.
     private let watchingInterval = Duration.seconds(10)
+    /// The user is waiting on a server right now, and the banner is the point.
+    /// Only while something is armed, which lasts 15 minutes at most.
+    private let waitingInterval = Duration.seconds(2)
 
     /// A set rather than a counter, so a repeated appear or a missed disappear
     /// cannot leave the app stuck on the fast interval forever.
@@ -219,20 +224,24 @@ final class AppState {
         refreshTask = Task { [weak self] in
             while !Task.isCancelled {
                 await self?.refresh()
-                guard let self, automaticRefresh else { return }
-                try? await Task.sleep(for: currentInterval)
+                guard let self, let interval = nextRefresh else { return }
+                try? await Task.sleep(for: interval)
             }
         }
     }
 
-    /// Clamped, because a stored zero would turn the loop into a spin.
     private var isWatchingLiveService: Bool {
         !watched.keys.isEmpty && rawResult.everyService.contains(where: watched.contains)
     }
 
-    private var currentInterval: Duration {
-        guard !visibleSurfaces.isEmpty else { return isWatchingLiveService ? watchingInterval : hiddenInterval }
-        return .seconds(max(1, pollingSeconds))
+    /// How long the loop sleeps, or nil to stop it. A wait keeps it running with
+    /// automatic refresh off, because the user asked for that one banner. The
+    /// polling preference is clamped, because a stored zero would spin.
+    private var nextRefresh: Duration? {
+        guard automaticRefresh || starts.isArmed else { return nil }
+        if !visibleSurfaces.isEmpty { return .seconds(max(1, pollingSeconds)) }
+        if starts.isArmed { return waitingInterval }
+        return isWatchingLiveService ? watchingInterval : hiddenInterval
     }
 
     func popoverDidAppear() { surfaceDidAppear(.popover) }
@@ -323,6 +332,8 @@ final class AppState {
             // and the first service to start afterwards is announced properly.
             noteArrivals(appeared, kind: kind)
             noteDepartures(departed)
+            // Never the arrivals of a manual Refresh, whose new ids are not new servers.
+            noteStarts(in: rawResult, appeared: kind == .userRequested ? [] : appeared)
             checkHealth(ofArrivals: appeared)
             await sampleTasks()
             if lastError != nil { lastError = nil }
@@ -395,12 +406,6 @@ final class AppState {
 
     // MARK: - Ignored services
 
-    var ignoredEntries: [IgnoredService] { ignoredServices.entries }
-    /// Anything on the list, running or not. The Preferences inventory.
-    var hasIgnoredServices: Bool { !ignoredServices.isEmpty }
-    /// Only the ones actually listening. What the dashboard chip can show.
-    var hasRunningIgnoredServices: Bool { !ignoredResult.services.isEmpty }
-
     /// The same kind of service from the same project or binary, on any port. A
     /// Vite started again by hand may have taken the next port, so the port is
     /// not part of the question.
@@ -420,24 +425,6 @@ final class AppState {
             return "Only infrastructure and daemons are running, and those are hidden"
         }
         return hasIgnoredServices ? "Every running service is ignored" : "No development services running"
-    }
-    func isIgnored(_ service: RunningService) -> Bool { ignoredServices.contains(service) }
-    func canIgnore(_ service: RunningService) -> Bool { ignoredServices.canIgnore(service) }
-
-    func ignore(_ service: RunningService) {
-        ignoredServices.ignore(service)
-        applyFilters()
-        Telemetry.send(.serviceIgnored(service))
-    }
-
-    func stopIgnoring(_ service: RunningService) {
-        ignoredServices.stopIgnoring(service)
-        applyFilters()
-    }
-
-    func stopIgnoring(_ key: ServiceKey) {
-        ignoredServices.remove(key)
-        applyFilters()
     }
 
     /// Splits the last scan into what the user sees and what they hid.

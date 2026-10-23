@@ -3,7 +3,8 @@ import PortfoxKit
 import SwiftUI
 import UserNotifications
 
-/// Posts a banner when services appear, and when a watched one stops.
+/// Posts a banner when services appear, when a watched one stops, and when
+/// something the user is waiting on comes up.
 ///
 /// Thin wrapper over one OS API that can refuse, reporting the refusal through
 /// `lastError` the way `LaunchAtLogin` does, because a toggle that silently does
@@ -51,10 +52,12 @@ final class ServiceNotifier {
     /// Repeats group under one heading in Notification Center.
     private static let threadIdentifier = "net.kandera.Portfox.arrivals"
     private static let departureThreadIdentifier = "net.kandera.Portfox.departures"
+    private static let startThreadIdentifier = "net.kandera.Portfox.starts"
     private static let departureCategory = "departure"
     private static let startAgainAction = "startAgain"
     fileprivate nonisolated static let portInfoKey = "port"
     fileprivate nonisolated static let anchorInfoKey = "anchor"
+    fileprivate nonisolated static let urlInfoKey = "url"
 
     private static let deniedMessage = "macOS is not delivering notifications from Portfox. "
         + "Turn them on in System Settings › Notifications."
@@ -80,8 +83,8 @@ final class ServiceNotifier {
         // a real window during one.
         guard SnapshotRenderer.requestedPath == nil else { return }
 
-        let delegate = Delegate { [weak self] action, key in
-            Task { @MainActor in self?.respond(to: action, key: key) }
+        let delegate = Delegate { [weak self] action, key, url in
+            Task { @MainActor in self?.respond(to: action, key: key, url: url) }
         }
         self.delegate = delegate
         let center = UNUserNotificationCenter.current()
@@ -133,6 +136,26 @@ final class ServiceNotifier {
         add(content)
     }
 
+    /// Clicking it opens the server, which is what the user was waiting to do.
+    func postStarted(_ service: RunningService) {
+        let content = UNMutableNotificationContent()
+        content.title = "\(service.project?.name ?? service.displayName) is up"
+        content.body = [service.displayName, "Port \(service.port)"].joined(separator: " · ")
+        content.threadIdentifier = Self.startThreadIdentifier
+        if let url = service.localURL {
+            content.userInfo = [Self.urlInfoKey: url.absoluteString]
+        }
+        add(content)
+    }
+
+    func postGaveUp(waitingFor label: String, afterMinutes minutes: Int) {
+        let content = UNMutableNotificationContent()
+        content.title = "Stopped waiting for \(label)"
+        content.body = "Nothing came up within \(minutes) minutes."
+        content.threadIdentifier = Self.startThreadIdentifier
+        add(content)
+    }
+
     /// A fresh identifier every time, so a second banner adds to the first rather
     /// than silently replacing one the user has not read.
     private func add(_ content: UNNotificationContent) {
@@ -145,11 +168,11 @@ final class ServiceNotifier {
         )
     }
 
-    private func respond(to action: String, key: ServiceKey?) {
+    private func respond(to action: String, key: ServiceKey?, url: URL?) {
         if action == Self.startAgainAction, let key, let service = departures.removeValue(forKey: key) {
             onStartAgain?(service)
         } else if action == UNNotificationDefaultActionIdentifier {
-            requestDashboard()
+            if let url { NSWorkspace.shared.open(url) } else { requestDashboard() }
         }
     }
 
@@ -174,9 +197,9 @@ final class ServiceNotifier {
         /// A closure rather than a back reference, because the callbacks arrive
         /// nonisolated and the delegate itself is not `Sendable`. The hop to the
         /// main actor is written once, at the point where the owner is known.
-        private let onResponse: @Sendable (_ action: String, _ key: ServiceKey?) -> Void
+        private let onResponse: @Sendable (_ action: String, _ key: ServiceKey?, _ url: URL?) -> Void
 
-        init(onResponse: @escaping @Sendable (_ action: String, _ key: ServiceKey?) -> Void) {
+        init(onResponse: @escaping @Sendable (_ action: String, _ key: ServiceKey?, _ url: URL?) -> Void) {
             self.onResponse = onResponse
         }
 
@@ -199,7 +222,8 @@ final class ServiceNotifier {
             let key = (info[ServiceNotifier.portInfoKey] as? Int).flatMap { port in
                 (info[ServiceNotifier.anchorInfoKey] as? String).map { ServiceKey(port: port, anchor: $0) }
             }
-            onResponse(response.actionIdentifier, key)
+            let url = (info[ServiceNotifier.urlInfoKey] as? String).flatMap(URL.init(string:))
+            onResponse(response.actionIdentifier, key, url)
         }
     }
 }

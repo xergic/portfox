@@ -5,6 +5,7 @@ Notable changes to Portfox. The format follows [Keep a Changelog](https://keepac
 ## [Unreleased]
 
 ### Added
+- "Notify When It Is Up" sends one banner when something you are waiting on starts, then turns itself off. Set it on a stopped pinned row, on a port number you searched for that nothing is using, or with the bell in the popover header for the next server an agent starts. Click the banner to open the server. Portfox checks every 2 seconds while you wait, even with automatic refresh off, and gives up after 15 minutes. It works with "Notify when a service appears" off.
 - Pin a project from the pin on its heading, or a single service from its right-click menu. Pinned services sit under a Pinned heading at the top, and pinned projects lead the project list. A pin whose service is not running stays as a dimmed row, so you can see what is missing.
 - Rename a project from the pencil on its heading, for example `wishfox-api` to "Wishfox API". The name shows in the popover, the dashboard, search and banners. Save an empty name to bring the detected one back.
 - Search matches every port a service binds, a pid, and the full command line. Type a range such as `3000-3999` to find anything listening inside it.

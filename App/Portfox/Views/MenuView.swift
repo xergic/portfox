@@ -115,6 +115,7 @@ struct MenuView: View {
                 summary(ungrouped: ungrouped)
             }
         } trailing: {
+            agentWaitButton
             IconButton(
                 symbol: "arrow.trianglehead.2.clockwise",
                 help: "Refresh",
@@ -129,6 +130,20 @@ struct MenuView: View {
         .padding(.horizontal, 14)
         .padding(.top, 12)
         .padding(.bottom, 10)
+    }
+
+    private var agentWaitButton: some View {
+        let isWaiting = state.isWaiting(for: .nextAgentServer)
+        return IconButton(
+            symbol: isWaiting ? "bell.badge.fill" : "bell.badge",
+            tint: isWaiting ? Theme.accentText : Theme.secondaryText,
+            help: isWaiting ? "Stop waiting for an agent's server" : "Notify when an agent's next server is up",
+            symbolSize: Theme.Metrics.headerSymbolSize,
+            frameSize: Theme.Metrics.headerButtonSize,
+            filled: true
+        ) {
+            state.toggleWait(for: .nextAgentServer, label: "an agent's server")
+        }
     }
 
     /// Groups, standalone, agent tools and ungrouped partition `services`, so the dev count
@@ -158,11 +173,27 @@ struct MenuView: View {
     }
 
     private var noMatches: some View {
-        Text("No services match \u{201C}\(query)\u{201D}")
-            .font(.system(size: 12))
-            .foregroundStyle(Theme.secondaryText)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 28)
+        VStack(spacing: 10) {
+            Text("No services match \u{201C}\(query)\u{201D}")
+                .font(.system(size: 12))
+                .foregroundStyle(Theme.secondaryText)
+            if let port = queriedPort {
+                let isWaiting = state.isWaiting(for: .port(port))
+                Button(isWaiting ? "Waiting for :\(port), Stop Waiting" : "Notify When :\(port) Is Up") {
+                    state.toggleWait(for: .port(port), label: "port \(port)")
+                }
+                .controlSize(.small)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 28)
+    }
+
+    /// A query that is a bare port number nothing is listening on.
+    private var queriedPort: Int? {
+        let trimmed = query.trimmingCharacters(in: .whitespaces)
+        guard let port = Int(trimmed), (1...65535).contains(port) else { return nil }
+        return port
     }
 
     private var emptyState: some View {
