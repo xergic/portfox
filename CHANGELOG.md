@@ -2,6 +2,11 @@
 
 Notable changes to Portfox. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- Search matches every port a service binds, a pid, and the full command line. Type a range such as `3000-3999` to find anything listening inside it.
+
 ## [1.4.0] - 2026-10-20
 
 ### Added

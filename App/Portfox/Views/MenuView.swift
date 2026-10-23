@@ -64,7 +64,7 @@ struct MenuView: View {
     private var searchField: some View {
         SearchField(
             text: $query,
-            prompt: "Search ports, projects, containers",
+            prompt: "Search ports, projects, commands",
             focusesOnAppear: true,
             isLive: scrolls
         )
