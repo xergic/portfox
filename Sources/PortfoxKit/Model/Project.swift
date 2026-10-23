@@ -8,8 +8,9 @@ public struct ProjectSnapshot: Hashable, Codable, Sendable {
     public let root: URL
     /// The process working directory, which may sit below `root` in a monorepo.
     public let serviceDirectory: URL
-    /// Display name, resolved by `ProjectResolver`.
-    public let name: String
+    /// Display name, resolved by `ProjectResolver`, or the user's own once the
+    /// app has applied `renamingProjects`.
+    public internal(set) var name: String
     /// The project's own version, from its manifest.
     public let version: String?
     /// `serviceDirectory` relative to `root`, nil when they are the same.
@@ -104,7 +105,7 @@ public struct Project: Identifiable, Hashable, Sendable {
     public var id: String { root.path }
 
     public let root: URL
-    public let name: String
+    public internal(set) var name: String
     public let version: String?
     public let iconPath: String?
     /// Set when sibling repositories were folded under a shared parent directory.

@@ -11,6 +11,10 @@ public struct ProjectGroup: Identifiable, Sendable, Equatable {
         self.project = project
         self.services = services
     }
+
+    static func byName(_ lhs: ProjectGroup, _ rhs: ProjectGroup) -> Bool {
+        lhs.project.name.localizedCaseInsensitiveCompare(rhs.project.name) == .orderedAscending
+    }
 }
 
 /// Turns a flat service list into project headings.
@@ -86,7 +90,7 @@ public struct ProjectGrouper: Sendable {
             groups.append(ProjectGroup(project: project, services: sortedByPort(rootServices)))
         }
 
-        return groups.sorted { $0.project.name.localizedCaseInsensitiveCompare($1.project.name) == .orderedAscending }
+        return groups.sorted(by: ProjectGroup.byName)
     }
 
     private func sortedByPort(_ services: [RunningService]) -> [RunningService] {

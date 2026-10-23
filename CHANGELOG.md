@@ -5,6 +5,7 @@ Notable changes to Portfox. The format follows [Keep a Changelog](https://keepac
 ## [Unreleased]
 
 ### Added
+- Rename a project from the pencil on its heading, for example `wishfox-api` to "Wishfox API". The name shows in the popover, the dashboard, search and banners. Save an empty name to bring the detected one back.
 - Search matches every port a service binds, a pid, and the full command line. Type a range such as `3000-3999` to find anything listening inside it.
 
 ## [1.4.0] - 2026-10-20

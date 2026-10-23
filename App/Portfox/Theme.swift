@@ -124,7 +124,7 @@ enum Theme {
         /// The project header carries a fourth button, so it reserves more than a
         /// service row. Raising the shared constant instead would cost every
         /// service row twenty points of text width for nothing.
-        static let projectActionsWidth: CGFloat = 92
+        static let projectActionsWidth: CGFloat = 112
         static let projectIcon: CGFloat = 22
 
         /// The filled buttons beside the app name, in the popover and the dashboard.

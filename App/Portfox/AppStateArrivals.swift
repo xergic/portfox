@@ -15,7 +15,7 @@ extension AppState {
         // and so changes the id of a process that never restarted.
         guard kind != .userRequested else { return }
 
-        arrivals.record(appeared.filter(isWorthAnnouncing))
+        arrivals.record(appeared.filter(isWorthAnnouncing).map(named))
     }
 
     /// The first service id the popover would draw, for `--arrived` snapshots.

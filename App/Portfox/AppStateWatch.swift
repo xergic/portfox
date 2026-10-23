@@ -31,7 +31,7 @@ extension AppState {
     func noteDepartures(_ departed: [RunningService]) {
         guard !departed.isEmpty else { return }
         for service in watched.unexpected(departed) {
-            notifier.postDeparture(of: service, offersStartAgain: canRestart && canRelaunch(service))
+            notifier.postDeparture(of: named(service), offersStartAgain: canRestart && canRelaunch(service))
         }
     }
 }

@@ -57,7 +57,7 @@ public struct RunningService: Identifiable, Hashable, Sendable {
 
     public let detection: DetectionResult
     public let classification: ServiceClass
-    public let project: ProjectSnapshot?
+    public internal(set) var project: ProjectSnapshot?
     /// Set when this row is one container behind a shared port forwarder, rather
     /// than a process on this machine. `listenerProcess` and `rootProcess` are
     /// then the forwarder, shared with every other container it publishes for,

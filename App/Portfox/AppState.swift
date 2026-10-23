@@ -143,6 +143,7 @@ final class AppState {
     let repository = ServiceRepository()
     let controller = ProcessController()
     let projectIcons = ProjectIcons()
+    let projectNames = ProjectNames()
     let appearance = Appearance()
     /// Which rows just appeared, and whether that is worth telling the user about.
     /// Posts every banner: arrivals, and watched services stopping.
@@ -448,17 +449,18 @@ final class AppState {
     /// The daemon ids come from `rawResult.standalone`, never `result.standalone`.
     /// `keeping` rebuilds the standalone list from whatever survived, so reading
     /// it off the already-filtered projection would be self-referential.
-    private func applyFilters() {
+    func applyFilters() {
         let ignoredIDs = Set(rawResult.services.filter(ignoredServices.contains).map(\.id))
         var hiddenIDs = ignoredIDs
         if hidesDaemons { hiddenIDs.formUnion(rawResult.standalone.map(\.id)) }
 
-        let visible = rawResult.keeping { !hiddenIDs.contains($0.id) }
+        let renamed = rawResult.renamingProjects(projectNames.name(forProjectAt:))
+        let visible = renamed.keeping { !hiddenIDs.contains($0.id) }
         if visible != result { result = visible }
 
         // Ignored-only, so a daemon that is also ignored stays listed on the
         // Ignored screen and the user can still un-ignore it.
-        let hidden = rawResult.keeping { ignoredIDs.contains($0.id) }
+        let hidden = renamed.keeping { ignoredIDs.contains($0.id) }
         if hidden != ignoredResult { ignoredResult = hidden }
     }
 

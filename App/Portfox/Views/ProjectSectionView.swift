@@ -13,6 +13,7 @@ struct ProjectSectionView: View {
     var forcesHover = false
 
     @State private var isPickingIcon = false
+    @State private var isRenaming = false
     @State private var isHovering = false
     @State private var assets: [ProjectAsset] = []
 
@@ -35,6 +36,13 @@ struct ProjectSectionView: View {
                 .foregroundStyle(Theme.primaryText)
                 .lineLimit(1)
                 .fixedSize()
+                // On the name rather than on the hover actions, which vanish the
+                // moment the pointer moves into the popover and would take it along.
+                .popover(isPresented: $isRenaming, arrowEdge: .bottom) {
+                    RenameProjectView(group: group, hasCustomName: state.customName(of: group) != nil) { name in
+                        state.rename(group, to: name)
+                    }
+                }
             Text(group.project.displayPath)
                 .font(.portDetail)
                 .foregroundStyle(Theme.secondaryText)
@@ -71,6 +79,7 @@ struct ProjectSectionView: View {
 
     private var actions: some View {
         HStack(spacing: 1) {
+            IconButton(symbol: "pencil", help: "Rename") { isRenaming = true }
             IconButton(symbol: "photo", help: "Change icon") { presentIconPicker() }
             if state.projectIcons.hasIconOverride(for: group) {
                 IconButton(symbol: "arrow.uturn.backward", help: "Use the default icon") {
