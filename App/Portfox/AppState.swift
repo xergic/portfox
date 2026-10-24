@@ -458,6 +458,12 @@ final class AppState {
         if stopped != stoppedPins { stoppedPins = stopped }
     }
 
+    /// What `--demo` renders in place of a scan.
+    func adoptFixture(_ fixture: ScanResult) {
+        rawResult = fixture
+        applyFilters()
+    }
+
     // MARK: - Actions
 
     /// The one way anything outside this file puts a message in front of the user.

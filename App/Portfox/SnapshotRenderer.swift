@@ -5,7 +5,7 @@ import SwiftUI
 /// reference screenshots without Screen Recording permission, and without
 /// hand-driving the menu bar.
 ///
-/// Usage: `Portfox --snapshot out.png [--hover] [--arrived] [--light]`, `--snapshot-dashboard out.png`,
+/// Usage: `Portfox --snapshot out.png [--hover] [--arrived] [--light] [--demo]`, `--snapshot-dashboard out.png`,
 /// `--snapshot-prefs out.png`, `--snapshot-ignored out.png` or
 /// `--snapshot-about out.png`.
 @MainActor
@@ -36,15 +36,21 @@ enum SnapshotRenderer {
     static var requestedPath: String? { request?.path }
 
     static func run(_ request: Request, state: AppState) async {
-        // The surface has to announce itself the way a real window does, or the
-        // state it renders is the state Portfox keeps while nothing is on screen.
-        switch request.surface {
-        case .popover: state.popoverDidAppear()
-        case .dashboard: state.dashboardDidAppear()
-        case .preferences, .ignored, .about: break
-        }
         if CommandLine.arguments.contains("--light") { state.appearance.force(.light) }
-        await state.refresh()
+        if CommandLine.arguments.contains("--demo") {
+            // Nothing may suspend between adopting the fixture and rendering it. The
+            // scan `AppState.init` started is still in flight and would replace it.
+            state.adoptFixture(SnapshotFixture.result())
+        } else {
+            // The surface has to announce itself the way a real window does, or the
+            // state it renders is the state Portfox keeps while nothing is on screen.
+            switch request.surface {
+            case .popover: state.popoverDidAppear()
+            case .dashboard: state.dashboardDidAppear()
+            case .preferences, .ignored, .about: break
+            }
+            await state.refresh()
+        }
 
         // Not threaded down as a parameter the way `--hover` is. Forcing hover on
         // every row is what you want for hover, but a wall of green says nothing
