@@ -29,7 +29,8 @@ after a UI change and look at the PNGs.
 `Portfox.xcodeproj` is generated and git-ignored. Never edit it. Change
 `project.yml` and run `make gen`.
 
-`snapshots/` and `dist/` are git-ignored. Do not commit PNGs or build output.
+`snapshots/` and `dist/` are git-ignored. Do not commit PNGs or build output,
+except the README images in `docs/images/` (see Snapshots).
 
 ## Layout
 
@@ -306,6 +307,10 @@ brand colour scores about 2:1 on white.
 scrollable surface carries a `scrolls` escape hatch that the snapshot path turns
 off. A `TextField` renders as an empty placeholder block, which is why the
 dashboard's search box draws flat text under a snapshot.
+
+`--demo` renders `SnapshotFixture` instead of scanning, and skips announcing the
+surface, because that starts a scan which would replace the fixture. The README
+images in `docs/images/` are copied from `snapshots/popover-demo*.png`.
 
 The popover measures its own list height. Inside a `MenuBarExtra` window a
 `ScrollView` has no intrinsic height and collapses to nothing.

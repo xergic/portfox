@@ -1,6 +1,26 @@
-# Portfox
+<p align="center">
+  <img src="docs/images/app-icon.png" width="128" height="128" alt="Portfox app icon">
+</p>
 
-A macOS menu bar app that shows what is listening on your local ports, which project it belongs to, and lets you stop it.
+<h1 align="center">Portfox</h1>
+
+<p align="center">
+  A macOS menu bar app that shows what is listening on your local ports,<br>
+  which project it belongs to, and lets you stop it.
+</p>
+
+<p align="center">
+  <a href="https://github.com/xergic/portfox/releases/latest">Download</a> ·
+  <a href="https://portfox.kandera.cz">Website</a> ·
+  <a href="https://github.com/xergic/localfox">Localfox</a>
+</p>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/popover-dark.png">
+    <img src="docs/images/popover-light.png" width="404" alt="The Portfox menu bar popover, listing dev servers grouped by project, one started by Claude Code, and the databases running beside them, each with its port">
+  </picture>
+</p>
 
 Discovery works from processes, not from port numbers, so custom ports need no configuration.
 
@@ -210,6 +230,8 @@ Portfox --snapshot out.png [--hover]        # the popover
 Portfox --snapshot-dashboard out.png        # the dashboard window
 Portfox --snapshot-prefs out.png            # the preferences sheet
 ```
+
+Add `--light` for the light appearance, and `--demo` to render a fixed set of made-up services instead of this machine. The README screenshot is `--demo`, so it never shows a real project.
 
 Preferences needs its own flag rather than sharing the dashboard's, because it is a sheet, and a sheet is a separate window that never renders inside its parent.
 
