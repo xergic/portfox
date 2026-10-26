@@ -304,8 +304,8 @@ This runs on a real Mac with Localfox N installed from the release DMG.
 - [ ] **Step 1: Publish the release candidate.** Add CHANGELOG `## [N+1]`. On Ondra's go-ahead, push tag `vN+1-rc.1`. Expected: a prerelease, `releases/latest` still on N, and no tap commit.
 - [ ] **Step 2: Point Localfox N at the candidate's feed:** `defaults write net.kandera.Localfox UpdateFeedOverride https://github.com/xergic/localfox/releases/download/vN+1-rc.1/appcast.xml`, then relaunch.
 - [ ] **Step 3: Set up the test.** Start two services, one proxied over HTTPS through the helper. Trust state is as it is today.
-- [ ] **Step 4: Run Check for Updates, then Install.** Expected: the prompt says "Installing stops 2 running services." Click Later. Expected: both services keep running, and the proxied URL still answers.
-- [ ] **Step 5: Check for Updates again, then Install Now.** Expected: Localfox relaunches as N+1.
+- [ ] **Step 4: Run Check for Updates, then Install.** Expected: the prompt says "Installing stops 2 running services." Click Later. Expected: both services keep running, and the proxied URL still answers. Stop both. Expected: the update installs and Localfox relaunches on its own.
+- [ ] **Step 5: Install N+1 again from N with services running, and choose Install Now.** Expected: Localfox relaunches as N+1.
   - The helper reports N+1 without Reinstall.
   - Starting the services again works.
   - The proxied HTTPS URL answers with no certificate warning.
