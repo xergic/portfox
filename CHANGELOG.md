@@ -2,6 +2,15 @@
 
 Notable changes to Portfox. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.6.0] - 2026-10-26
+
+### Added
+- Portfox updates itself. It checks for a new version once a day and shows what changed before you choose to install it. Turn the daily check off, or check right away, in Preferences › General. About has a Check for Updates button too. Installs from Homebrew keep working with `brew upgrade`.
+- "Compact rows" in Preferences › Appearance puts each service on one line, so more fit before the list scrolls. A row that does not fit on one line still takes two, and no badge is ever dropped.
+
+### Changed
+- A quieter look across the popover, the dashboard and Preferences. Services sit in flat rows divided by hairlines instead of cards, with tighter spacing and smaller section titles.
+
 ## [1.5.0] - 2026-10-23
 
 ### Added
