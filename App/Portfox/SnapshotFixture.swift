@@ -2,13 +2,13 @@ import Foundation
 import PortfoxKit
 
 /// The machine `--demo` renders instead of this one: a monorepo with an agent
-/// started server, a second project, and the daemons most machines carry.
-/// The README screenshot comes from here, so it never shows a real project.
+/// started server and the daemons most machines carry. The README screenshot
+/// comes from here, so it never shows a real project. The project icon is a
+/// bundled PNG, because a real one is read from the project folder on disk.
 enum SnapshotFixture {
     static func result() -> ScanResult {
         let projects = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Projects")
         let wishfox = projects.appendingPathComponent("wishfox")
-        let dueberry = projects.appendingPathComponent("dueberry")
 
         let developed = [
             service(
@@ -17,14 +17,9 @@ enum SnapshotFixture {
                 project: project(wishfox, subpath: "web"), origin: .agent(.claudeCode)
             ),
             service(
-                .nestJS, "11.1.6", pid: 4243, port: 3041,
-                command: ["/opt/homebrew/bin/node", "dist/main.js"],
+                .bun, "1.3.2", pid: 4243, port: 4000,
+                command: ["/opt/homebrew/bin/bun", "--watch", "src/index.ts"],
                 project: project(wishfox, subpath: "api")
-            ),
-            service(
-                .svelteKit, "2.43.2", pid: 4244, port: 5173,
-                command: ["/opt/homebrew/bin/node", "node_modules/.bin/vite", "dev"],
-                project: project(dueberry)
             )
         ]
         let daemons = [
@@ -52,7 +47,8 @@ enum SnapshotFixture {
             serviceDirectory: subpath.map(root.appendingPathComponent) ?? root,
             name: root.lastPathComponent,
             subpath: subpath,
-            rootKind: .workspace
+            rootKind: .workspace,
+            iconPath: Bundle.main.path(forResource: "DemoProjectIcon", ofType: "png")
         )
     }
 
