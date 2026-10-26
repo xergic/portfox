@@ -326,6 +326,11 @@ scrollable surface carries a `scrolls` escape hatch that the snapshot path turns
 off. A `TextField` renders as an empty placeholder block, which is why the
 dashboard's search box draws flat text under a snapshot.
 
+The logos are asset appearance variants, and `ImageRenderer` rasterises them
+against the drawing appearance, which is the Mac's own. `SnapshotRenderer` renders
+inside `performAsCurrentDrawingAppearance`, or a light snapshot on a dark Mac
+draws Bun's white mark on white.
+
 `--demo` renders `SnapshotFixture` instead of scanning, and skips announcing the
 surface, because that starts a scan which would replace the fixture. The README
 images in `docs/images/` are copied from `snapshots/popover-demo*.png`.

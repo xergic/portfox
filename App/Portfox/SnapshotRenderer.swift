@@ -63,7 +63,13 @@ enum SnapshotRenderer {
         let renderer = ImageRenderer(content: content(for: request.surface, state: state))
         renderer.scale = 2
 
-        guard let image = renderer.nsImage,
+        // The logos are asset appearance variants, resolved against the drawing
+        // appearance when the image is rasterised. Under `ImageRenderer` that is the
+        // system's, so a light snapshot on a dark Mac drew white marks on white.
+        var rendered: NSImage?
+        (state.appearance.nsAppearance ?? .currentDrawing()).performAsCurrentDrawingAppearance { rendered = renderer.nsImage }
+
+        guard let image = rendered,
               let tiff = image.tiffRepresentation,
               let bitmap = NSBitmapImageRep(data: tiff),
               let png = bitmap.representation(using: .png, properties: [:])
