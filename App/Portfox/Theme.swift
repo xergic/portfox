@@ -114,6 +114,10 @@ enum Theme {
         /// up with the header while its hover fill still has room to show.
         static let listRowPaddingH: CGFloat = 8
         static let listRowPaddingV: CGFloat = 8
+        static let compactRowPaddingV: CGFloat = 6
+
+        static func rowPaddingV(compact: Bool) -> CGFloat { compact ? compactRowPaddingV : listRowPaddingV }
+        static func rowIcon(compact: Bool) -> CGFloat { compact ? serviceIconCompact : serviceIcon }
         /// The list's own inset from the window edge, so the fill clears it.
         static let listInset: CGFloat = 6
         /// Where a row's text starts. Headers, search and footers line up on it.
@@ -126,12 +130,15 @@ enum Theme {
         static let factLabelWidth: CGFloat = 118
         static let treeIndent: CGFloat = 18
         static let serviceIcon: CGFloat = 16
+        static let serviceIconCompact: CGFloat = 14
         /// Beside a service name on the bottom line of a project-first cell.
         static let serviceIconSmall: CGFloat = 13
         /// The least of a project path a long project name may leave, so the
         /// last folder still reads as "…/wishfox-api".
         static let pathMinWidth: CGFloat = 96
         static let statusPillWidth: CGFloat = 38
+        /// Wide enough for "100%" in `portCaption` with monospaced digits.
+        static let cpuLabelWidth: CGFloat = 28
         static let projectIcon: CGFloat = 16
 
         /// The icon buttons beside the app name, in the popover and the dashboard.

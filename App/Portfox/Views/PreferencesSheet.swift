@@ -220,6 +220,13 @@ struct PreferencesSheet: View {
             }
             PreferenceDivider()
             PreferenceRow(
+                title: "Compact rows",
+                subtitle: "One line per service, so more fit before the list scrolls"
+            ) {
+                PreferenceCheckbox(isOn: $state.compactRows)
+            }
+            PreferenceDivider()
+            PreferenceRow(
                 title: "Show uptime",
                 subtitle: "How long each service has been running, beside its folder"
             ) {

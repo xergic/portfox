@@ -14,18 +14,23 @@ struct PinPlaceholderRow: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            ServiceIconView(type: pin.type, projectIconPath: pin.iconPath)
-                .opacity(0.5)
+            ServiceIconView(
+                type: pin.type,
+                projectIconPath: pin.iconPath,
+                size: Theme.Metrics.rowIcon(compact: state.compactRows)
+            )
+            .opacity(0.5)
 
-            VStack(alignment: .leading, spacing: 1) {
-                Text(state.displayName(of: pin))
-                    .font(.portName)
-                    .foregroundStyle(Theme.secondaryText)
-                    .lineLimit(1)
-                Text(detail)
-                    .font(.portDetail)
-                    .foregroundStyle(Theme.tertiaryText)
-                    .lineLimit(1)
+            Group {
+                if state.compactRows {
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: 6) { name; detailText }
+                            .fixedSize(horizontal: true, vertical: false)
+                        VStack(alignment: .leading, spacing: 1) { name; detailText }
+                    }
+                } else {
+                    VStack(alignment: .leading, spacing: 1) { name; detailText }
+                }
             }
             .layoutPriority(1)
 
@@ -52,7 +57,7 @@ struct PinPlaceholderRow: View {
             }
         }
         .padding(.horizontal, Theme.Metrics.listRowPaddingH)
-        .padding(.vertical, Theme.Metrics.listRowPaddingV)
+        .padding(.vertical, Theme.Metrics.rowPaddingV(compact: state.compactRows))
         .background(isHovering ? Theme.cardHover : .clear, in: .row)
         .contentShape(Rectangle())
         .onHover { hovering in
@@ -62,6 +67,20 @@ struct PinPlaceholderRow: View {
             Button(isWaiting ? "Stop Waiting" : "Notify When It Is Up", action: toggleWait)
             Button("Unpin") { state.unpin(pin) }
         }
+    }
+
+    private var name: some View {
+        Text(state.displayName(of: pin))
+            .font(.portName)
+            .foregroundStyle(Theme.secondaryText)
+            .lineLimit(1)
+    }
+
+    private var detailText: some View {
+        Text(detail)
+            .font(.portDetail)
+            .foregroundStyle(Theme.tertiaryText)
+            .lineLimit(1)
     }
 
     private var detail: String {

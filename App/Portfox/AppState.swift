@@ -66,6 +66,13 @@ final class AppState {
         didSet { defaults.set(showsMenuBarCount, forKey: Key.showsMenuBarCount) }
     }
 
+    var compactRows: Bool {
+        didSet {
+            guard compactRows != oldValue else { return }
+            defaults.set(compactRows, forKey: Key.compactRows)
+        }
+    }
+
     var sharesUsageData: Bool {
         didSet {
             defaults.set(sharesUsageData, forKey: Telemetry.defaultsKey)
@@ -135,6 +142,7 @@ final class AppState {
         static let automaticRefresh = "automaticRefresh"
         static let pollingSeconds = "pollingSeconds"
         static let showsMenuBarCount = "showsMenuBarCount"
+        static let compactRows = "compactRows"
         static let hidesDaemons = "hidesDaemons"
         static let showsUptime = "showsUptime"
         static let checksHealth = "checksHealth"
@@ -204,6 +212,7 @@ final class AppState {
         automaticRefresh = defaults.bool(forKey: Key.automaticRefresh)
         pollingSeconds = defaults.integer(forKey: Key.pollingSeconds)
         showsMenuBarCount = defaults.bool(forKey: Key.showsMenuBarCount)
+        compactRows = defaults.bool(forKey: Key.compactRows)
         hidesDaemons = defaults.bool(forKey: Key.hidesDaemons)
         showsUptime = defaults.bool(forKey: Key.showsUptime)
         checksHealth = defaults.bool(forKey: Key.checksHealth)

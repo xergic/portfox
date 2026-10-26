@@ -47,6 +47,9 @@ snapshot: app ## Render popover, dashboard, preferences, ignored and about snaps
 	@$(DERIVED)/Build/Products/$(CONFIG)/Portfox.app/Contents/MacOS/Portfox --snapshot snapshots/popover-demo.png --demo
 	@$(DERIVED)/Build/Products/$(CONFIG)/Portfox.app/Contents/MacOS/Portfox --snapshot snapshots/popover-demo-light.png --demo --light
 	@$(DERIVED)/Build/Products/$(CONFIG)/Portfox.app/Contents/MacOS/Portfox --snapshot-dashboard snapshots/dashboard-demo.png --demo
+	@$(DERIVED)/Build/Products/$(CONFIG)/Portfox.app/Contents/MacOS/Portfox --snapshot snapshots/popover-compact.png --demo -compactRows YES
+	@$(DERIVED)/Build/Products/$(CONFIG)/Portfox.app/Contents/MacOS/Portfox --snapshot snapshots/popover-compact-light.png --demo --light -compactRows YES
+	@$(DERIVED)/Build/Products/$(CONFIG)/Portfox.app/Contents/MacOS/Portfox --snapshot snapshots/popover-compact-project.png --demo -compactRows YES -cellLayout projectFirst
 
 archive: ## Build an arm64 ad hoc signed Release app and DMG into dist/
 	@Tools/archive.sh $(VERSION)

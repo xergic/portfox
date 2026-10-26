@@ -302,6 +302,12 @@ the arrival wash are a `rowRadius` fill inside the row, so none of them can chan
 its height. `card` is for contained elements only: fact tables, the process tree,
 preference groups. Group and section titles go through `groupLabelStyle()`.
 
+**Compact rows fall back per row, never by dropping content.** With "Compact rows"
+on, a row tries one line inside `ViewThatFits` and takes two when that line does
+not fit at its ideal width. The one-line variant is `fixedSize` horizontally,
+because squeezed it truncated a service name rather than falling back. A badge is
+never dropped for room: an origin or container badge is a warning.
+
 **Text on an accent fill uses `onAccent`, never `background`.** Standing in
 `background` for it worked only while there was one appearance. `accent` is the
 brand fill; `accentText` is the accent as a glyph, darkened in light because the

@@ -24,14 +24,14 @@ struct ServiceRowView: View {
         HStack(spacing: 10) {
             leadingIcon
 
-            VStack(alignment: .leading, spacing: 1) {
-                switch effectiveLayout {
-                case .serviceFirst:
-                    serviceLine
-                    detailLine { folderLine }
-                case .projectFirst:
-                    projectLine
-                    detailLine { serviceLine }
+            Group {
+                // A line that does not fit falls back to two for this row alone.
+                // `ViewThatFits` measures ideal widths, so nothing is truncated to
+                // squeeze onto one line, and no badge is ever dropped for room.
+                if state.compactRows {
+                    ViewThatFits(in: .horizontal) { oneLine; twoLines }
+                } else {
+                    twoLines
                 }
             }
             .layoutPriority(1)
@@ -41,7 +41,7 @@ struct ServiceRowView: View {
             trailingSlot
         }
         .padding(.horizontal, Theme.Metrics.listRowPaddingH)
-        .padding(.vertical, Theme.Metrics.listRowPaddingV)
+        .padding(.vertical, Theme.Metrics.rowPaddingV(compact: state.compactRows))
         .background(rowBackground)
         .contentShape(Rectangle())
         .onHover { hovering in
@@ -69,6 +69,41 @@ struct ServiceRowView: View {
             .animation(showsArrival ? .easeOut(duration: 0.2) : .easeIn(duration: 0.9), value: showsArrival)
     }
 
+    private var twoLines: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            leadLine
+            detailLine { secondLine }
+        }
+    }
+
+    private var oneLine: some View {
+        HStack(spacing: 6) {
+            leadLine
+            secondLine
+            metrics
+            badges
+        }
+        // Chosen only at its ideal width, so it must never be squeezed below it.
+        // Without this the project-first line truncated "Nuxt" to "N…".
+        .fixedSize(horizontal: true, vertical: false)
+    }
+
+    @ViewBuilder
+    private var leadLine: some View {
+        switch effectiveLayout {
+        case .serviceFirst: serviceLine
+        case .projectFirst: projectLine
+        }
+    }
+
+    @ViewBuilder
+    private var secondLine: some View {
+        switch effectiveLayout {
+        case .serviceFirst: folderLine
+        case .projectFirst: serviceLine
+        }
+    }
+
     /// On hover the actions take the pills' place, so they never cover the name,
     /// project or version. Both are always laid out in one slot as wide as the
     /// wider of them, so the text beside it never re-truncates as the pointer
@@ -94,7 +129,8 @@ struct ServiceRowView: View {
     private var leadingIcon: some View {
         ServiceIconView(
             type: service.type,
-            projectIconPath: effectiveLayout == .projectFirst ? service.project?.iconPath : nil
+            projectIconPath: effectiveLayout == .projectFirst ? service.project?.iconPath : nil,
+            size: Theme.Metrics.rowIcon(compact: state.compactRows)
         )
     }
 

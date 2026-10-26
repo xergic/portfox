@@ -51,11 +51,16 @@ struct ServiceCPULabel: View {
 
     var body: some View {
         if let percent = state.cpu(ofServiceAt: pid) {
+            // One width from 0% to 100%. The row's one-or-two-line choice is
+            // measured with this label in it, so a reading crossing a digit
+            // boundary flipped a compact row's layout on the sampling tick.
             Text(CPUFormat.short(percent))
                 .font(.portCaption)
+                .monospacedDigit()
                 .foregroundStyle(percent >= 100 ? Theme.danger : Theme.tertiaryText)
                 .lineLimit(1)
                 .fixedSize(horizontal: true, vertical: false)
+                .frame(minWidth: Theme.Metrics.cpuLabelWidth, alignment: .leading)
         }
     }
 }
