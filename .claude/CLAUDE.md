@@ -6,10 +6,10 @@ Project instructions for Portfox. Read `README.md` for the user-facing descripti
 
 A macOS 15+ menu bar app that lists local TCP listeners, identifies which dev
 service each one is, resolves its project, and can stop it. Swift 6, SwiftUI,
-strict concurrency. The app target has three dependencies and the kit none:
-TelemetryDeck, KeyboardShortcuts for the global hotkey, and MenuBarExtraAccess,
+strict concurrency. The app target has four dependencies and the kit none:
+TelemetryDeck, KeyboardShortcuts for the global hotkey, MenuBarExtraAccess,
 because on macOS 27 the `MenuBarExtra` status button has no target and nothing
-else can open the popover from code.
+else can open the popover from code, and Sparkle for updates.
 
 ## Commands
 
@@ -86,6 +86,12 @@ manager when none exists, so `Telemetry.send` checks its own `isRunning` flag.
 **The app ID is not in the source.** `Info.plist` carries `$(TELEMETRY_APP_ID)`,
 which only the release workflow sets, from the `TELEMETRY_APP_ID` repository
 variable. A fork or a local build has an empty ID and never starts the SDK.
+
+**The feed URL is not in the source either.** `SUFeedURL` is
+`$(SPARKLE_FEED_URL)`, which only the release workflow sets, so a local build or
+a fork never offers to replace itself with the release build. `Updater` creates
+no controller without it, or in a snapshot run. The Sparkle private key lives in
+the `SPARKLE_ED_PRIVATE_KEY` secret and reaches `generate_appcast` on stdin only.
 
 **Preferences live in the app, not the kit.** `IgnoredServices` and
 `ProjectIconOverrides` are `UserDefaults`-backed app state. The kit reports the
@@ -331,6 +337,15 @@ The popover measures its own list height. Inside a `MenuBarExtra` window a
 
 Push a `vMAJOR.MINOR.PATCH` tag. `.github/workflows/release.yml` archives,
 signs with Developer ID, notarizes, staples, builds the DMG and publishes it.
+`CHANGELOG.md` must have a `## [X.Y.Z]` section first: it is the GitHub release
+body and the Sparkle release notes, and the job fails in its first minute without
+it.
+
+The release carries three assets: `Portfox-X.Y.Z.dmg`, a version-less
+`Portfox.dmg` that the site's `/download` redirect serves, and a one-item
+`appcast.xml` that `portfox.kandera.cz/appcast.xml` redirects to. Both go through
+`releases/latest/download/`, so a release never needs a site deploy. Appcast
+enclosures always use the versioned URL.
 
 A second `tap` job then sets `version` and `sha256` in `Casks/portfox.rb` of
 `xergic/homebrew-tap` and pushes. It runs on its own runner with the

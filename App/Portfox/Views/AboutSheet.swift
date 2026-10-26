@@ -48,29 +48,27 @@ struct AboutSheet: View {
 
             repositoryButton
                 .padding(.top, 10)
+
+            if Updater.shared.isAvailable {
+                updateButton
+            }
         }
         .padding(.horizontal, 24)
         .padding(.bottom, 20)
     }
 
     private var repositoryButton: some View {
-        Button {
+        PillButton(symbol: "arrow.up.right", label: "View on GitHub") {
             NSWorkspace.shared.open(AppInfo.repositoryURL)
-        } label: {
-            HStack(spacing: 5) {
-                Image(systemName: "arrow.up.right")
-                    .font(.system(size: 10, weight: .semibold))
-                Text("View on GitHub")
-                    .font(.system(size: 12, weight: .medium))
-            }
-            .foregroundStyle(Theme.primaryText)
-            .padding(.horizontal, 10)
-            .frame(height: Theme.Metrics.buttonHeight)
-            .background(ControlBackground(fill: Theme.pill))
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
         .help(AppInfo.repositoryURL.absoluteString)
+    }
+
+    private var updateButton: some View {
+        PillButton(symbol: "arrow.down.circle", label: "Check for Updates…") {
+            Updater.shared.checkForUpdates()
+        }
+        .disabled(!Updater.shared.canCheckForUpdates)
     }
 
     private var footer: some View {
@@ -86,6 +84,32 @@ struct AboutSheet: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
+    }
+}
+
+private struct PillButton: View {
+    let symbol: String
+    let label: String
+    let action: () -> Void
+
+    @Environment(\.isEnabled) private var isEnabled
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Image(systemName: symbol)
+                    .font(.system(size: 10, weight: .semibold))
+                Text(label)
+                    .font(.system(size: 12, weight: .medium))
+            }
+            .foregroundStyle(Theme.primaryText)
+            .padding(.horizontal, 10)
+            .frame(height: Theme.Metrics.buttonHeight)
+            .background(ControlBackground(fill: Theme.pill))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .opacity(isEnabled ? 1 : 0.4)
     }
 }
 

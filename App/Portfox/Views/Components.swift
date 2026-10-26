@@ -129,6 +129,7 @@ struct ActionButton: View {
     let action: () -> Void
 
     @State private var isHovering = false
+    @Environment(\.isEnabled) private var isEnabled
 
     var body: some View {
         Button(action: action) {
@@ -147,6 +148,7 @@ struct ActionButton: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .opacity(isEnabled ? 1 : 0.4)
         .onHover { isHovering = $0 }
     }
 }

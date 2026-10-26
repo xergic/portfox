@@ -32,6 +32,7 @@ struct PortfoxApp: App {
             if let request = SnapshotRenderer.request {
                 Task { await SnapshotRenderer.run(request, state: state) }
             } else {
+                Updater.shared.start()
                 KeyboardShortcuts.onKeyUp(for: .togglePopover) { [$isMenuPresented] in
                     // An `LSUIElement` app is never active on its own, and an
                     // inactive app's window cannot take the search field's keys.

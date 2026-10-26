@@ -10,6 +10,7 @@ permissions:
 env:
   HOMEBREW_NO_AUTO_UPDATE: 1
   HOMEBREW_NO_INSTALL_CLEANUP: 1
+  SPARKLE_FEED_URL: https://portfox.kandera.cz/appcast.xml
 
 jobs:
   release:
@@ -43,6 +44,7 @@ jobs:
             echo "Tag $GITHUB_REF_NAME is not vMAJOR.MINOR.PATCH" >&2
             exit 1
           fi
+          Tools/release-notes.sh "$version" > "$RUNNER_TEMP/notes.md"
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Import the Developer ID certificate
@@ -94,10 +96,12 @@ jobs:
             -configuration Release \
             -destination 'generic/platform=macOS' \
             -archivePath "$RUNNER_TEMP/Portfox.xcarchive" \
+            -clonedSourcePackagesDirPath "$RUNNER_TEMP/packages" \
             -quiet \
             MARKETING_VERSION="$VERSION" \
             CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" \
             TELEMETRY_APP_ID="$TELEMETRY_APP_ID" \
+            SPARKLE_FEED_URL="$SPARKLE_FEED_URL" \
             CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="Developer ID Application" \
             DEVELOPMENT_TEAM="$TEAM_ID" \
@@ -169,15 +173,40 @@ jobs:
           xcrun stapler validate "$DMG"
           spctl --assess --type open --context context:primary-signature --verbose=4 "$DMG"
 
+      - name: Build the appcast
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
+        run: |
+          : "${SPARKLE_ED_PRIVATE_KEY:?set the SPARKLE_ED_PRIVATE_KEY repository secret}"
+          mkdir -p "$RUNNER_TEMP/feed"
+          ln "$DMG" "$RUNNER_TEMP/feed/"
+          # Named after the archive, which is how generate_appcast finds its notes.
+          gh api markdown -f mode=gfm -f text="$(cat "$RUNNER_TEMP/notes.md")" \
+            > "$RUNNER_TEMP/feed/Portfox-$VERSION.html"
+          printf '%s' "$SPARKLE_ED_PRIVATE_KEY" | "$RUNNER_TEMP/packages/artifacts/sparkle/Sparkle/bin/generate_appcast" \
+            --ed-key-file - \
+            --embed-release-notes \
+            --maximum-deltas 0 \
+            --download-url-prefix "https://github.com/xergic/portfox/releases/download/$GITHUB_REF_NAME/" \
+            "$RUNNER_TEMP/feed"
+          appcast="$RUNNER_TEMP/feed/appcast.xml"
+          grep -q 'sparkle:edSignature=' "$appcast"
+          grep -q "url=\"https://github.com/xergic/portfox/releases/download/$GITHUB_REF_NAME/Portfox-$VERSION.dmg\"" "$appcast"
+          echo "APPCAST=$appcast" >> "$GITHUB_ENV"
+          # The site's /download redirect needs a name that never changes.
+          ln "$DMG" "$RUNNER_TEMP/Portfox.dmg"
+
       - name: Publish the release
         id: publish
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          gh release create "$GITHUB_REF_NAME" "$DMG" \
+          gh release create "$GITHUB_REF_NAME" "$DMG" "$RUNNER_TEMP/Portfox.dmg" "$APPCAST" \
             --title "Portfox $VERSION" \
-            --generate-notes
+            --notes-file "$RUNNER_TEMP/notes.md"
           echo "sha256=$(shasum -a 256 "$DMG" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
 
       - name: Remove the signing keychain

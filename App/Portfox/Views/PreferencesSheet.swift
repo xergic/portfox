@@ -381,6 +381,10 @@ struct PreferencesSheet: View {
                     .padding(.horizontal, Theme.Metrics.rowPaddingH)
                     .padding(.bottom, 10)
             }
+            if Updater.shared.isAvailable {
+                PreferenceDivider()
+                updateRows
+            }
             PreferenceDivider()
             PreferenceRow(
                 title: "Open Portfox",
@@ -397,6 +401,21 @@ struct PreferencesSheet: View {
             ) {
                 PreferenceCheckbox(isOn: $state.sharesUsageData)
             }
+        }
+    }
+
+    @ViewBuilder private var updateRows: some View {
+        @Bindable var updater = Updater.shared
+        PreferenceRow(
+            title: "Check for updates automatically",
+            subtitle: "Look for a new version once a day"
+        ) {
+            PreferenceCheckbox(isOn: $updater.automaticallyChecks)
+        }
+        PreferenceDivider()
+        PreferenceRow(title: "Check for updates") {
+            ActionButton(symbol: "arrow.down.circle", label: "Check Now") { updater.checkForUpdates() }
+                .disabled(!updater.canCheckForUpdates)
         }
     }
 
