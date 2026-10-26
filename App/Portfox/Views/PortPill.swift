@@ -3,7 +3,7 @@ import SwiftUI
 struct PortPill: View {
     let port: Int
     /// Counted in a corner badge rather than listed, so a row with two ports is
-    /// no wider than a row with one and the hover actions keep their place.
+    /// no wider than a row with one.
     var extraPorts: [Int] = []
 
     var body: some View {
@@ -18,8 +18,7 @@ struct PortPill: View {
         .font(.portPort)
         .lineLimit(1)
         .fixedSize()
-        .frame(width: Theme.Metrics.portPillWidth, height: 21)
-        .background(ControlBackground(fill: Theme.pill))
+        .frame(height: 21)
         .overlay(alignment: .topTrailing) {
             if !extraPorts.isEmpty {
                 Text("+\(extraPorts.count)")
@@ -31,7 +30,7 @@ struct PortPill: View {
                             .fill(Theme.cardHover)
                             .stroke(Theme.border, lineWidth: 0.5)
                     )
-                    .offset(x: 5, y: -6)
+                    .offset(x: 4, y: -8)
                     .help("Also on " + extraPorts.map(String.init).joined(separator: ", "))
             }
         }
@@ -45,7 +44,7 @@ struct IconButton: View {
     var help: String = ""
     var symbolSize: CGFloat = 11
     var frameSize: CGFloat = 20
-    /// A round-rect fill behind the glyph, for a button that stands alone in a header.
+    /// A hover fill behind the glyph, for a button that stands alone in a header.
     var filled = false
     /// Spins the glyph only, so a filled button's background stays put.
     var spins = false
@@ -65,7 +64,9 @@ struct IconButton: View {
                 )
                 .frame(width: frameSize, height: frameSize)
                 .background {
-                    if filled { ControlBackground(isHovering: isHovering) }
+                    if filled, isHovering {
+                        RoundedRectangle.row.fill(Theme.cardHover)
+                    }
                 }
                 .contentShape(Rectangle())
         }

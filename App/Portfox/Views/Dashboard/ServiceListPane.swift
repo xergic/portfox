@@ -30,7 +30,7 @@ struct ServiceListPane: View {
             prompt: "Search by port, framework, path",
             isLive: scrolls
         )
-        .padding(.horizontal, 12)
+        .padding(.horizontal, Theme.Metrics.contentInset)
         .padding(.top, 12)
         .padding(.bottom, 8)
     }
@@ -40,12 +40,12 @@ struct ServiceListPane: View {
             SegmentedControl(
                 selection: $dashboard.filter,
                 options: availableFilters.map { ($0, $0.displayName) },
-                font: .system(size: 12, weight: .medium)
+                font: .system(size: 11, weight: .medium)
             )
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 12)
-        .padding(.bottom, 12)
+        .padding(.horizontal, Theme.Metrics.contentInset)
+        .padding(.bottom, 10)
     }
 
     /// The system chip only makes sense once noise is being scanned at all, and
@@ -104,7 +104,7 @@ struct ServiceListPane: View {
             .font(.portCaption)
             .foregroundStyle(Theme.secondaryText)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 14)
+            .padding(.horizontal, Theme.Metrics.contentInset)
             .padding(.vertical, 10)
     }
 }

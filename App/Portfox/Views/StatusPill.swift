@@ -34,15 +34,18 @@ struct HealthPill: View {
     var body: some View {
         if case .status(let code, let latency) = state.health.readings[service.id] {
             Text(String(code))
-                .font(.portVersion)
-                .fontWeight(.semibold)
+                .font(.mono(10, .semibold))
                 .foregroundStyle(HTTPStatusStyle.tint(code))
-                .frame(width: Theme.Metrics.statusPillWidth, height: 21)
+                .frame(width: Theme.Metrics.statusPillWidth, height: 16)
                 .background(
                     RoundedRectangle(cornerRadius: Theme.Metrics.badgeRadius, style: .continuous)
-                        .fill(HTTPStatusStyle.tint(code).opacity(0.14))
+                        .fill(HTTPStatusStyle.tint(code).opacity(0.16))
                 )
                 .help("\(HTTPStatusStyle.text(code)) · \(HTTPStatusStyle.milliseconds(latency))")
+        } else if state.checksHealth, service.localURL != nil {
+            // Held empty until the first reading, so its arrival does not widen
+            // the slot and tip a compact row onto two lines.
+            Color.clear.frame(width: Theme.Metrics.statusPillWidth, height: 16)
         }
     }
 }

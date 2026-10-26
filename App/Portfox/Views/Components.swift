@@ -1,18 +1,17 @@
 import PortfoxKit
 import SwiftUI
 
-/// The app icon, name and a subtitle, then a summary line and trailing buttons.
+/// The app icon and name, then a summary line and trailing buttons.
 /// The popover is too narrow to hold the summary beside the name, so it stacks it.
 struct AppHeader<Summary: View, Trailing: View>: View {
-    let subtitle: String
     var stacksSummary = false
     @ViewBuilder let summary: () -> Summary
     @ViewBuilder let trailing: () -> Trailing
 
     var body: some View {
         if stacksSummary {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 10) { identity; Spacer(); trailing() }
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 8) { identity; Spacer(); trailing() }
                 summary()
             }
         } else {
@@ -26,17 +25,12 @@ struct AppHeader<Summary: View, Trailing: View>: View {
     }
 
     private var identity: some View {
-        HStack(spacing: 10) {
-            AppIconView(size: 34)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(AppInfo.name)
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(Theme.primaryText)
-                Text(subtitle)
-                    .font(.portDetail)
-                    .foregroundStyle(Theme.secondaryText)
-            }
-            .lineLimit(1)
+        HStack(spacing: 8) {
+            AppIconView(size: 18)
+            Text(AppInfo.name)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Theme.primaryText)
+                .lineLimit(1)
         }
     }
 }
@@ -51,10 +45,10 @@ struct SummaryCount: View {
         HStack(spacing: 5) {
             Circle().fill(dot).frame(width: 6, height: 6)
             Text(value)
-                .font(.portDetailStrong)
+                .font(.portCaption.weight(.semibold))
                 .foregroundStyle(Theme.primaryText)
             Text(label)
-                .font(.portDetail)
+                .font(.portCaption)
                 .foregroundStyle(Theme.secondaryText)
         }
         // A squeezed count wrapped "dev services" onto two lines.
@@ -68,7 +62,7 @@ extension SummaryCount {
     }
 }
 
-/// The popover row's resting card: fill, hairline, radius.
+/// A contained element on the window surface: a fact table, the process tree.
 struct CardBackground: View {
     var fill: Color = Theme.card
     var border: Color = Theme.separator
@@ -79,7 +73,7 @@ struct CardBackground: View {
     }
 }
 
-/// Every button, field and pill: one radius, one hairline, a hover fill.
+/// Every bordered control: one radius, one hairline, a hover fill.
 struct ControlBackground: View {
     var fill: Color = Theme.card
     var isHovering = false
@@ -96,24 +90,31 @@ struct OriginBadge: View {
 
     var body: some View {
         TintedBadge(text: origin.label, tint: origin == .orphaned ? Theme.warning : Theme.roleBoundary)
-            .fixedSize()
     }
 }
 
-/// A small sentence-case label washed in its own tint: a process role, the
-/// stop target, an HTTP status.
+/// A small uppercase label washed in its own tint: a process role, the
+/// stop target, an origin.
 struct TintedBadge: View {
     let text: String
     let tint: Color
+    /// Off only where a long value beside fixed buttons must give way, such as
+    /// the project name in a detail header. Everywhere else a badge is a warning
+    /// or a role and must never be cut.
+    var fixesSize = true
 
     var body: some View {
         Text(text)
             .font(.portBadge)
+            .lineLimit(1)
+            .fixedSize(horizontal: fixesSize, vertical: false)
+            .textCase(.uppercase)
+            .tracking(0.45)
             .foregroundStyle(tint)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
+            .padding(.horizontal, 4)
+            .padding(.vertical, 1)
             .background(
-                RoundedRectangle(cornerRadius: Theme.Metrics.badgeRadius, style: .continuous).fill(tint.opacity(0.14))
+                RoundedRectangle(cornerRadius: Theme.Metrics.badgeRadius, style: .continuous).fill(tint.opacity(0.16))
             )
     }
 }
@@ -133,15 +134,15 @@ struct ActionButton: View {
         Button(action: action) {
             HStack(spacing: 6) {
                 Image(systemName: symbol)
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(size: 10, weight: .semibold))
                 Text(label)
                     .font(.system(size: 12, weight: .medium))
                     .lineLimit(1)
             }
             .fixedSize()
             .foregroundStyle(isPrimary ? Theme.onAccent : tint)
-            .padding(.horizontal, 11)
-            .frame(height: Theme.Metrics.controlHeight)
+            .padding(.horizontal, 9)
+            .frame(height: Theme.Metrics.buttonHeight)
             .background(ControlBackground(fill: isPrimary ? Theme.accent : Theme.card, isHovering: isHovering && !isPrimary))
             .contentShape(Rectangle())
         }
@@ -168,8 +169,8 @@ struct SegmentedControl<Value: Hashable>: View {
                     Text(option.label)
                         .font(font)
                         .foregroundStyle(option.value == selection ? Theme.onAccent : Theme.secondaryText)
-                        .padding(.horizontal, 10)
-                        .frame(height: Theme.Metrics.controlHeight - 2 * Self.inset)
+                        .padding(.horizontal, 9)
+                        .frame(height: Theme.Metrics.buttonHeight - 2 * Self.inset)
                         .background(
                             RoundedRectangle(cornerRadius: Theme.Metrics.controlRadius - Self.inset, style: .continuous)
                                 .fill(option.value == selection ? Theme.accent : Color.clear)
@@ -184,4 +185,9 @@ struct SegmentedControl<Value: Hashable>: View {
         .opacity(isEnabled ? 1 : 0.4)
         .allowsHitTesting(isEnabled)
     }
+}
+
+extension Shape where Self == RoundedRectangle {
+    /// The flat row's hover and selection fill, and anything sized to match it.
+    static var row: RoundedRectangle { RoundedRectangle(cornerRadius: Theme.Metrics.rowRadius, style: .continuous) }
 }

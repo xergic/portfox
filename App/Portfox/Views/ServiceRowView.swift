@@ -40,8 +40,8 @@ struct ServiceRowView: View {
 
             trailingSlot
         }
-        .padding(.horizontal, Theme.Metrics.rowPaddingH)
-        .padding(.vertical, Theme.Metrics.rowPaddingV)
+        .padding(.horizontal, Theme.Metrics.listRowPaddingH)
+        .padding(.vertical, Theme.Metrics.listRowPaddingV)
         .background(rowBackground)
         .contentShape(Rectangle())
         .onHover { hovering in
@@ -62,16 +62,11 @@ struct ServiceRowView: View {
     /// In fast and out slow: the row has to announce itself, then get out of the
     /// way. Both fit inside `ServiceArrivals.flashDuration` with room to spare.
     private var rowBackground: some View {
-        CardBackground(
-            fill: isSelected ? Theme.selectedRow : (isHighlighted ? Theme.cardHover : Theme.card),
-            border: borderColor
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: Theme.Metrics.cardRadius, style: .continuous)
-                .fill(Theme.arrivalRow)
-                .opacity(showsArrival ? 1 : 0)
-        )
-        .animation(showsArrival ? .easeOut(duration: 0.2) : .easeIn(duration: 0.9), value: showsArrival)
+        let shape = RoundedRectangle.row
+        return shape
+            .fill(isSelected ? Theme.selectedRow : (isHighlighted ? Theme.cardHover : .clear))
+            .overlay(shape.fill(Theme.arrivalRow).opacity(showsArrival ? 1 : 0))
+            .animation(showsArrival ? .easeOut(duration: 0.2) : .easeIn(duration: 0.9), value: showsArrival)
     }
 
     /// On hover the actions take the pills' place, so they never cover the name,
@@ -153,7 +148,6 @@ struct ServiceRowView: View {
             }
             if service.container != nil {
                 TintedBadge(text: ContainerRuntime.displayName(of: service.listenerProcess), tint: Theme.pathDirectory)
-                    .fixedSize()
             }
         }
     }
@@ -235,10 +229,6 @@ struct ServiceRowView: View {
 
     private var showsActions: Bool { showsHoverActions && (isHovering || forcedHover || isSharing) }
     private var isHighlighted: Bool { showsActions || (isHovering && !showsHoverActions) }
-    private var borderColor: Color {
-        if isSelected { return Theme.selectedBorder }
-        return isHighlighted ? Theme.border : Theme.separator
-    }
 }
 
 /// A dim fact appended to a line: the version of the thing that is running, or

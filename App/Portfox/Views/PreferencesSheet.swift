@@ -67,7 +67,7 @@ struct PreferencesSheet: View {
     }
 
     private var header: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             if page == .ignored {
                 IconButton(
                 symbol: "chevron.left",
@@ -77,21 +77,21 @@ struct PreferencesSheet: View {
             ) { page = .preferences }
             }
 
-            RoundedRectangle(cornerRadius: Theme.Metrics.cardRadius, style: .continuous)
+            RoundedRectangle.row
                 .fill(Theme.accent)
-                .frame(width: 34, height: 34)
+                .frame(width: 22, height: 22)
                 .overlay(
                     Image(systemName: page.symbol)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(Theme.onAccent)
                 )
 
-            VStack(alignment: .leading, spacing: 1) {
+            VStack(alignment: .leading, spacing: 0) {
                 Text(page.title)
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Theme.primaryText)
                 Text(page.subtitle)
-                    .font(.portDetail)
+                    .font(.portCaption)
                     .foregroundStyle(Theme.secondaryText)
             }
 
@@ -105,7 +105,7 @@ struct PreferencesSheet: View {
             ) { dismiss() }
         }
         .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .padding(.vertical, 10)
     }
 
     @ViewBuilder
@@ -118,7 +118,7 @@ struct PreferencesSheet: View {
     }
 
     private var sections: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 14) {
             discoverySection
             appearanceSection
             filteringSection
@@ -129,7 +129,7 @@ struct PreferencesSheet: View {
     }
 
     private var discoverySection: some View {
-        PreferencesSection(title: "Discovery and refresh", symbol: "arrow.trianglehead.2.clockwise") {
+        PreferencesSection(title: "Discovery and refresh") {
             @Bindable var state = state
             PreferenceRow(
                 title: "Automatic refresh loop",
@@ -187,7 +187,7 @@ struct PreferencesSheet: View {
     }
 
     private var appearanceSection: some View {
-        PreferencesSection(title: "Appearance", symbol: "paintbrush") {
+        PreferencesSection(title: "Appearance") {
             @Bindable var state = state
             @Bindable var appearance = state.appearance
             PreferenceRow(
@@ -244,7 +244,7 @@ struct PreferencesSheet: View {
     }
 
     private var applicationsSection: some View {
-        PreferencesSection(title: "Applications", symbol: "square.grid.2x2") {
+        PreferencesSection(title: "Applications") {
             @Bindable var state = state
             PreferenceRow(
                 title: "Editor",
@@ -279,7 +279,7 @@ struct PreferencesSheet: View {
     }
 
     private var filteringSection: some View {
-        PreferencesSection(title: "Process filtering", symbol: "eye") {
+        PreferencesSection(title: "Process filtering") {
             @Bindable var state = state
             PreferenceRow(
                 title: "Show all listeners",
@@ -357,7 +357,7 @@ struct PreferencesSheet: View {
     }
 
     private var generalSection: some View {
-        PreferencesSection(title: "General", symbol: "gearshape") {
+        PreferencesSection(title: "General") {
             PreferenceRow(
                 title: "Launch at login",
                 subtitle: "Start Portfox automatically when you log in"

@@ -28,11 +28,11 @@ struct AboutSheet: View {
                 .padding(.bottom, 2)
 
             Text(AppInfo.name)
-                .font(.system(size: 17, weight: .bold))
+                .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(Theme.primaryText)
 
             Text(AppInfo.fullVersionLabel)
-                .font(.portSubtitle)
+                .font(.portVersion)
                 .foregroundStyle(Theme.secondaryText)
 
             Text(AppInfo.summary)
@@ -64,8 +64,8 @@ struct AboutSheet: View {
                     .font(.system(size: 12, weight: .medium))
             }
             .foregroundStyle(Theme.primaryText)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 10)
+            .frame(height: Theme.Metrics.buttonHeight)
             .background(ControlBackground(fill: Theme.pill))
             .contentShape(Rectangle())
         }
@@ -80,8 +80,8 @@ struct AboutSheet: View {
                 .buttonStyle(.plain)
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(Theme.primaryText)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 6)
+                .padding(.horizontal, 10)
+                .frame(height: Theme.Metrics.buttonHeight)
                 .background(ControlBackground(fill: Theme.pill))
         }
         .padding(.horizontal, 14)

@@ -40,8 +40,5 @@ struct HoverActionsView: View {
             }
         }
         .fixedSize()
-        .padding(.horizontal, 3)
-        .padding(.vertical, 2)
-        .background(ControlBackground(fill: Theme.cardHover))
     }
 }

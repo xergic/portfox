@@ -15,7 +15,7 @@ struct ServiceSections: View {
     var forcesHover = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             if let error = state.lastError {
                 ErrorBanner(message: error)
             }
@@ -32,15 +32,19 @@ struct ServiceSections: View {
             section("Agent tools", sections.rest.agentTools)
             section("Other listeners", sections.rest.ungrouped)
         }
-        .padding(12)
+        .padding(.horizontal, Theme.Metrics.listInset)
+        .padding(.vertical, 6)
     }
 
     private var pinnedRows: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 2) {
             SectionHeader(title: "Pinned")
-            rows(sections.pinnedServices)
-            ForEach(sections.stoppedPins) { pin in
-                PinPlaceholderRow(pin: pin, showsHoverActions: showsHoverActions, forcedHover: forcesHover)
+            RowList(sections.pinnedServices.map(PinnedRow.running) + sections.stoppedPins.map(PinnedRow.stopped)) { row in
+                switch row {
+                case .running(let service): serviceRow(service)
+                case .stopped(let pin):
+                    PinPlaceholderRow(pin: pin, showsHoverActions: showsHoverActions, forcedHover: forcesHover)
+                }
             }
         }
     }
@@ -59,23 +63,61 @@ struct ServiceSections: View {
     @ViewBuilder
     private func section(_ title: String, _ services: [RunningService]) -> some View {
         if !services.isEmpty {
-            VStack(alignment: .leading, spacing: 6) {
-                SectionHeader(title: title)
-                rows(services)
+            VStack(alignment: .leading, spacing: 2) {
+                SectionHeader(title: title, trailing: services.count == 1 ? "1 service" : "\(services.count) services")
+                RowList(services) { serviceRow($0) }
             }
         }
     }
 
-    private func rows(_ services: [RunningService]) -> some View {
-        ForEach(services) { service in
-            ServiceRowView(
-                service: service,
-                layout: state.cellLayout,
-                showsHoverActions: showsHoverActions,
-                isSelected: service.id == selectedID,
-                onTap: onSelect,
-                forcedHover: forcesHover
-            )
+    private func serviceRow(_ service: RunningService) -> some View {
+        ServiceRowView(
+            service: service,
+            layout: state.cellLayout,
+            showsHoverActions: showsHoverActions,
+            isSelected: service.id == selectedID,
+            onTap: onSelect,
+            forcedHover: forcesHover
+        )
+    }
+}
+
+private enum PinnedRow: Identifiable {
+    case running(RunningService)
+    case stopped(Pin)
+
+    /// The bare service id, so the popover's arrow keys can still scroll to it.
+    var id: AnyHashable {
+        switch self {
+        case .running(let service): service.id
+        case .stopped(let pin): pin.id
+        }
+    }
+}
+
+/// Rows flat on the surface with a hairline between neighbours, never above the
+/// first. A row draws no card of its own, so this is the only thing that tells
+/// two rows apart at rest.
+struct RowList<Item: Identifiable, Row: View>: View {
+    let items: [Item]
+    @ViewBuilder let row: (Item) -> Row
+
+    init(_ items: [Item], @ViewBuilder row: @escaping (Item) -> Row) {
+        self.items = items
+        self.row = row
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ForEach(items) { item in
+                if item.id != items.first?.id {
+                    Rectangle()
+                        .fill(Theme.separator)
+                        .frame(height: 1)
+                        .padding(.horizontal, Theme.Metrics.listRowPaddingH)
+                }
+                row(item)
+            }
         }
     }
 }

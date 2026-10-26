@@ -51,9 +51,9 @@ struct PinPlaceholderRow: View {
                 }
             }
         }
-        .padding(.horizontal, Theme.Metrics.rowPaddingH)
-        .padding(.vertical, Theme.Metrics.rowPaddingV)
-        .background(CardBackground(fill: isHovering ? Theme.cardHover : .clear, border: Theme.border))
+        .padding(.horizontal, Theme.Metrics.listRowPaddingH)
+        .padding(.vertical, Theme.Metrics.listRowPaddingV)
+        .background(isHovering ? Theme.cardHover : .clear, in: .row)
         .contentShape(Rectangle())
         .onHover { hovering in
             withAnimation(.easeOut(duration: 0.12)) { isHovering = hovering }
@@ -84,9 +84,6 @@ struct PinPlaceholderRow: View {
             IconButton(symbol: "pin.slash", help: "Unpin") { state.unpin(pin) }
         }
         .fixedSize()
-        .padding(.horizontal, 3)
-        .padding(.vertical, 2)
-        .background(ControlBackground(fill: Theme.cardHover))
     }
 
     private var showsActions: Bool { isHovering || forcedHover }

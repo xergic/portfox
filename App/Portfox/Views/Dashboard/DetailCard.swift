@@ -1,36 +1,23 @@
 import SwiftUI
 
-/// A titled group of facts in the detail pane, wearing the same card fill,
-/// hairline and radius as a popover row.
+/// A titled group of facts in the detail pane, one step up from the surface.
 struct DetailCard<Content: View>: View {
     let title: String
-    var systemImage: String?
     @ViewBuilder let content: () -> Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            titleView
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .groupLabelStyle()
+                .padding(.leading, 2)
             contentBox
         }
     }
 
-    private var titleView: some View {
-        HStack(spacing: 6) {
-            if let systemImage {
-                Image(systemName: systemImage)
-                    .foregroundStyle(Theme.tertiaryText)
-            }
-            Text(title)
-                .foregroundStyle(Theme.secondaryText)
-        }
-        .font(.portDetailStrong)
-        .padding(.leading, 2)
-    }
-
     private var contentBox: some View {
         content()
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(CardBackground())
     }

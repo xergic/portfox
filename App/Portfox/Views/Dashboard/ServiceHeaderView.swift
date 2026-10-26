@@ -10,7 +10,7 @@ struct ServiceHeaderView: View {
     var projectIconPath: String?
 
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
+        HStack(alignment: .center, spacing: 10) {
             iconBadge
             VStack(alignment: .leading, spacing: 4) {
                 titleLine
@@ -23,15 +23,13 @@ struct ServiceHeaderView: View {
     }
 
     private var iconBadge: some View {
-        ServiceIconView(type: service.type, projectIconPath: projectIconPath, size: 32)
-            .frame(width: 46, height: 46)
-            .background(CardBackground())
+        ServiceIconView(type: service.type, projectIconPath: projectIconPath, size: 28)
     }
 
     private var titleLine: some View {
         HStack(spacing: 8) {
             Text(service.displayName)
-                .font(.system(size: 17, weight: .bold))
+                .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(Theme.primaryText)
             if let version = service.version {
                 TrailingFact(text: version, font: .portVersion)
@@ -53,15 +51,7 @@ struct ServiceHeaderView: View {
     }
 
     private func pill(text: String) -> some View {
-        Text(text)
-            .font(.portCaption)
-            .foregroundStyle(Theme.secondaryText)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(Theme.pill)
-            )
+        TintedBadge(text: text, tint: Theme.secondaryText, fixesSize: false)
     }
 
     /// The address is the one part a user copies, so it alone stays monospace.

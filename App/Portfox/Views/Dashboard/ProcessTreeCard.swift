@@ -8,7 +8,7 @@ struct ProcessTreeCard: View {
     let service: RunningService
 
     var body: some View {
-        DetailCard(title: "Process ancestry & child workers", systemImage: "arrow.triangle.branch") {
+        DetailCard(title: "Process ancestry & child workers") {
             if rows.isEmpty {
                 Text("The process tree is not available yet.")
                     .font(.portDetail)

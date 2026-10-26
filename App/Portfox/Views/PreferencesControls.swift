@@ -9,29 +9,28 @@ import SwiftUI
 struct PreferencesCard<Content: View>: View {
     @ViewBuilder let content: () -> Content
 
+    /// Clipped, so a row's square hover fill follows the card's rounded corners
+    /// and the hairline is drawn over it rather than under.
     var body: some View {
+        let shape = RoundedRectangle(cornerRadius: Theme.Metrics.cardRadius, style: .continuous)
         VStack(alignment: .leading, spacing: 0, content: content)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(CardBackground())
+            .background(Theme.card)
+            .clipShape(shape)
+            .overlay(shape.strokeBorder(Theme.separator, lineWidth: 1))
     }
 }
 
 /// A titled group of rows in a card, the preferences twin of `DetailCard`.
 struct PreferencesSection<Content: View>: View {
     let title: String
-    let symbol: String
     @ViewBuilder let content: () -> Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Image(systemName: symbol)
-                    .foregroundStyle(Theme.tertiaryText)
-                Text(title)
-                    .foregroundStyle(Theme.secondaryText)
-            }
-            .font(.portDetailStrong)
-            .padding(.leading, 2)
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .groupLabelStyle()
+                .padding(.leading, 2)
             PreferencesCard(content: content)
         }
     }
@@ -50,6 +49,7 @@ struct PreferenceCheckbox: View {
         Toggle("", isOn: $isOn)
             .labelsHidden()
             .toggleStyle(.checkbox)
+            .controlSize(.small)
             .tint(Theme.accent)
     }
 }
@@ -65,7 +65,7 @@ struct PreferenceRow<Leading: View, Control: View>: View {
             leading()
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.portSectionLabel)
+                    .font(.system(size: 12.5, weight: .medium))
                     .foregroundStyle(Theme.primaryText)
                 if let subtitle {
                     Text(subtitle)
@@ -78,7 +78,7 @@ struct PreferenceRow<Leading: View, Control: View>: View {
             control()
         }
         .padding(.horizontal, Theme.Metrics.rowPaddingH)
-        .padding(.vertical, Theme.Metrics.rowPaddingV)
+        .padding(.vertical, Theme.Metrics.listRowPaddingV)
     }
 }
 
@@ -116,7 +116,7 @@ struct AppMenu: View {
             .menuStyle(.borderlessButton)
             .fixedSize()
             .padding(.horizontal, 8)
-            .frame(height: Theme.Metrics.controlHeight)
+            .frame(height: Theme.Metrics.buttonHeight)
             .background(ControlBackground(fill: Theme.pill))
         }
     }

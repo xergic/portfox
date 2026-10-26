@@ -24,7 +24,6 @@ struct MenuView: View {
         let selectedID = selection(in: ordered)?.id
         VStack(spacing: 0) {
             header(ungrouped: state.result.ungrouped)
-            Divider().overlay(Theme.separator)
 
             if state.result.services.isEmpty, sections.stoppedPins.isEmpty {
                 emptyState
@@ -69,8 +68,9 @@ struct MenuView: View {
             focusesOnAppear: true,
             isLive: scrolls
         )
-        .padding(.horizontal, 12)
-        .padding(.top, 10)
+        .padding(.horizontal, Theme.Metrics.contentInset)
+        .padding(.top, 2)
+        .padding(.bottom, 4)
     }
 
     private func handle(_ press: KeyPress, in ordered: [RunningService]) -> KeyPress.Result {
@@ -110,7 +110,7 @@ struct MenuView: View {
     }
 
     private func header(ungrouped: [RunningService]) -> some View {
-        AppHeader(subtitle: "Local services", stacksSummary: true) {
+        AppHeader(stacksSummary: true) {
             if !state.result.services.isEmpty {
                 summary(ungrouped: ungrouped)
             }
@@ -127,7 +127,7 @@ struct MenuView: View {
                 Task { await state.refresh(.userRequested) }
             }
         }
-        .padding(.horizontal, 14)
+        .padding(.horizontal, Theme.Metrics.contentInset)
         .padding(.top, 12)
         .padding(.bottom, 10)
     }
@@ -218,12 +218,12 @@ struct MenuView: View {
     }
 
     private var footer: some View {
-        HStack(spacing: 14) {
-            FooterButton(symbol: "macwindow", title: "Dashboard") {
+        HStack(spacing: 12) {
+            FooterButton(title: "Dashboard") {
                 WindowPresenter.showDashboard(openWindow)
             }
 
-            FooterButton(symbol: "slider.horizontal.3", title: "Settings…") {
+            FooterButton(title: "Settings…") {
                 // Set before the window opens, so the sheet is already requested on
                 // its first layout pass rather than a runloop turn too late.
                 state.presentedSheet = .preferences
@@ -243,14 +243,11 @@ struct MenuView: View {
                 WindowPresenter.showDashboard(openWindow)
             }
 
-            Button("Quit") { NSApplication.shared.terminate(nil) }
-                .buttonStyle(.plain)
-                .font(.system(size: 12))
-                .foregroundStyle(Theme.secondaryText)
+            FooterButton(title: "Quit", shortcut: "⌘Q") { NSApplication.shared.terminate(nil) }
                 .keyboardShortcut("q")
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
+        .padding(.horizontal, Theme.Metrics.contentInset)
+        .padding(.vertical, 9)
     }
 }
 
@@ -267,7 +264,6 @@ private struct StopAllButton: View {
 
     var body: some View {
         FooterButton(
-            symbol: isArmed ? "exclamationmark.triangle.fill" : "stop.circle",
             // The count is what will actually stop, not what is listed, so the
             // question cannot promise more than the button delivers.
             title: isArmed ? "Stop \(state.stoppableServices.count)?" : "Stop All",
@@ -305,8 +301,8 @@ private struct VersionButton: View {
 }
 
 private struct FooterButton: View {
-    let symbol: String
     let title: String
+    var shortcut: String?
     /// Overrides the hover colouring, for a button that has to look dangerous
     /// whether or not the pointer is on it.
     var tint: Color?
@@ -316,12 +312,14 @@ private struct FooterButton: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 6) {
-                Image(systemName: symbol)
+            HStack(spacing: 4) {
                 Text(title)
+                    .foregroundStyle(tint ?? (isHovering ? Theme.primaryText : Theme.secondaryText))
+                if let shortcut {
+                    Text(shortcut).foregroundStyle(Theme.tertiaryText)
+                }
             }
-            .font(.system(size: 12))
-            .foregroundStyle(tint ?? (isHovering ? Theme.primaryText : Theme.secondaryText))
+            .font(.portCaption)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

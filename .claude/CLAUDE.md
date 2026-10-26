@@ -296,6 +296,12 @@ process recurses until the stack runs out.
 inside that callback, where the notification has already fired, which is why
 `Appearance.init` carries both branches.
 
+**A row never draws its own card.** Rows sit flat on `background` and `RowList`
+draws the hairline between neighbours, never above the first. Hover, selection and
+the arrival wash are a `rowRadius` fill inside the row, so none of them can change
+its height. `card` is for contained elements only: fact tables, the process tree,
+preference groups. Group and section titles go through `groupLabelStyle()`.
+
 **Text on an accent fill uses `onAccent`, never `background`.** Standing in
 `background` for it worked only while there was one appearance. `accent` is the
 brand fill; `accentText` is the accent as a glyph, darkened in light because the

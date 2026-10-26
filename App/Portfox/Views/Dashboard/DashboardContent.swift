@@ -72,7 +72,7 @@ struct DashboardContent: View {
     }
 
     private var topBar: some View {
-        AppHeader(subtitle: "Services and process inspector") {
+        AppHeader {
             HStack(spacing: 14) {
                 SummaryCount(
                     count: state.serviceCount,
@@ -103,7 +103,7 @@ struct DashboardContent: View {
                 state.presentedSheet = .preferences
             }
         }
-        .padding(.horizontal, 16)
-        .frame(height: 60)
+        .padding(.horizontal, Theme.Metrics.contentInset)
+        .frame(height: 44)
     }
 }

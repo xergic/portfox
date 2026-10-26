@@ -9,11 +9,13 @@ import SwiftUI
 /// unchanged call sites, and it keeps working under `ImageRenderer`, where a
 /// snapshot of the light appearance has to actually come out light.
 enum Theme {
-    static let background = dynamic(dark: srgb(0.055, 0.055, 0.063), light: srgb(0.965, 0.965, 0.973))
-    static let card = dynamic(dark: srgb(0.106, 0.106, 0.118), light: srgb(1, 1, 1))
-    static let cardHover = dynamic(dark: srgb(0.137, 0.137, 0.153), light: srgb(0.941, 0.941, 0.949))
+    /// Rows sit straight on this, so it is the row colour as well as the window's.
+    static let background = dynamic(dark: srgb(0.110, 0.110, 0.118), light: srgb(1, 1, 1))
+    /// One step up from `background`: a contained element such as a fact table.
+    static let card = dynamic(dark: srgb(0.165, 0.165, 0.176), light: srgb(0.957, 0.957, 0.965))
+    static let cardHover = dynamic(dark: srgb(0.180, 0.180, 0.192), light: srgb(0.929, 0.929, 0.941))
     static let separator = dynamic(dark: srgb(1, 1, 1, 0.07), light: srgb(0, 0, 0, 0.08))
-    static let border = dynamic(dark: srgb(1, 1, 1, 0.09), light: srgb(0, 0, 0, 0.12))
+    static let border = dynamic(dark: srgb(1, 1, 1, 0.10), light: srgb(0, 0, 0, 0.12))
 
     static let primaryText = dynamic(dark: srgb(0.949, 0.949, 0.957), light: srgb(0.106, 0.106, 0.118))
     static let secondaryText = dynamic(dark: srgb(0.541, 0.541, 0.576), light: srgb(0.400, 0.400, 0.435))
@@ -37,7 +39,7 @@ enum Theme {
     static let success = dynamic(dark: successDark, light: successLight)
     static let danger = dynamic(dark: srgb(0.937, 0.267, 0.267), light: srgb(0.784, 0.110, 0.110))
 
-    static let pill = dynamic(dark: srgb(0.137, 0.137, 0.149), light: srgb(0.925, 0.925, 0.937))
+    static let pill = dynamic(dark: srgb(0.165, 0.165, 0.176), light: srgb(0.941, 0.941, 0.953))
 
     /// What a process is doing in a service's tree, matching `ProcessRole`.
     static let roleBoundary = dynamic(dark: srgb(0.694, 0.549, 0.973), light: srgb(0.486, 0.227, 0.929))
@@ -59,12 +61,9 @@ enum Theme {
         light: successLight.withAlphaComponent(0.55)
     )
 
-    /// Opaque, the accent mixed into `card`, so it can stand in for the card fill.
-    static let selectedRow = dynamic(dark: srgb(0.095, 0.174, 0.180), light: srgb(0.860, 0.970, 0.964))
-    static let selectedBorder = dynamic(
-        dark: accentBrand.withAlphaComponent(0.55),
-        light: accentBrand.withAlphaComponent(0.70)
-    )
+    /// Opaque, the accent mixed into `background`, so a selected row needs no
+    /// second layer under it.
+    static let selectedRow = dynamic(dark: srgb(0.097, 0.191, 0.193), light: srgb(0.860, 0.970, 0.964))
 
     /// A row that appeared since the previous scan, washed for a few seconds.
     /// Same asymmetry as `listenerRow` and for the same measured reason: alpha
@@ -103,33 +102,41 @@ enum Theme {
         static let popoverWidth: CGFloat = 404
         static let maximumListHeight: CGFloat = 460
         static let cardRadius: CGFloat = 10
-        /// Action buttons, the search field and the segmented filter.
+        /// The hover and selection fill of a flat row.
+        static let rowRadius: CGFloat = 6
+        static let searchHeight: CGFloat = 26
+        /// Bordered controls: action buttons and the segmented filter.
         static let controlRadius: CGFloat = 8
-        static let controlHeight: CGFloat = 28
-        static let badgeRadius: CGFloat = 5
+        static let buttonHeight: CGFloat = 24
+        static let badgeRadius: CGFloat = 3
         static let rowPaddingH: CGFloat = 12
-        static let rowPaddingV: CGFloat = 9
+        /// A flat list row. Narrower than `rowPaddingH`, so the row's text lines
+        /// up with the header while its hover fill still has room to show.
+        static let listRowPaddingH: CGFloat = 8
+        static let listRowPaddingV: CGFloat = 8
+        /// The list's own inset from the window edge, so the fill clears it.
+        static let listInset: CGFloat = 6
+        /// Where a row's text starts. Headers, search and footers line up on it.
+        static let contentInset: CGFloat = listInset + listRowPaddingH
+        static let groupHeaderInsets = EdgeInsets(top: 6, leading: listRowPaddingH, bottom: 4, trailing: listRowPaddingH)
+        /// Hover actions sit a little outside the text edge, so their glyphs and
+        /// not their hit areas line up with the path they cover.
+        static let headerActionsInset: CGFloat = listRowPaddingH - 4
         /// The label column of a detail card, wide enough for "Working directory".
         static let factLabelWidth: CGFloat = 118
         static let treeIndent: CGFloat = 18
-        static let serviceIcon: CGFloat = 22
+        static let serviceIcon: CGFloat = 16
         /// Beside a service name on the bottom line of a project-first cell.
         static let serviceIconSmall: CGFloat = 13
-        /// Fixed so four and five digit ports align, and so the hover actions can
-        /// be positioned beside the pill without measuring it.
-        static let portPillWidth: CGFloat = 66
+        /// The least of a project path a long project name may leave, so the
+        /// last folder still reads as "…/wishfox-api".
+        static let pathMinWidth: CGFloat = 96
         static let statusPillWidth: CGFloat = 38
-        /// Space the hover actions occupy. Reserved even at rest, so revealing
-        /// them never re-truncates the text or shifts the row under the pointer.
-        /// The project header carries a fourth button, so it reserves more than a
-        /// service row. Raising the shared constant instead would cost every
-        /// service row twenty points of text width for nothing.
-        static let projectActionsWidth: CGFloat = 132
-        static let projectIcon: CGFloat = 22
+        static let projectIcon: CGFloat = 16
 
-        /// The filled buttons beside the app name, in the popover and the dashboard.
-        static let headerButtonSize: CGFloat = 30
-        static let headerSymbolSize: CGFloat = 13
+        /// The icon buttons beside the app name, in the popover and the dashboard.
+        static let headerButtonSize: CGFloat = 22
+        static let headerSymbolSize: CGFloat = 12
         static let dashboardWidth: CGFloat = 1180
         static let dashboardHeight: CGFloat = 820
         static let sidebarWidth: CGFloat = 300
@@ -159,16 +166,15 @@ extension Font {
         }
     }
 
-    static let portName = Font.system(size: 13, weight: .semibold)
-    static let portProject = Font.system(size: 13, weight: .bold)
+    static let portName = Font.system(size: 12.5, weight: .semibold)
     static let portSubtitle = Font.mono(11)
     static let portPort = Font.mono(12, .medium)
     static let portSectionLabel = Font.system(size: 12, weight: .medium)
+    static let portGroupLabel = Font.system(size: 10.5, weight: .semibold)
     /// Proportional secondary text: subtitles, summary labels, fact labels.
     static let portDetail = Font.system(size: 12)
-    static let portDetailStrong = Font.system(size: 12, weight: .semibold)
     static let portCaption = Font.system(size: 11)
-    static let portBadge = Font.system(size: 11, weight: .medium)
+    static let portBadge = Font.system(size: 9, weight: .bold)
     /// Every version number: services, plugins, projects and Portfox itself.
     static let portVersion = Font.mono(11)
 }
@@ -180,5 +186,13 @@ extension View {
     /// preference and no-ops under `ImageRenderer`.
     func themedSurface(_ scheme: ColorScheme) -> some View {
         environment(\.colorScheme, scheme)
+    }
+
+    /// Every group and section title: small, uppercase, tracked out.
+    func groupLabelStyle() -> some View {
+        font(.portGroupLabel)
+            .textCase(.uppercase)
+            .tracking(0.7)
+            .foregroundStyle(Theme.secondaryText)
     }
 }

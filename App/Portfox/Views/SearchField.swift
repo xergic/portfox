@@ -15,12 +15,12 @@ struct SearchField: View {
     var body: some View {
         HStack(spacing: 7) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 12, weight: .medium))
+                .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(Theme.tertiaryText)
             if isLive {
                 TextField(prompt, text: $text)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 13))
+                    .font(.system(size: 12))
                     .foregroundStyle(Theme.primaryText)
                     .focused($isFocused)
                     .onAppear { if focusesOnAppear { isFocused = true } }
@@ -31,7 +31,7 @@ struct SearchField: View {
                     }
             } else {
                 Text(text.isEmpty ? prompt : text)
-                    .font(.system(size: 13))
+                    .font(.system(size: 12))
                     .foregroundStyle(text.isEmpty ? Theme.tertiaryText : Theme.primaryText)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -39,8 +39,8 @@ struct SearchField: View {
                 IconButton(symbol: "xmark.circle.fill", help: "Clear") { text = "" }
             }
         }
-        .padding(.horizontal, 10)
-        .frame(height: Theme.Metrics.controlHeight)
-        .background(ControlBackground(fill: Theme.pill))
+        .padding(.horizontal, 9)
+        .frame(height: Theme.Metrics.searchHeight)
+        .background(Theme.pill, in: .row)
     }
 }

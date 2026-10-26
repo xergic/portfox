@@ -18,7 +18,7 @@ struct ProjectSectionView: View {
     @State private var assets: [ProjectAsset] = []
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 2) {
             header
             services
         }
@@ -32,10 +32,10 @@ struct ProjectSectionView: View {
                 size: Theme.Metrics.projectIcon
             )
             Text(group.project.name)
-                .font(.portProject)
-                .foregroundStyle(Theme.primaryText)
+                .groupLabelStyle()
                 .lineLimit(1)
-                .fixedSize()
+                .truncationMode(.tail)
+                .layoutPriority(1)
                 // On the name rather than on the hover actions, which vanish the
                 // moment the pointer moves into the popover and would take it along.
                 .popover(isPresented: $isRenaming, arrowEdge: .bottom) {
@@ -49,23 +49,27 @@ struct ProjectSectionView: View {
                     .foregroundStyle(Theme.tertiaryText)
                     .help("Pinned to the top")
             }
+            Spacer(minLength: 8)
             Text(group.project.displayPath)
-                .font(.portDetail)
-                .foregroundStyle(Theme.secondaryText)
+                .font(.portSubtitle)
+                .foregroundStyle(Theme.tertiaryText)
                 .lineLimit(1)
                 .truncationMode(.head)
-                .padding(.trailing, showsHoverActions ? Theme.Metrics.projectActionsWidth : 0)
-            Spacer(minLength: 0)
+                .frame(minWidth: Theme.Metrics.pathMinWidth, alignment: .trailing)
+                .opacity(showsHoverActions && showsActions ? 0 : 1)
         }
-        // Bare on the background, because a card header above cards would read
-        // as one more row.
-        .padding(4)
+        .padding(Theme.Metrics.groupHeaderInsets)
         // An overlay rather than another element in the stack. Inserting the
         // buttons on hover would re-truncate the path and shift the row under
         // the pointer, which reads as the row jumping.
         .overlay(alignment: .trailing) {
             if showsHoverActions, showsActions {
-                actions.padding(.trailing, 12)
+                // On the surface colour, so a long name running under the buttons
+                // is covered rather than drawn through them.
+                actions
+                    .padding(.leading, 6)
+                    .background(Theme.background)
+                    .padding(.trailing, Theme.Metrics.headerActionsInset)
             }
         }
         .contentShape(Rectangle())
@@ -102,23 +106,18 @@ struct ProjectSectionView: View {
             }
         }
         .fixedSize()
-        .padding(.horizontal, 3)
-        .padding(.vertical, 2)
-        .background(ControlBackground(fill: Theme.cardHover))
     }
 
     private var services: some View {
-        VStack(spacing: 6) {
-            ForEach(group.services) { service in
-                ServiceRowView(
-                    service: service,
-                    layout: layout,
-                    showsHoverActions: showsHoverActions,
-                    isSelected: service.id == selectedServiceID,
-                    onTap: onSelect,
-                    forcedHover: forcesHover
-                )
-            }
+        RowList(group.services) { service in
+            ServiceRowView(
+                service: service,
+                layout: layout,
+                showsHoverActions: showsHoverActions,
+                isSelected: service.id == selectedServiceID,
+                onTap: onSelect,
+                forcedHover: forcesHover
+            )
         }
     }
 
@@ -134,11 +133,19 @@ struct ProjectSectionView: View {
 
 struct SectionHeader: View {
     let title: String
+    var trailing: String?
 
     var body: some View {
-        Text(title)
-            .font(.portSectionLabel)
-            .foregroundStyle(Theme.secondaryText)
-            .padding(EdgeInsets(top: 6, leading: 4, bottom: 4, trailing: 4))
+        HStack(alignment: .firstTextBaseline) {
+            Text(title).groupLabelStyle()
+            Spacer(minLength: 8)
+            if let trailing {
+                Text(trailing)
+                    .font(.portCaption)
+                    .foregroundStyle(Theme.tertiaryText)
+            }
+        }
+        .lineLimit(1)
+        .padding(Theme.Metrics.groupHeaderInsets)
     }
 }

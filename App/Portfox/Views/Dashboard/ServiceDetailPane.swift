@@ -44,7 +44,7 @@ struct ServiceDetailPane: View {
     }
 
     private var metadata: some View {
-        DetailCard(title: "Process metadata", systemImage: "terminal") {
+        DetailCard(title: "Process metadata") {
             VStack(spacing: 8) {
                 LabeledRow(label: "PID", value: String(service.listenerProcess.pid), layout: .inline)
                 LabeledRow(
@@ -106,7 +106,7 @@ struct ServiceDetailPane: View {
     }
 
     private var inspection: some View {
-        DetailCard(title: "HTTP inspection", systemImage: "globe") {
+        DetailCard(title: "HTTP inspection") {
             VStack(spacing: 8) {
                 switch dashboard.probeResult(for: service) {
                 case .success(let probe):
