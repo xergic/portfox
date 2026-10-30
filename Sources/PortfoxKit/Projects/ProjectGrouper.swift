@@ -81,13 +81,16 @@ public struct ProjectGrouper: Sendable {
 
         for (rootPath, rootServices) in servicesByRootPath where !mergedRootPaths.contains(rootPath) {
             guard let root = rootURLByPath[rootPath], let snapshot = snapshotByRootPath[rootPath] else { continue }
+            let sorted = sortedByPort(rootServices)
+            // In a monorepo each service carries its own package's name and icon,
+            // so taking them from one member headed the group with whichever came last.
             let project = Project(
                 root: root,
-                name: snapshot.name,
+                name: snapshot.rootName,
                 version: snapshot.version,
-                iconPath: snapshot.iconPath
+                iconPath: sorted.lazy.compactMap(\.project?.iconPath).first
             )
-            groups.append(ProjectGroup(project: project, services: sortedByPort(rootServices)))
+            groups.append(ProjectGroup(project: project, services: sorted))
         }
 
         return groups.sorted(by: ProjectGroup.byName)

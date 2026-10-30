@@ -102,6 +102,38 @@ struct ProjectGrouperTests {
         #expect(groups.first?.services.map(\.port) == [3000, 3001])
     }
 
+    @Test("a monorepo group takes the root's name and the first member icon by port")
+    func monorepoGroupUsesRootIdentity() {
+        let tree = TempTree()
+        defer { tree.cleanUp() }
+        let root = tree.makeDirectory("roda")
+
+        func member(_ name: String, port: Int, icon: String? = nil) -> RunningService {
+            let snapshot = ProjectSnapshot(
+                root: root,
+                serviceDirectory: root.appendingPathComponent("apps/\(name)"),
+                name: name,
+                rootName: "roda",
+                subpath: "apps/\(name)",
+                rootKind: .workspace,
+                iconPath: icon
+            )
+            return makeService(port: port, project: snapshot, pid: pid_t(port))
+        }
+
+        let services = [
+            member("ingest", port: 8789),
+            member("admin", port: 8788, icon: "/admin/icon.svg"),
+            member("web", port: 3000),
+            member("api", port: 8787, icon: "/api/icon.png")
+        ]
+
+        let group = ProjectGrouper(codeCollectionRoots: []).group(services).first
+
+        #expect(group?.project.name == "roda")
+        #expect(group?.project.iconPath == "/api/icon.png")
+    }
+
     @Test("services without a project are ignored")
     func servicesWithoutProjectAreIgnored() {
         let service = makeService(port: 4000, project: nil)

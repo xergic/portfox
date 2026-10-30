@@ -16,7 +16,7 @@ public struct IconResolver: Sendable {
     /// Checked in order, relative to the service directory and then the project root.
     public static let searchPaths = [
         "app/icon.png", "app/icon.svg", "app/apple-icon.png", "app/favicon.ico",
-        "src/app/icon.png", "src/app/favicon.ico",
+        "src/app/icon.png", "src/app/icon.svg", "src/app/apple-icon.png", "src/app/favicon.ico",
         "public/favicon.svg", "public/favicon.png", "public/favicon.ico",
         "public/icon.png", "public/apple-touch-icon.png", "public/logo.png",
         "static/favicon.svg", "static/favicon.png", "static/favicon.ico",

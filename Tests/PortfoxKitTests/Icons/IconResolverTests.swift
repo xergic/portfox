@@ -18,7 +18,7 @@ struct IconResolverTests {
 
     @Test(
         "projectIconPath finds an icon at each of the documented locations",
-        arguments: ["public/favicon.ico", "app/icon.png", "static/favicon.svg", "favicon.png"]
+        arguments: ["public/favicon.ico", "app/icon.png", "src/app/icon.svg", "static/favicon.svg", "favicon.png"]
     )
     func projectIconPathFindsKnownLocations(relative: String) {
         let tree = TempTree()

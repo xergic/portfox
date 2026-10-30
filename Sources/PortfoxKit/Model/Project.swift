@@ -11,6 +11,9 @@ public struct ProjectSnapshot: Hashable, Codable, Sendable {
     /// Display name, resolved by `ProjectResolver`, or the user's own once the
     /// app has applied `renamingProjects`.
     public internal(set) var name: String
+    /// Display name of `root` itself. Differs from `name` in a monorepo, where
+    /// `name` comes from the service's own package and this heads the group.
+    public let rootName: String
     /// The project's own version, from its manifest.
     public let version: String?
     /// `serviceDirectory` relative to `root`, nil when they are the same.
@@ -40,6 +43,7 @@ public struct ProjectSnapshot: Hashable, Codable, Sendable {
         root: URL,
         serviceDirectory: URL,
         name: String,
+        rootName: String? = nil,
         version: String? = nil,
         subpath: String? = nil,
         files: Set<String> = [],
@@ -52,6 +56,7 @@ public struct ProjectSnapshot: Hashable, Codable, Sendable {
         self.root = root
         self.serviceDirectory = serviceDirectory
         self.name = name
+        self.rootName = rootName ?? name
         self.version = version
         self.subpath = subpath
         self.files = files
@@ -88,6 +93,7 @@ public struct ProjectSnapshot: Hashable, Codable, Sendable {
             root: root,
             serviceDirectory: serviceDirectory,
             name: name,
+            rootName: rootName,
             version: version,
             subpath: subpath,
             files: files,

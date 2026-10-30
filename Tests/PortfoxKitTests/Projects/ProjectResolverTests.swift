@@ -178,6 +178,20 @@ struct ProjectResolverTests {
         #expect(snapshot?.name == "scraper")
     }
 
+    @Test("rootName is the workspace's own name, whatever the service's package is called")
+    func rootNameComesFromRootManifest() {
+        let tree = TempTree()
+        defer { tree.cleanUp() }
+        tree.write(#"{ "name": "roda", "workspaces": ["apps/*"] }"#, at: "package.json")
+        let service = tree.makeDirectory("apps/ingest")
+        tree.write(#"{ "name": "@roda/ingest" }"#, at: "apps/ingest/package.json")
+
+        let snapshot = ProjectResolver().resolve(serviceDirectory: service)
+
+        #expect(snapshot?.name == "ingest")
+        #expect(snapshot?.rootName == "roda")
+    }
+
     @Test("returns nil when the service directory does not exist")
     func missingDirectoryReturnsNil() {
         let tree = TempTree()
