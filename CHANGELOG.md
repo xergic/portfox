@@ -2,6 +2,12 @@
 
 Notable changes to Portfox. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.6.1] - 2026-10-30
+
+### Fixed
+- A monorepo heading shows the repository's own name and icon. It used to take the name of one of its apps, such as "ingest", and that app's framework logo.
+- A Next.js app with its icon at `src/app/icon.svg` or `src/app/apple-icon.png` shows that icon.
+
 ## [1.6.0] - 2026-10-26
 
 ### Added
