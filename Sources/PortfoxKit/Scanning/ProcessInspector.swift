@@ -48,6 +48,7 @@ public struct ProcessInspector: Sendable {
 
     public func snapshot(pid: pid_t) -> ProcessSnapshot? {
         guard let bsd = bsdInfo(pid: pid) else { return nil }
+        let raw = procArgs(pid: pid)
         return ProcessSnapshot(
             pid: pid,
             parentPID: pid_t(bsd.pbi_ppid),
@@ -55,8 +56,9 @@ public struct ProcessInspector: Sendable {
             uid: bsd.pbi_uid,
             startTime: Date(timeIntervalSince1970: TimeInterval(bsd.pbi_start_tvsec)),
             executablePath: executablePath(pid: pid),
-            arguments: arguments(pid: pid),
-            workingDirectory: workingDirectory(pid: pid)
+            arguments: raw.map(Self.parseProcArgs) ?? [],
+            workingDirectory: workingDirectory(pid: pid),
+            localfoxDomain: raw.flatMap { Self.localfoxDomain(in: $0) }
         )
     }
 
@@ -186,6 +188,22 @@ public struct ProcessInspector: Sendable {
         let bytes = buffer.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }
         guard !bytes.isEmpty else { return nil }
         return String(decoding: bytes, as: UTF8.self)
+    }
+
+    /// `LOCALFOX_HOST` from the environment block, when it names a `.localhost`
+    /// host. Any process can set any variable, so a value that is not one never
+    /// becomes a URL Portfox would open.
+    static func localfoxDomain(in buffer: [UInt8]) -> String? {
+        let key = Array("LOCALFOX_HOST=".utf8)
+        let entries = buffer.split(separator: 0, omittingEmptySubsequences: true)
+        guard let entry = entries.last(where: { $0.starts(with: key) }) else { return nil }
+
+        let value = String(decoding: entry.dropFirst(key.count), as: UTF8.self).lowercased()
+        let labels = value.split(separator: ".", omittingEmptySubsequences: false)
+        let isHost = labels.count >= 2 && labels.last == "localhost" && labels.allSatisfy { label in
+            !label.isEmpty && label.count <= 63 && label.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "-") }
+        }
+        return isHost ? value : nil
     }
 
     /// `KERN_PROCARGS2` layout: `Int32 argc`, the executable path, alignment NULs,

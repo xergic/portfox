@@ -80,7 +80,7 @@ struct MenuView: View {
         case .upArrow:
             return moveSelection(by: -1, in: ordered)
         case .return:
-            guard let service = selection(in: ordered), service.localURL != nil else { return .ignored }
+            guard let service = selection(in: ordered), service.browserURL != nil else { return .ignored }
             state.open(service)
             return .handled
         case .delete where press.modifiers.contains(.command):

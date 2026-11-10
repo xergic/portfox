@@ -213,6 +213,17 @@ public struct RunningService: Identifiable, Hashable, Sendable {
         return "\(subtitle) @ \(version)"
     }
 
+    /// Where Open and Copy URL point: the Localfox domain when Localfox started
+    /// it, else `localURL`. Kept apart from `localURL`, which the HTTP probe
+    /// uses and which must stay on loopback.
+    public var browserURL: URL? {
+        guard let localfoxDomain else { return localURL }
+        return URL(string: "https://\(localfoxDomain)")
+    }
+
+    /// Never a container's: its listener is the shared forwarder.
+    public var localfoxDomain: String? { hasHostProcess ? listenerProcess.localfoxDomain : nil }
+
     public var localURL: URL? {
         guard type.isHTTP else { return nil }
         return URL(string: "http://\(primarySocket.displayHost):\(primarySocket.port)")

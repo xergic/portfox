@@ -9,6 +9,7 @@ Notable changes to Portfox. The format follows [Keep a Changelog](https://keepac
 - "Warn about memory use" in Preferences › Warnings sends one banner when a dev server passes 4 GB, or all of them together pass 12 GB. A server's workers count toward its total. Pick other limits there, or turn it off. It is on by default but never asks for notification permission by itself, so it stays quiet until banners are allowed. Databases are left out.
 - "Warn about idle agent servers" sends one banner when a server Claude Code or Codex started has done nothing for an hour: under 1% CPU, workers included, and no new connection. The banner has a Stop button. Portfox never stops a server on its own. Time the Mac spends asleep does not count.
 - A server running from a git worktree is grouped under its own heading, with the branch beside the project name. Worktrees inside the main checkout, such as Claude Code's `.claude/worktrees/`, used to be filed under the main project.
+- A server Localfox started gets a Localfox badge, and Open and Copy URL use its `https://….localhost` domain instead of `localhost` and a port. The dashboard shows the domain too.
 
 ## [1.6.1] - 2026-10-30
 

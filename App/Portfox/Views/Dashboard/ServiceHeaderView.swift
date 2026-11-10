@@ -71,7 +71,7 @@ struct ServiceHeaderView: View {
             ActionButton(symbol: "doc.on.doc", label: copyLabel, tint: Theme.primaryText) {
                 state.copyURL(service)
             }
-            if service.localURL != nil {
+            if service.browserURL != nil {
                 ActionButton(symbol: "globe", label: "Open Browser", isPrimary: true) {
                     state.open(service)
                 }
@@ -87,7 +87,7 @@ struct ServiceHeaderView: View {
         }
     }
 
-    private var copyLabel: String { service.localURL == nil ? "Copy Port" : "Copy URL" }
+    private var copyLabel: String { service.browserURL == nil ? "Copy Port" : "Copy URL" }
 
     private var stopButton: some View {
         state.isStubborn(service)

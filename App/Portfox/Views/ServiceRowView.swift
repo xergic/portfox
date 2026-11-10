@@ -176,7 +176,7 @@ struct ServiceRowView: View {
     }
 
     private var hasBadges: Bool {
-        service.origin != nil || service.container != nil || duplicateOf != nil
+        service.origin != nil || service.container != nil || duplicateOf != nil || service.localfoxDomain != nil
     }
 
     private var duplicateOf: Int? { state.duplicateOriginalPorts[service.id] }
@@ -188,6 +188,10 @@ struct ServiceRowView: View {
             }
             if service.container != nil {
                 TintedBadge(text: ContainerRuntime.displayName(of: service.listenerProcess), tint: Theme.pathDirectory)
+            }
+            if let domain = service.localfoxDomain {
+                TintedBadge(text: "Localfox", tint: Theme.accentText)
+                    .help("Started by Localfox and served at \(domain)")
             }
             if let port = duplicateOf {
                 TintedBadge(text: "Duplicate", tint: Theme.warning)
@@ -299,7 +303,7 @@ private struct ServiceContextMenu: View {
     let service: RunningService
 
     var body: some View {
-        if service.localURL != nil {
+        if service.browserURL != nil {
             Button("Open in Browser") { state.open(service) }
             Button("Copy URL") { state.copyURL(service) }
         } else {

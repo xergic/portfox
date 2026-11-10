@@ -9,10 +9,10 @@ struct HoverActionsView: View {
 
     var body: some View {
         HStack(spacing: 1) {
-            if service.localURL != nil {
+            if service.browserURL != nil {
                 IconButton(symbol: "globe", help: "Open in browser") { state.open(service) }
             }
-            IconButton(symbol: "doc.on.doc", help: service.localURL == nil ? "Copy port" : "Copy URL") {
+            IconButton(symbol: "doc.on.doc", help: service.browserURL == nil ? "Copy port" : "Copy URL") {
                 state.copyURL(service)
             }
             // Only for a web service another device can reach. A phone camera opens

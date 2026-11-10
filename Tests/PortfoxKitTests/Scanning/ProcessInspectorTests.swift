@@ -72,4 +72,46 @@ struct ProcessInspectorTests {
         let peers = inspector.connectionPeers(pid: getpid(), port: Int(UInt16(bigEndian: address.sin_port)))
         #expect(peers.contains(Int(UInt16(bigEndian: local.sin_port))))
     }
+
+    private func procArgs(_ entries: [String]) -> [UInt8] {
+        var buffer = withUnsafeBytes(of: Int32(1)) { Array($0) }
+        buffer += Array("/usr/bin/node".utf8) + [0, 0, 0]
+        for entry in entries { buffer += Array(entry.utf8) + [0] }
+        return buffer
+    }
+
+    @Test("the Localfox domain is read from the environment block")
+    func localfoxDomainIsRead() {
+        let buffer = procArgs(["node", "PATH=/usr/bin", "LOCALFOX_HOST=Wishfox.localhost"])
+        #expect(ProcessInspector.localfoxDomain(in: buffer) == "wishfox.localhost")
+    }
+
+    @Test("a LOCALFOX_HOST that is not a .localhost host is ignored")
+    func foreignDomainIsIgnored() {
+        #expect(ProcessInspector.localfoxDomain(in: procArgs(["node", "LOCALFOX_HOST=evil.com"])) == nil)
+        #expect(ProcessInspector.localfoxDomain(in: procArgs(["node", "LOCALFOX_HOST=a/b.localhost"])) == nil)
+        #expect(ProcessInspector.localfoxDomain(in: procArgs(["node"])) == nil)
+    }
+
+    /// A copy, because the kernel withholds a platform binary's environment, and
+    /// `/bin/sleep` is one. A dev server's `node` or `bun` is not.
+    @Test("a live child's Localfox domain reaches its snapshot")
+    func liveChildCarriesLocalfoxDomain() throws {
+        let tree = TempTree()
+        defer { tree.cleanUp() }
+        let sleep = tree.root.appendingPathComponent("sleep")
+        try FileManager.default.copyItem(at: URL(fileURLWithPath: "/bin/sleep"), to: sleep)
+
+        let child = Process()
+        child.executableURL = sleep
+        child.arguments = ["5"]
+        child.environment = ["LOCALFOX_HOST": "shop.localhost"]
+        try child.run()
+        defer { child.terminate() }
+        // `run` returns before the child has exec'd, and until then its
+        // arguments and environment are still the parent's.
+        Thread.sleep(forTimeInterval: 0.2)
+
+        #expect(inspector.snapshot(pid: child.processIdentifier)?.localfoxDomain == "shop.localhost")
+    }
 }

@@ -153,7 +153,7 @@ final class ServiceNotifier {
         content.title = "\(service.project?.name ?? service.displayName) is up"
         content.body = [service.displayName, "Port \(service.port)"].joined(separator: " · ")
         content.threadIdentifier = Self.startThreadIdentifier
-        if let url = service.localURL {
+        if let url = service.browserURL {
             content.userInfo = [Self.urlInfoKey: url.absoluteString]
         }
         add(content)

@@ -73,6 +73,9 @@ struct ServiceDetailPane: View {
                 case nil:
                     EmptyView()
                 }
+                if let domain = service.localfoxDomain {
+                    LabeledRow(label: "Localfox", value: domain, layout: .inline, valueColor: Theme.pathDirectory)
+                }
                 if let port = state.duplicateOriginalPorts[service.id] {
                     LabeledRow(
                         label: "Duplicate",

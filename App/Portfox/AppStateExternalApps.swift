@@ -9,7 +9,7 @@ import PortfoxKit
 @MainActor
 extension AppState {
     func copyURL(_ service: RunningService) {
-        copy(service.localURL?.absoluteString ?? String(service.port))
+        copy(service.browserURL?.absoluteString ?? String(service.port))
     }
 
     func copy(_ value: String) {
@@ -50,7 +50,7 @@ extension AppState {
     }
 
     func open(_ service: RunningService) {
-        guard let url = service.localURL else { return }
+        guard let url = service.browserURL else { return }
         NSWorkspace.shared.open(url)
     }
 

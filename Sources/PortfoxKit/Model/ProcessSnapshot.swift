@@ -70,6 +70,9 @@ public struct ProcessSnapshot: Identifiable, Hashable, Codable, Sendable {
     public let executablePath: String?
     public let arguments: [String]
     public let workingDirectory: String?
+    /// The domain Localfox serves this process at, from `LOCALFOX_HOST` in its
+    /// environment. Read from the same buffer as argv, so it costs no syscall.
+    public let localfoxDomain: String?
 
     public init(
         pid: pid_t,
@@ -79,7 +82,8 @@ public struct ProcessSnapshot: Identifiable, Hashable, Codable, Sendable {
         startTime: Date? = nil,
         executablePath: String? = nil,
         arguments: [String] = [],
-        workingDirectory: String? = nil
+        workingDirectory: String? = nil,
+        localfoxDomain: String? = nil
     ) {
         self.pid = pid
         self.parentPID = parentPID
@@ -89,6 +93,7 @@ public struct ProcessSnapshot: Identifiable, Hashable, Codable, Sendable {
         self.executablePath = executablePath
         self.arguments = arguments
         self.workingDirectory = workingDirectory
+        self.localfoxDomain = localfoxDomain
     }
 
     /// Full command line, whitespace joined.

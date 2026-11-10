@@ -125,6 +125,10 @@ Two packages of one monorepo are not duplicates, because each runs from its own 
 
 A server running from a linked git worktree gets its own project heading, with the branch beside the name, or the worktree's name on a detached HEAD. This holds even when the worktree sits inside the main checkout, as Claude Code's `.claude/worktrees/` do. The main checkout carries no label, and a submodule is never mistaken for a worktree.
 
+## Localfox
+
+A server [Localfox](https://github.com/xergic/localfox) started carries `LOCALFOX_HOST` in its environment. Portfox reads it from the same kernel buffer as the command line, so it costs nothing extra. The row gets a Localfox badge, and Open and Copy URL use the domain. The HTTP status check still talks to `localhost` and the port, because it never leaves loopback. A value that is not a `.localhost` host is ignored.
+
 ## Settings
 
 Settings live in a sheet inside the dashboard, replacing the old Settings window. The dashboard's toolbar opens it, and so does the popover footer, which opens the window and the sheet together.
@@ -276,6 +280,7 @@ Only the official release builds report. The TelemetryDeck app ID is injected by
 - Launch at login needs a signed build. It fails on a local ad hoc one.
 - Restart only works with a terminal that runs a script handed to it. Terminal, iTerm2 and Warp do. Anything else gets *Stop and Copy Command*.
 - CPU is measured between two scans, so it reads blank while automatic refresh is off.
+- macOS withholds the environment of an Apple platform binary, such as `/usr/bin/python3`, so a server running one never shows as started by Localfox.
 - An idle server is judged on samples a minute apart with every window closed. A short request that opens and closes between two samples counts only through the CPU it cost.
 
 ## Contributing
