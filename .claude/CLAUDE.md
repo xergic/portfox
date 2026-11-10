@@ -272,6 +272,43 @@ departed `RunningService` per key in memory. A relaunch shares
 to 10s.** A banner a minute late is useless. Nothing watched, or nothing watched
 running, keeps 60s.
 
+## Warnings and badges
+
+**A duplicate is the same `ServiceType` in the same service directory under a
+different root.** The oldest root is the original, an unknown start time sorts
+last. Two monorepo packages are never duplicates, and only `developmentService`
+rows qualify. `duplicateOriginalPorts` is read off `rawResult`, so ignoring the
+original leaves the copy marked.
+
+**Memory and idle warnings never prompt.** Both are on by default and post only
+once `notifier.isAuthorized`. Only switching one on asks macOS, the same as
+watching a service. They measure dev servers with a host process
+(`hostedDevServers`), workers included, never databases.
+
+**Idle time is suspending-clock time.** `IdleWatch` adds the elapsed time the
+caller measured, never wall dates, so a Mac that slept overnight does not wake to
+a banner per server. Busy means at least 1% CPU or a remote port not open at the
+previous sample. A held-open HMR socket is not activity. `IdleAlerts` keeps its own
+previous sample, because `ProcessMetrics` keeps CPU only while the CPU column is
+on, and filling it would draw that column with the preference off.
+
+**Nothing is ever stopped by a warning.** The idle banner carries a Stop button,
+and the stop goes through `stop(identifiedBy:)`, keyed by the warned root's pid and
+start time, never a `ServiceKey`, so an old banner cannot stop the server that
+replaced it. It reaches `markStopping` like every
+other path.
+
+**A linked worktree is a project boundary.** `ProjectResolver` truncates the
+ancestor walk at the nearest `.git` that is a file pointing into
+`.git/worktrees/`. A `.git` file pointing into `.git/modules/` is a submodule and
+is walked through. Worktrees are never folded as siblings: `.claude/worktrees` is
+a folder of checkouts, not a project.
+
+**Localfox is recognised by `LOCALFOX_HOST`,** read from the same `KERN_PROCARGS2`
+buffer as argv, and only when it is a `.localhost` host. `browserURL` uses it.
+`localURL` never does, because the HTTP probe must stay on loopback. macOS withholds
+a platform binary's environment, so `/usr/bin/python3` never shows as Localfox.
+
 ## Appearance
 
 `Theme` carries two literal palettes. Every colour token is a dynamic `NSColor`
