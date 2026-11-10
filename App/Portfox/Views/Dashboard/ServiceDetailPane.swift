@@ -73,6 +73,15 @@ struct ServiceDetailPane: View {
                 case nil:
                     EmptyView()
                 }
+                if let port = state.duplicateOriginalPorts[service.id] {
+                    LabeledRow(
+                        label: "Duplicate",
+                        value: "The same server already runs on port \(port)",
+                        layout: .inline,
+                        valueFont: .portDetail,
+                        valueColor: Theme.warning
+                    )
+                }
                 if !service.secondaryPorts.isEmpty {
                     LabeledRow(
                         label: "Other ports",

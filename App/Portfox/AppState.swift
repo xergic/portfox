@@ -25,6 +25,9 @@ final class AppState {
     /// moves, because deciding it asks the filesystem whether a directory and a
     /// binary are still there, and a menu drawn on hover must not stat anything.
     private(set) var relaunchableServiceIDs: Set<String> = []
+    /// Later copies of a dev server, by id, to the first copy's port. Read off
+    /// `rawResult`, so ignoring the original leaves the copy still marked.
+    private(set) var duplicateOriginalPorts: [String: Int] = [:]
     /// The tree from the last scan. The dashboard renders it, and stopping needs
     /// it to sweep orphans.
     private(set) var processTree: ProcessTree?
@@ -408,6 +411,9 @@ final class AppState {
 
         let stopped = pins.stopped(in: rawResult)
         if stopped != stoppedPins { stoppedPins = stopped }
+
+        let duplicates = rawResult.duplicateOriginalPorts
+        if duplicates != duplicateOriginalPorts { duplicateOriginalPorts = duplicates }
     }
 
     /// What `--demo` renders in place of a scan.

@@ -115,6 +115,12 @@ A searchable, filterable service list sits on the left. The right pane shows eve
 
 The row Portfox would actually signal on Stop is badged "stops here".
 
+## Duplicate servers
+
+A dev server running a second time from the same folder gets a Duplicate badge. That usually means an agent started `pnpm dev` without noticing it was already up, and the copy took the next port. The oldest process is the original and keeps its row clean. The dashboard names the port the original is on.
+
+Two packages of one monorepo are not duplicates, because each runs from its own folder. Databases and daemons are never marked.
+
 ## Settings
 
 Settings live in a sheet inside the dashboard, replacing the old Settings window. The dashboard's toolbar opens it, and so does the popover footer, which opens the window and the sheet together.

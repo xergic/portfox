@@ -2,6 +2,11 @@
 
 Notable changes to Portfox. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- A second copy of a dev server gets a Duplicate badge. That is the same framework running again in the same folder, usually because an agent started `pnpm dev` without noticing it was already up. The oldest copy is the original, and the dashboard names the port it is on, so you know which one to stop.
+
 ## [1.6.1] - 2026-10-30
 
 ### Fixed

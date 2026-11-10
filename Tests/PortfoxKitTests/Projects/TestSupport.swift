@@ -44,12 +44,14 @@ func makeService(
     classification: ServiceClass = .developmentService,
     container: ContainerSnapshot? = nil,
     origin: ServiceOrigin? = nil,
-    hosts: [(host: String, port: Int)]? = nil
+    hosts: [(host: String, port: Int)]? = nil,
+    startTime: Date? = nil
 ) -> RunningService {
     let process = ProcessSnapshot(
         pid: pid,
         parentPID: 1,
         uid: 501,
+        startTime: startTime,
         executablePath: executable,
         arguments: arguments
     )

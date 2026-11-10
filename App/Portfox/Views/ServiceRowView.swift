@@ -175,7 +175,11 @@ struct ServiceRowView: View {
         }
     }
 
-    private var hasBadges: Bool { service.origin != nil || service.container != nil }
+    private var hasBadges: Bool {
+        service.origin != nil || service.container != nil || duplicateOf != nil
+    }
+
+    private var duplicateOf: Int? { state.duplicateOriginalPorts[service.id] }
 
     private var badges: some View {
         HStack(spacing: 4) {
@@ -184,6 +188,10 @@ struct ServiceRowView: View {
             }
             if service.container != nil {
                 TintedBadge(text: ContainerRuntime.displayName(of: service.listenerProcess), tint: Theme.pathDirectory)
+            }
+            if let port = duplicateOf {
+                TintedBadge(text: "Duplicate", tint: Theme.warning)
+                    .help("The same server already runs on port \(port)")
             }
         }
     }
