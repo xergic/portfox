@@ -53,6 +53,7 @@ final class ServiceNotifier {
     private static let threadIdentifier = "net.kandera.Portfox.arrivals"
     private static let departureThreadIdentifier = "net.kandera.Portfox.departures"
     private static let startThreadIdentifier = "net.kandera.Portfox.starts"
+    private static let memoryThreadIdentifier = "net.kandera.Portfox.memory"
     private static let departureCategory = "departure"
     private static let startAgainAction = "startAgain"
     fileprivate nonisolated static let portInfoKey = "port"
@@ -153,6 +154,15 @@ final class ServiceNotifier {
         content.title = "Stopped waiting for \(label)"
         content.body = "Nothing came up within \(minutes) minutes."
         content.threadIdentifier = Self.startThreadIdentifier
+        add(content)
+    }
+
+    /// Clicking it opens the dashboard, which shows the memory of every process.
+    func postMemoryWarning(title: String, body: String) {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.threadIdentifier = Self.memoryThreadIdentifier
         add(content)
     }
 

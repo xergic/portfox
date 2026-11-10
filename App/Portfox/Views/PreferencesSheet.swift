@@ -122,6 +122,7 @@ struct PreferencesSheet: View {
             discoverySection
             appearanceSection
             filteringSection
+            WarningPreferences()
             applicationsSection
             generalSection
         }

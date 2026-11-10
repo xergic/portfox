@@ -23,7 +23,7 @@ extension AppState {
     }
 
     func sampleTasks() async {
-        guard let tree = processTree, wantsMemory || wantsCPU else {
+        guard let tree = processTree, wantsMemory || wantsCPU || isWatchingMemory else {
             metrics.forgetEverything()
             return
         }
@@ -43,7 +43,7 @@ extension AppState {
         // Walked once here rather than once per row per redraw, which is also what
         // keeps a CPU label from depending on the tree.
         var workersByListener: [pid_t: [pid_t]] = [:]
-        if wantsCPU {
+        if wantsCPU || isWatchingMemory {
             for service in watched {
                 let listener = service.listenerProcess.pid
                 workersByListener[listener] = tree.descendants(of: listener).map(\.pid)
@@ -51,6 +51,7 @@ extension AppState {
         }
 
         let sampled = await repository.sampleTasks(of: pids)
+        checkMemory(sampled, workers: workersByListener)
         metrics.absorb(
             sampled,
             workersByListener: workersByListener,

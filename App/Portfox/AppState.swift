@@ -169,6 +169,7 @@ final class AppState {
     /// What the user is waiting on to come up.
     let starts = StartWatches()
     let health = HealthChecks()
+    let memoryAlerts = MemoryAlerts()
     let ignoredServices = IgnoredServices()
     private let defaults = UserDefaults.standard
 
@@ -355,7 +356,7 @@ final class AppState {
     }
 
     /// Only the dashboard shows memory, and CPU is off until asked for, so a
-    /// machine nobody is looking at is never sampled.
+    /// machine nobody is looking at is sampled only to keep a memory warning.
     var wantsMemory: Bool { visibleSurfaces.contains(.dashboard) }
     var wantsCPU: Bool { showsCPU && !visibleSurfaces.isEmpty }
 

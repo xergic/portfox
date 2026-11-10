@@ -1,0 +1,42 @@
+import SwiftUI
+
+/// Banners about dev servers that need a look, not about anything starting.
+struct WarningPreferences: View {
+    @Environment(AppState.self) private var state
+
+    var body: some View {
+        @Bindable var state = state
+        @Bindable var limits = state.memoryAlerts
+        PreferencesSection(title: "Warnings") {
+            PreferenceRow(title: "Warn about memory use", subtitle: memorySubtitle) {
+                PreferenceCheckbox(isOn: $state.warnsAboutMemory)
+            }
+            PreferenceDivider()
+            limitRow("One server", selection: $limits.perServiceGB, choices: MemoryAlerts.perServiceChoices)
+            PreferenceDivider()
+            limitRow("All servers", selection: $limits.totalGB, choices: MemoryAlerts.totalChoices)
+        }
+    }
+
+    private func limitRow(_ title: String, selection: Binding<Int>, choices: [Int]) -> some View {
+        PreferenceRow(title: title) {
+            SegmentedControl(
+                selection: selection,
+                options: choices.map { ($0, "\($0) GB") },
+                isEnabled: state.warnsAboutMemory
+            )
+        }
+        .opacity(state.warnsAboutMemory ? 1 : 0.4)
+    }
+
+    /// Says why a checked box stays quiet, rather than letting it look broken.
+    private var memorySubtitle: String {
+        if state.warnsAboutMemory, !state.notifier.isAuthorized {
+            return "Needs notifications, which macOS has not allowed for Portfox."
+        }
+        if state.warnsAboutMemory, !state.automaticRefresh {
+            return "Needs the automatic refresh loop, which is off. Nothing is measured in the background."
+        }
+        return "One banner when a dev server, or all of them together, passes a limit. Databases are left out."
+    }
+}
