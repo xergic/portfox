@@ -222,4 +222,50 @@ struct ProjectResolverTests {
 
         #expect(chain.last?.path == "/")
     }
+
+    /// The layout `git worktree add` leaves behind, nested the way Claude Code
+    /// nests its worktrees inside the main checkout.
+    private func worktree(in tree: TempTree, named name: String, head: String) -> URL {
+        tree.write("", at: ".git/HEAD")
+        tree.write(#"{ "name": "shop" }"#, at: "package.json")
+        tree.write(head, at: ".git/worktrees/\(name)/HEAD")
+        let checkout = tree.makeDirectory(".claude/worktrees/\(name)")
+        tree.write("gitdir: \(tree.root.path)/.git/worktrees/\(name)\n", at: ".claude/worktrees/\(name)/.git")
+        tree.write(#"{ "name": "shop" }"#, at: ".claude/worktrees/\(name)/package.json")
+        return checkout
+    }
+
+    @Test("a worktree inside the main checkout is its own project, labelled with its branch")
+    func nestedWorktreeIsItsOwnRoot() {
+        let tree = TempTree()
+        defer { tree.cleanUp() }
+        let checkout = worktree(in: tree, named: "fix-cart", head: "ref: refs/heads/fix/cart\n")
+
+        let snapshot = ProjectResolver().resolve(serviceDirectory: checkout)
+
+        #expect(snapshot?.root.path == checkout.path)
+        #expect(snapshot?.checkout == "fix/cart")
+        #expect(snapshot?.name == "shop")
+    }
+
+    @Test("a worktree on a detached HEAD is labelled with its name")
+    func detachedWorktreeUsesItsName() {
+        let tree = TempTree()
+        defer { tree.cleanUp() }
+        let checkout = worktree(in: tree, named: "agent-7f3a", head: "4b825dc642cb6eb9a060e54bf8d69288fbee4904\n")
+
+        #expect(ProjectResolver().resolve(serviceDirectory: checkout)?.checkout == "agent-7f3a")
+    }
+
+    @Test("a submodule is not a worktree, and the main checkout carries no label")
+    func submoduleIsNotAWorktree() {
+        let tree = TempTree()
+        defer { tree.cleanUp() }
+        tree.write("", at: ".git/HEAD")
+        tree.write("gitdir: ../.git/modules/vendor\n", at: "vendor/.git")
+        tree.write(#"{ "name": "vendor" }"#, at: "vendor/package.json")
+
+        #expect(ProjectResolver().resolve(serviceDirectory: tree.root.appendingPathComponent("vendor"))?.checkout == nil)
+        #expect(ProjectResolver().resolve(serviceDirectory: tree.root)?.checkout == nil)
+    }
 }

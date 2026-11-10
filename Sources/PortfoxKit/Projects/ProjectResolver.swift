@@ -35,8 +35,18 @@ public struct ProjectResolver: ProjectResolving {
         let directory = rawDirectory.standardizedFileURL.resolvingSymlinksInPath()
         let home = FileManager.default.homeDirectoryForCurrentUser.standardizedFileURL.resolvingSymlinksInPath()
 
-        let chain = ancestorChain(from: directory, home: home)
+        var chain = ancestorChain(from: directory, home: home)
         let entries = Dictionary(uniqueKeysWithValues: chain.map { ($0, Self.directoryEntries(at: $0)) })
+
+        // A linked worktree is a checkout of its own, even when it sits inside the
+        // main one, as Claude Code's `.claude/worktrees/<name>` does. Walking past
+        // it would file the worktree's server under the main checkout's project.
+        var checkout: String?
+        if let index = chain.firstIndex(where: { (entries[$0] ?? []).contains(".git") }),
+           let label = GitWorktree.label(of: chain[index]) {
+            chain = Array(chain[...index])
+            checkout = label
+        }
 
         let workspaceRoot = chain.reversed().first { isWorkspaceRoot($0, entries: entries) }
         let gitRoot = chain.reversed().first { (entries[$0] ?? []).contains(".git") }
@@ -74,7 +84,8 @@ public struct ProjectResolver: ProjectResolving {
             dependencies: combinedManifest.dependencies,
             scripts: combinedManifest.scripts,
             rootKind: rootKind,
-            iconPath: nil
+            iconPath: nil,
+            checkout: checkout
         )
     }
 

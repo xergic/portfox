@@ -121,6 +121,10 @@ A dev server running a second time from the same folder gets a Duplicate badge. 
 
 Two packages of one monorepo are not duplicates, because each runs from its own folder. Databases and daemons are never marked.
 
+## Worktrees
+
+A server running from a linked git worktree gets its own project heading, with the branch beside the name, or the worktree's name on a detached HEAD. This holds even when the worktree sits inside the main checkout, as Claude Code's `.claude/worktrees/` do. The main checkout carries no label, and a submodule is never mistaken for a worktree.
+
 ## Settings
 
 Settings live in a sheet inside the dashboard, replacing the old Settings window. The dashboard's toolbar opens it, and so does the popover footer, which opens the window and the sheet together.

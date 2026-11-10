@@ -43,6 +43,15 @@ struct ProjectSectionView: View {
                         state.rename(group, to: name)
                     }
                 }
+            // Mono and as typed, not a badge: a branch is an identifier, like a path.
+            if let checkout = group.project.checkout {
+                Label(checkout, systemImage: "arrow.triangle.branch")
+                    .font(.portSubtitle)
+                    .foregroundStyle(Theme.pathDirectory)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .help("A git worktree on \(checkout), not the main checkout")
+            }
             if state.isPinned(group) {
                 Image(systemName: "pin.fill")
                     .font(.system(size: 9))

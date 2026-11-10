@@ -142,4 +142,23 @@ struct ProjectGrouperTests {
 
         #expect(groups.isEmpty)
     }
+
+    @Test("worktrees under one folder stay apart, each headed with its branch")
+    func worktreesAreNotSiblings() {
+        let worktrees = URL(fileURLWithPath: "/Users/me/shop/.claude/worktrees")
+        let services = ["fix-cart", "new-checkout"].enumerated().map { index, branch in
+            let root = worktrees.appendingPathComponent(branch)
+            return makeService(
+                port: 3000 + index,
+                project: ProjectSnapshot(root: root, serviceDirectory: root, name: "shop", checkout: branch),
+                pid: pid_t(3000 + index)
+            )
+        }
+
+        let groups = ProjectGrouper(codeCollectionRoots: []).group(services)
+
+        #expect(groups.count == 2)
+        #expect(Set(groups.compactMap(\.project.checkout)) == ["fix-cart", "new-checkout"])
+        #expect(groups.allSatisfy { !$0.project.isSiblingGroup })
+    }
 }

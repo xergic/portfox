@@ -51,14 +51,12 @@ public struct ProjectGrouper: Sendable {
     /// problem, they belong in the infrastructure section.
     public func group(_ services: [RunningService]) -> [ProjectGroup] {
         var servicesByRootPath: [String: [RunningService]] = [:]
-        var rootURLByPath: [String: URL] = [:]
         var snapshotByRootPath: [String: ProjectSnapshot] = [:]
 
         for service in services {
             guard let snapshot = service.project else { continue }
             let key = snapshot.root.path
             servicesByRootPath[key, default: []].append(service)
-            rootURLByPath[key] = snapshot.root
             snapshotByRootPath[key] = snapshot
         }
 
@@ -66,7 +64,10 @@ public struct ProjectGrouper: Sendable {
         var mergedRootPaths: Set<String> = []
 
         if groupSiblingRepositories {
-            let rootsByParent = Dictionary(grouping: rootURLByPath.values) { $0.deletingLastPathComponent().path }
+            // Worktrees share a parent such as `.claude/worktrees`, which is a
+            // folder of checkouts, not a project to head them with.
+            let foldable = snapshotByRootPath.values.filter { $0.checkout == nil }.map(\.root)
+            let rootsByParent = Dictionary(grouping: foldable) { $0.deletingLastPathComponent().path }
             for (parentPath, roots) in rootsByParent {
                 guard roots.count > 1, !codeCollectionRoots.contains(parentPath) else { continue }
 
@@ -80,7 +81,8 @@ public struct ProjectGrouper: Sendable {
         }
 
         for (rootPath, rootServices) in servicesByRootPath where !mergedRootPaths.contains(rootPath) {
-            guard let root = rootURLByPath[rootPath], let snapshot = snapshotByRootPath[rootPath] else { continue }
+            guard let snapshot = snapshotByRootPath[rootPath] else { continue }
+            let root = snapshot.root
             let sorted = sortedByPort(rootServices)
             // In a monorepo each service carries its own package's name and icon,
             // so taking them from one member headed the group with whichever came last.
@@ -88,7 +90,8 @@ public struct ProjectGrouper: Sendable {
                 root: root,
                 name: snapshot.rootName,
                 version: snapshot.version,
-                iconPath: sorted.lazy.compactMap(\.project?.iconPath).first
+                iconPath: sorted.lazy.compactMap(\.project?.iconPath).first,
+                checkout: snapshot.checkout
             )
             groups.append(ProjectGroup(project: project, services: sorted))
         }

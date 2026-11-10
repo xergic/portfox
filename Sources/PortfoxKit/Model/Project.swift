@@ -31,6 +31,9 @@ public struct ProjectSnapshot: Hashable, Codable, Sendable {
     public let rootKind: RootKind
     /// Absolute path of an icon file belonging to the project, when one was found.
     public let iconPath: String?
+    /// The branch of a linked git worktree, or its folder name on a detached
+    /// HEAD. Nil for a main checkout, which is the one nobody needs told about.
+    public let checkout: String?
 
     public enum RootKind: String, Codable, Sendable {
         case workspace
@@ -51,7 +54,8 @@ public struct ProjectSnapshot: Hashable, Codable, Sendable {
         dependencies: Set<String> = [],
         scripts: [String: String] = [:],
         rootKind: RootKind = .directory,
-        iconPath: String? = nil
+        iconPath: String? = nil,
+        checkout: String? = nil
     ) {
         self.root = root
         self.serviceDirectory = serviceDirectory
@@ -65,6 +69,7 @@ public struct ProjectSnapshot: Hashable, Codable, Sendable {
         self.scripts = scripts
         self.rootKind = rootKind
         self.iconPath = iconPath
+        self.checkout = checkout
     }
 
     /// True when any file in the service directory or the project root starts with `prefix`.
@@ -101,7 +106,8 @@ public struct ProjectSnapshot: Hashable, Codable, Sendable {
             dependencies: dependencies,
             scripts: scripts,
             rootKind: rootKind,
-            iconPath: path ?? iconPath
+            iconPath: path ?? iconPath,
+            checkout: checkout
         )
     }
 }
@@ -116,19 +122,23 @@ public struct Project: Identifiable, Hashable, Sendable {
     public let iconPath: String?
     /// Set when sibling repositories were folded under a shared parent directory.
     public let isSiblingGroup: Bool
+    /// See `ProjectSnapshot.checkout`.
+    public let checkout: String?
 
     public init(
         root: URL,
         name: String,
         version: String? = nil,
         iconPath: String? = nil,
-        isSiblingGroup: Bool = false
+        isSiblingGroup: Bool = false,
+        checkout: String? = nil
     ) {
         self.root = root
         self.name = name
         self.version = version
         self.iconPath = iconPath
         self.isSiblingGroup = isSiblingGroup
+        self.checkout = checkout
     }
 
     /// Home-relative path for display, for example `~/Projects/raqt`.
