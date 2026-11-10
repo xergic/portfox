@@ -37,6 +37,10 @@ final class ServiceNotifier {
     /// Runs when the user presses Start Again on a stop banner. Set by `AppState`,
     /// which owns the relaunch.
     var onStartAgain: ((RunningService) -> Void)?
+    /// Runs when the user presses Stop on an idle banner, with the identity of
+    /// the process it warned about. Not a `ServiceKey`, which survives a restart,
+    /// so an old banner would stop the busy server that replaced the idle one.
+    var onStop: ((String) -> Void)?
 
     /// The last stop of each watched service that offered Start Again. In memory
     /// only, because the relaunch needs the dead process's argv, which no banner
@@ -54,11 +58,15 @@ final class ServiceNotifier {
     private static let departureThreadIdentifier = "net.kandera.Portfox.departures"
     private static let startThreadIdentifier = "net.kandera.Portfox.starts"
     private static let memoryThreadIdentifier = "net.kandera.Portfox.memory"
+    private static let idleThreadIdentifier = "net.kandera.Portfox.idle"
+    private static let idleCategory = "idle"
+    private static let stopAction = "stop"
     private static let departureCategory = "departure"
     private static let startAgainAction = "startAgain"
     fileprivate nonisolated static let portInfoKey = "port"
     fileprivate nonisolated static let anchorInfoKey = "anchor"
     fileprivate nonisolated static let urlInfoKey = "url"
+    fileprivate nonisolated static let identityInfoKey = "identity"
 
     private static let deniedMessage = "macOS is not delivering notifications from Portfox. "
         + "Turn them on in System Settings › Notifications."
@@ -84,15 +92,17 @@ final class ServiceNotifier {
         // a real window during one.
         guard SnapshotRenderer.requestedPath == nil else { return }
 
-        let delegate = Delegate { [weak self] action, key, url in
-            Task { @MainActor in self?.respond(to: action, key: key, url: url) }
+        let delegate = Delegate { [weak self] action, key, url, identity in
+            Task { @MainActor in self?.respond(to: action, key: key, url: url, identity: identity) }
         }
         self.delegate = delegate
         let center = UNUserNotificationCenter.current()
         center.delegate = delegate
         let startAgain = UNNotificationAction(identifier: Self.startAgainAction, title: "Start Again")
+        let stop = UNNotificationAction(identifier: Self.stopAction, title: "Stop", options: .destructive)
         center.setNotificationCategories([
-            UNNotificationCategory(identifier: Self.departureCategory, actions: [startAgain], intentIdentifiers: [])
+            UNNotificationCategory(identifier: Self.departureCategory, actions: [startAgain], intentIdentifiers: []),
+            UNNotificationCategory(identifier: Self.idleCategory, actions: [stop], intentIdentifiers: [])
         ])
 
         Task { await readSettings() }
@@ -166,6 +176,20 @@ final class ServiceNotifier {
         add(content)
     }
 
+    /// Asks rather than acts. Portfox never stops a server on its own, so the
+    /// Stop is a button on the banner and nothing happens if it is ignored.
+    func postIdle(_ service: RunningService) {
+        let content = UNMutableNotificationContent()
+        content.title = "\(service.displayName) has been idle for an hour"
+        content.body = [service.origin.map { "Started by \($0.label)" }, service.project?.name, "Port \(service.port)"]
+            .compactMap { $0 }
+            .joined(separator: " · ")
+        content.threadIdentifier = Self.idleThreadIdentifier
+        content.categoryIdentifier = Self.idleCategory
+        content.userInfo = [Self.identityInfoKey: service.rootProcess.identity]
+        add(content)
+    }
+
     /// A fresh identifier every time, so a second banner adds to the first rather
     /// than silently replacing one the user has not read.
     private func add(_ content: UNNotificationContent) {
@@ -178,9 +202,11 @@ final class ServiceNotifier {
         )
     }
 
-    private func respond(to action: String, key: ServiceKey?, url: URL?) {
+    private func respond(to action: String, key: ServiceKey?, url: URL?, identity: String?) {
         if action == Self.startAgainAction, let key, let service = departures.removeValue(forKey: key) {
             onStartAgain?(service)
+        } else if action == Self.stopAction, let identity {
+            onStop?(identity)
         } else if action == UNNotificationDefaultActionIdentifier {
             if let url { NSWorkspace.shared.open(url) } else { requestDashboard() }
         }
@@ -207,9 +233,9 @@ final class ServiceNotifier {
         /// A closure rather than a back reference, because the callbacks arrive
         /// nonisolated and the delegate itself is not `Sendable`. The hop to the
         /// main actor is written once, at the point where the owner is known.
-        private let onResponse: @Sendable (_ action: String, _ key: ServiceKey?, _ url: URL?) -> Void
+        private let onResponse: @Sendable (_ action: String, _ key: ServiceKey?, _ url: URL?, _ identity: String?) -> Void
 
-        init(onResponse: @escaping @Sendable (_ action: String, _ key: ServiceKey?, _ url: URL?) -> Void) {
+        init(onResponse: @escaping @Sendable (_ action: String, _ key: ServiceKey?, _ url: URL?, _ identity: String?) -> Void) {
             self.onResponse = onResponse
         }
 
@@ -233,7 +259,7 @@ final class ServiceNotifier {
                 (info[ServiceNotifier.anchorInfoKey] as? String).map { ServiceKey(port: port, anchor: $0) }
             }
             let url = (info[ServiceNotifier.urlInfoKey] as? String).flatMap(URL.init(string:))
-            onResponse(response.actionIdentifier, key, url)
+            onResponse(response.actionIdentifier, key, url, info[ServiceNotifier.identityInfoKey] as? String)
         }
     }
 }

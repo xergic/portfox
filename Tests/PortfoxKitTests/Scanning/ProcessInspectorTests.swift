@@ -40,4 +40,36 @@ struct ProcessInspectorTests {
     func snapshotOfMissingPidIsNil() {
         #expect(inspector.snapshot(pid: .max) == nil)
     }
+
+    /// The libproc walk against a real accepted connection, inside this process.
+    @Test("an accepted connection is reported by its remote port")
+    func connectionPeersSeeAcceptedConnection() throws {
+        let server = socket(AF_INET, SOCK_STREAM, 0)
+        let client = socket(AF_INET, SOCK_STREAM, 0)
+        defer { close(server); close(client) }
+
+        var address = sockaddr_in()
+        address.sin_family = sa_family_t(AF_INET)
+        address.sin_addr.s_addr = inet_addr("127.0.0.1")
+        var length = socklen_t(MemoryLayout<sockaddr_in>.size)
+        let bound = withUnsafeMutablePointer(to: &address) { pointer in
+            pointer.withMemoryRebound(to: sockaddr.self, capacity: 1) { generic in
+                bind(server, generic, length) == 0 && listen(server, 1) == 0
+                    && getsockname(server, generic, &length) == 0
+                    && connect(client, generic, length) == 0
+            }
+        }
+        try #require(bound)
+        let accepted = accept(server, nil, nil)
+        defer { close(accepted) }
+
+        var local = sockaddr_in()
+        var localLength = socklen_t(MemoryLayout<sockaddr_in>.size)
+        _ = withUnsafeMutablePointer(to: &local) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { getsockname(client, $0, &localLength) }
+        }
+
+        let peers = inspector.connectionPeers(pid: getpid(), port: Int(UInt16(bigEndian: address.sin_port)))
+        #expect(peers.contains(Int(UInt16(bigEndian: local.sin_port))))
+    }
 }

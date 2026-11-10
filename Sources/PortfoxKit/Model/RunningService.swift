@@ -109,6 +109,10 @@ public struct RunningService: Identifiable, Hashable, Sendable {
     /// bare runtime with none of the setup its parent did.
     public var canRestart: Bool { classification.isUserManaged && origin != .orphaned }
 
+    public var isAgentStarted: Bool {
+        if case .agent = origin { true } else { false }
+    }
+
     public var type: ServiceType { detection.type }
     public var port: Int { primarySocket.port }
     public var displayName: String { detection.type.displayName }

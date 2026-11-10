@@ -9,11 +9,18 @@ extension AppState {
         get { memoryAlerts.isEnabled }
         set {
             memoryAlerts.isEnabled = newValue
-            if newValue, !notifier.isAuthorized {
-                Task { await notifier.requestAuthorization() }
-            }
+            askForBanners(whenEnabling: newValue)
         }
     }
+
+    func askForBanners(whenEnabling isOn: Bool) {
+        if isOn, !notifier.isAuthorized {
+            Task { await notifier.requestAuthorization() }
+        }
+    }
+
+    /// Dev servers with a process on this Mac, which is what both warnings measure.
+    var hostedDevServers: [RunningService] { stoppableServices.filter(\.hasHostProcess) }
 
     /// Whether memory has to be sampled with every window closed.
     var isWatchingMemory: Bool { memoryAlerts.isEnabled && notifier.isAuthorized }
@@ -23,7 +30,7 @@ extension AppState {
     func checkMemory(_ sampled: [pid_t: TaskSample], workers: [pid_t: [pid_t]]) {
         guard isWatchingMemory else { return }
 
-        let servers = stoppableServices.filter(\.hasHostProcess)
+        let servers = hostedDevServers
         let usage = MemoryWatch.Usage(of: servers, workers: workers, sampled: sampled)
         for crossing in memoryAlerts.crossings(usage) {
             switch crossing {

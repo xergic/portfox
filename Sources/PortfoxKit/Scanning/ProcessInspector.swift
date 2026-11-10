@@ -105,6 +105,43 @@ public struct ProcessInspector: Sendable {
         )
     }
 
+    /// Remote ports of the established TCP connections `pid` holds on `port`.
+    ///
+    /// libproc rather than `lsof`, because this runs for every agent-started
+    /// server on every tick, and a subprocess per server per tick is the cost
+    /// the scanner exists to avoid. A closed connection has no descriptor, so a
+    /// request that came and went between two calls is invisible here.
+    public func connectionPeers(pid: pid_t, port: Int) -> Set<Int> {
+        let size = proc_pidinfo(pid, PROC_PIDLISTFDS, 0, nil, 0)
+        guard size > 0 else { return [] }
+
+        let stride = MemoryLayout<proc_fdinfo>.stride
+        var descriptors = [proc_fdinfo](repeating: proc_fdinfo(), count: Int(size) / stride + 16)
+        let read = proc_pidinfo(pid, PROC_PIDLISTFDS, 0, &descriptors, Int32(descriptors.count * stride))
+        guard read > 0 else { return [] }
+
+        var peers: Set<Int> = []
+        for descriptor in descriptors.prefix(Int(read) / stride)
+        where descriptor.proc_fdtype == UInt32(PROX_FDTYPE_SOCKET) {
+            var info = socket_fdinfo()
+            let infoSize = Int32(MemoryLayout<socket_fdinfo>.size)
+            guard proc_pidfdinfo(pid, descriptor.proc_fd, PROC_PIDFDSOCKETINFO, &info, infoSize) == infoSize,
+                  info.psi.soi_kind == SOCKINFO_TCP,
+                  info.psi.soi_proto.pri_tcp.tcpsi_state == Int32(TSI_S_ESTABLISHED)
+            else { continue }
+
+            let addresses = info.psi.soi_proto.pri_tcp.tcpsi_ini
+            // Both ports sit in network byte order inside an Int32.
+            guard Self.hostPort(addresses.insi_lport) == port else { continue }
+            peers.insert(Self.hostPort(addresses.insi_fport))
+        }
+        return peers
+    }
+
+    private static func hostPort(_ raw: Int32) -> Int {
+        Int(UInt16(bigEndian: UInt16(truncatingIfNeeded: raw)))
+    }
+
     public func executablePath(pid: pid_t) -> String? {
         var buffer = [CChar](repeating: 0, count: Int(MAXPATHLEN) * 4)
         let length = proc_pidpath(pid, &buffer, UInt32(buffer.count))

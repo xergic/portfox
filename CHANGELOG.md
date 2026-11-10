@@ -7,6 +7,7 @@ Notable changes to Portfox. The format follows [Keep a Changelog](https://keepac
 ### Added
 - A second copy of a dev server gets a Duplicate badge. That is the same framework running again in the same folder, usually because an agent started `pnpm dev` without noticing it was already up. The oldest copy is the original, and the dashboard names the port it is on, so you know which one to stop.
 - "Warn about memory use" in Preferences › Warnings sends one banner when a dev server passes 4 GB, or all of them together pass 12 GB. A server's workers count toward its total. Pick other limits there, or turn it off. It is on by default but never asks for notification permission by itself, so it stays quiet until banners are allowed. Databases are left out.
+- "Warn about idle agent servers" sends one banner when a server Claude Code or Codex started has done nothing for an hour: under 1% CPU, workers included, and no new connection. The banner has a Stop button. Portfox never stops a server on its own. Time the Mac spends asleep does not count.
 
 ## [1.6.1] - 2026-10-30
 

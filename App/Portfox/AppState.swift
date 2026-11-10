@@ -170,6 +170,7 @@ final class AppState {
     let starts = StartWatches()
     let health = HealthChecks()
     let memoryAlerts = MemoryAlerts()
+    let idleAlerts = IdleAlerts()
     let ignoredServices = IgnoredServices()
     private let defaults = UserDefaults.standard
 
@@ -228,6 +229,9 @@ final class AppState {
         Telemetry.setEnabled(sharesUsageData)
         notifier.onStartAgain = { [weak self] service in
             Task { await self?.startAgain(service) }
+        }
+        notifier.onStop = { [weak self] identity in
+            Task { await self?.stop(identifiedBy: identity) }
         }
         start()
     }

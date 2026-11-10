@@ -15,6 +15,10 @@ struct WarningPreferences: View {
             limitRow("One server", selection: $limits.perServiceGB, choices: MemoryAlerts.perServiceChoices)
             PreferenceDivider()
             limitRow("All servers", selection: $limits.totalGB, choices: MemoryAlerts.totalChoices)
+            PreferenceDivider()
+            PreferenceRow(title: "Warn about idle agent servers", subtitle: idleSubtitle) {
+                PreferenceCheckbox(isOn: $state.warnsAboutIdleServers)
+            }
         }
     }
 
@@ -29,14 +33,23 @@ struct WarningPreferences: View {
         .opacity(state.warnsAboutMemory ? 1 : 0.4)
     }
 
-    /// Says why a checked box stays quiet, rather than letting it look broken.
     private var memorySubtitle: String {
-        if state.warnsAboutMemory, !state.notifier.isAuthorized {
-            return "Needs notifications, which macOS has not allowed for Portfox."
-        }
-        if state.warnsAboutMemory, !state.automaticRefresh {
+        blocker(isOn: state.warnsAboutMemory)
+            ?? "One banner when a dev server, or all of them together, passes a limit. Databases are left out."
+    }
+
+    private var idleSubtitle: String {
+        blocker(isOn: state.warnsAboutIdleServers)
+            ?? "One banner with a Stop button when a server Claude Code or Codex started has been idle for an hour"
+    }
+
+    /// Says why a checked box stays quiet, rather than letting it look broken.
+    private func blocker(isOn: Bool) -> String? {
+        guard isOn else { return nil }
+        if !state.notifier.isAuthorized { return "Needs notifications, which macOS has not allowed for Portfox." }
+        if !state.automaticRefresh {
             return "Needs the automatic refresh loop, which is off. Nothing is measured in the background."
         }
-        return "One banner when a dev server, or all of them together, passes a limit. Databases are left out."
+        return nil
     }
 }

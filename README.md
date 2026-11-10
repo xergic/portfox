@@ -136,6 +136,7 @@ Settings live in a sheet inside the dashboard, replacing the old Settings window
 - **Group related services by project**: fold sibling repositories under their shared parent directory.
 - **Ignored services**: the list of services you have hidden, each with a remove button. Right-click any service and choose *Ignore Service* to add one. Ignored services leave the popover, the dashboard, the menu bar count and the memory total. An ignored service that is running can also be un-ignored from the *Ignored* chip in the dashboard sidebar.
 - **Warn about memory use**: one banner when a dev server passes a limit (2, 4 or 8 GB), or all of them together pass one (8 to 24 GB). A server counts its workers. On by default, but it never asks for notification permission by itself, so it posts only once banners are allowed. It keeps measuring with every window closed, once a minute, so it needs the automatic refresh loop.
+- **Warn about idle agent servers**: one banner with a Stop button when a server Claude Code or Codex started has been idle for an hour. Idle means under 1% CPU, workers included, and no new connection to its port. Sleep does not count. Portfox never stops it on its own. Same notification rules as the memory warning.
 - **Editor** and **Terminal**: which app *Open in…* uses. Only apps installed on this Mac are listed. The editor opens the repository, the terminal opens the directory the service actually runs in.
 - **Launch at login**: start Portfox automatically when you log in.
 - **Share anonymous usage data**: send anonymous usage counts to TelemetryDeck. On by default. See [Privacy](#privacy).
@@ -271,6 +272,7 @@ Only the official release builds report. The TelemetryDeck app ID is injected by
 - Launch at login needs a signed build. It fails on a local ad hoc one.
 - Restart only works with a terminal that runs a script handed to it. Terminal, iTerm2 and Warp do. Anything else gets *Stop and Copy Command*.
 - CPU is measured between two scans, so it reads blank while automatic refresh is off.
+- An idle server is judged on samples a minute apart with every window closed. A short request that opens and closes between two samples counts only through the CPU it cost.
 
 ## Contributing
 
