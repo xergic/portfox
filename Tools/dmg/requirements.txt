@@ -1,0 +1,2 @@
+# Pin the layout writer; 1.6.7 fixes backgrounds on macOS 26.2 and later.
+dmgbuild==1.6.7

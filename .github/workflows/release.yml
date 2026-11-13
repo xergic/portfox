@@ -29,6 +29,12 @@ jobs:
       - name: Install XcodeGen and SwiftLint
         run: brew install xcodegen swiftlint
 
+      - name: Install DMG packaging tools
+        run: |
+          python3 -m venv "$RUNNER_TEMP/dmgbuild"
+          "$RUNNER_TEMP/dmgbuild/bin/pip" install -r Tools/dmg/requirements.txt
+          echo "$RUNNER_TEMP/dmgbuild/bin" >> "$GITHUB_PATH"
+
       # A tag can point anywhere, so re-run the checks here rather than trust
       # that the tagged commit ever went through CI.
       - name: Lint and test

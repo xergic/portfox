@@ -13,3 +13,6 @@ dist/
 
 # Agent worktrees
 .claude/worktrees/
+
+# Local DMG packaging tools
+.venv-dmg/
