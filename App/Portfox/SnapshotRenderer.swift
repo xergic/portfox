@@ -88,6 +88,15 @@ enum SnapshotRenderer {
         }
     }
 
+    /// Render any category without changing persisted settings.
+    private static var preferencesCategory: PreferencesCategory {
+        let arguments = CommandLine.arguments
+        guard let index = arguments.firstIndex(of: "--preferences-category"),
+              index + 1 < arguments.count,
+              let category = PreferencesCategory(rawValue: arguments[index + 1]) else { return .general }
+        return category
+    }
+
     /// `preferredColorScheme` is a scene preference and does nothing here, so
     /// every surface carries `themedSurface` the way `MenuView` already does.
     /// `.dashboard` hosts `DashboardContent` directly, bypassing the
@@ -108,7 +117,7 @@ enum SnapshotRenderer {
                 .background(Theme.background)
                 .themedSurface(state.appearance.colorScheme)
         case .preferences:
-            PreferencesSheet(scrolls: false)
+            PreferencesSheet(category: preferencesCategory, scrolls: false)
                 .environment(state)
         case .ignored:
             PreferencesSheet(page: .ignored, scrolls: false)

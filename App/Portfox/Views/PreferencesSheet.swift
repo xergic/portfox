@@ -3,35 +3,6 @@ import PortfoxKit
 import SwiftUI
 
 struct PreferencesSheet: View {
-    /// The sheet is two screens, not one page. An ignore list grows without
-    /// bound, and every hidden service would otherwise push the settings the user
-    /// came for further down.
-    enum Page {
-        case preferences
-        case ignored
-
-        var symbol: String {
-            switch self {
-            case .preferences: "slider.horizontal.3"
-            case .ignored: "eye.slash"
-            }
-        }
-
-        var title: String {
-            switch self {
-            case .preferences: "Portfox preferences"
-            case .ignored: "Ignored services"
-            }
-        }
-
-        var subtitle: String {
-            switch self {
-            case .preferences: "Configure scanning, refresh and appearance"
-            case .ignored: "Hidden from every list, matched by port and project or binary"
-            }
-        }
-    }
-
     /// How a service gets onto the ignore list, shown wherever the list is empty.
     private static let ignoreHint = "Right-click any service and choose Ignore Service to hide it everywhere"
 
@@ -39,14 +10,16 @@ struct PreferencesSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var launchAtLogin = LaunchAtLogin()
     @State private var page: Page
+    @State private var category: PreferencesCategory
 
     @State private var ignoredHeight: CGFloat = Theme.Metrics.maximumListHeight
 
     /// `ImageRenderer` lays out in a single pass and never draws scroll content.
     var scrolls = true
 
-    init(page: Page = .preferences, scrolls: Bool = true) {
+    init(page: Page = .preferences, category: PreferencesCategory = .general, scrolls: Bool = true) {
         _page = State(initialValue: page)
+        _category = State(initialValue: page == .ignored ? .filtering : category)
         self.scrolls = scrolls
     }
 
@@ -54,14 +27,28 @@ struct PreferencesSheet: View {
         VStack(alignment: .leading, spacing: 0) {
             header
             Divider().overlay(Theme.separator)
-            switch page {
-            case .preferences: scrollContent
-            case .ignored: ignoredContent
+            HStack(spacing: 0) {
+                PreferencesSidebar(selection: Binding(
+                    get: { category },
+                    set: { category = $0; page = .preferences }
+                ))
+                Divider().overlay(Theme.separator)
+                VStack(alignment: .leading, spacing: 0) {
+                    if page == .preferences {
+                        PreferencesPageHeading(category: category)
+                        scrollContent
+                    } else {
+                        ignoredContent
+                    }
+                    Spacer(minLength: 0)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
+            .frame(height: 480)
             Divider().overlay(Theme.separator)
             footer
         }
-        .frame(width: 560)
+        .frame(width: 720)
         .background(Theme.background)
         .themedSurface(state.appearance.colorScheme)
     }
@@ -70,11 +57,11 @@ struct PreferencesSheet: View {
         HStack(spacing: 8) {
             if page == .ignored {
                 IconButton(
-                symbol: "chevron.left",
-                help: "Back to preferences",
-                frameSize: Theme.Metrics.headerButtonSize,
-                filled: true
-            ) { page = .preferences }
+                    symbol: "chevron.left",
+                    help: "Back to filtering",
+                    frameSize: Theme.Metrics.headerButtonSize,
+                    filled: true
+                ) { page = .preferences }
             }
 
             RoundedRectangle.row
@@ -86,14 +73,9 @@ struct PreferencesSheet: View {
                         .foregroundStyle(Theme.onAccent)
                 )
 
-            VStack(alignment: .leading, spacing: 0) {
-                Text(page.title)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Theme.primaryText)
-                Text(page.subtitle)
-                    .font(.portCaption)
-                    .foregroundStyle(Theme.secondaryText)
-            }
+            Text(page.title)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Theme.primaryText)
 
             Spacer()
 
@@ -103,38 +85,42 @@ struct PreferencesSheet: View {
                 frameSize: Theme.Metrics.headerButtonSize,
                 filled: true
             ) { dismiss() }
+                .keyboardShortcut(.cancelAction)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
     }
 
     @ViewBuilder
     private var scrollContent: some View {
         if scrolls {
             ScrollView { sections }
+                .id(category)
         } else {
             sections
         }
     }
 
     private var sections: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            discoverySection
-            appearanceSection
-            filteringSection
-            WarningPreferences()
-            applicationsSection
-            generalSection
+        VStack(alignment: .leading, spacing: 18) {
+            switch category {
+            case .general: generalSection
+            case .appearance: appearanceSection
+            case .discovery: discoverySection
+            case .filtering: filteringSection
+            case .warnings: WarningPreferences()
+            case .applications: applicationsSection
+            }
         }
-        .padding(14)
+        .padding(20)
     }
 
     private var discoverySection: some View {
         PreferencesSection(title: "Discovery and refresh") {
             @Bindable var state = state
             PreferenceRow(
-                title: "Automatic refresh loop",
-                subtitle: "Poll listening TCP sockets while a window is open"
+                title: "Refresh automatically",
+                subtitle: "Scan for listening services while a window is open"
             ) {
                 PreferenceCheckbox(isOn: $state.automaticRefresh)
             }
@@ -150,7 +136,7 @@ struct PreferencesSheet: View {
             PreferenceDivider()
             PreferenceRow(
                 title: "Check HTTP status",
-                subtitle: "One request to each web service when it starts and when you open Portfox, never on a timer"
+                subtitle: "Check once when a service starts or Portfox opens"
             ) {
                 PreferenceCheckbox(isOn: $state.checksHealth)
             }
@@ -184,16 +170,16 @@ struct PreferencesSheet: View {
     private var arrivalSubtitle: String {
         state.automaticRefresh
             ? "A banner when something starts listening. Ignored and system ports are left out."
-            : "Needs the automatic refresh loop, which is off. Nothing is scanned in the background."
+            : "Automatic refresh is off. Nothing is scanned in the background."
     }
 
     private var appearanceSection: some View {
-        PreferencesSection(title: "Appearance") {
+        PreferencesSection(title: "Theme and service list") {
             @Bindable var state = state
             @Bindable var appearance = state.appearance
             PreferenceRow(
                 title: "Theme",
-                subtitle: "Follow the system theme, or pin Portfox to light or dark"
+                subtitle: "Use your Mac’s appearance or choose your own"
             ) {
                 SegmentedControl(
                     selection: $appearance.preference,
@@ -248,11 +234,11 @@ struct PreferencesSheet: View {
     private var cpuSubtitle: String {
         state.automaticRefresh
             ? "Percent of one core, listener and workers together, as Activity Monitor counts it"
-            : "Needs the automatic refresh loop, which is off. It is measured between two scans."
+            : "Automatic refresh is off. It is measured between two scans."
     }
 
     private var applicationsSection: some View {
-        PreferencesSection(title: "Applications") {
+        PreferencesSection(title: "Open with") {
             @Bindable var state = state
             PreferenceRow(
                 title: "Editor",
@@ -287,7 +273,7 @@ struct PreferencesSheet: View {
     }
 
     private var filteringSection: some View {
-        PreferencesSection(title: "Process filtering") {
+        PreferencesSection(title: "Visible services") {
             @Bindable var state = state
             PreferenceRow(
                 title: "Show all listeners",
@@ -365,7 +351,7 @@ struct PreferencesSheet: View {
     }
 
     private var generalSection: some View {
-        PreferencesSection(title: "General") {
+        PreferencesSection(title: "Startup and behavior") {
             PreferenceRow(
                 title: "Launch at login",
                 subtitle: "Start Portfox automatically when you log in"
@@ -422,6 +408,9 @@ struct PreferencesSheet: View {
 
     private var footer: some View {
         HStack {
+            Text("Changes are saved automatically")
+                .font(.portCaption)
+                .foregroundStyle(Theme.secondaryText)
             Spacer()
             ActionButton(
                 symbol: page == .ignored ? "chevron.left" : "checkmark",
@@ -430,8 +419,9 @@ struct PreferencesSheet: View {
             ) {
                 if page == .ignored { page = .preferences } else { dismiss() }
             }
+            .keyboardShortcut(.defaultAction)
         }
-        .padding(.horizontal, 14)
+        .padding(.horizontal, 18)
         .padding(.vertical, 10)
     }
 }

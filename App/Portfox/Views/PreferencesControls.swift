@@ -39,6 +39,7 @@ struct PreferencesSection<Content: View>: View {
 struct PreferenceDivider: View {
     var body: some View {
         Divider().overlay(Theme.separator)
+            .padding(.horizontal, Theme.Metrics.rowPaddingH)
     }
 }
 
@@ -63,7 +64,7 @@ struct PreferenceRow<Leading: View, Control: View>: View {
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
             leading()
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.system(size: 12.5, weight: .medium))
                     .foregroundStyle(Theme.primaryText)
@@ -76,9 +77,11 @@ struct PreferenceRow<Leading: View, Control: View>: View {
             }
             Spacer(minLength: 12)
             control()
+                .fixedSize()
+                .accessibilityLabel(title)
         }
         .padding(.horizontal, Theme.Metrics.rowPaddingH)
-        .padding(.vertical, Theme.Metrics.listRowPaddingV)
+        .padding(.vertical, 12)
     }
 }
 

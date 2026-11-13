@@ -7,7 +7,7 @@ struct WarningPreferences: View {
     var body: some View {
         @Bindable var state = state
         @Bindable var limits = state.memoryAlerts
-        PreferencesSection(title: "Warnings") {
+        PreferencesSection(title: "Resource alerts") {
             PreferenceRow(title: "Warn about memory use", subtitle: memorySubtitle) {
                 PreferenceCheckbox(isOn: $state.warnsAboutMemory)
             }
@@ -48,7 +48,7 @@ struct WarningPreferences: View {
         guard isOn else { return nil }
         if !state.notifier.isAuthorized { return "Needs notifications, which macOS has not allowed for Portfox." }
         if !state.automaticRefresh {
-            return "Needs the automatic refresh loop, which is off. Nothing is measured in the background."
+            return "Automatic refresh is off. Nothing is measured in the background."
         }
         return nil
     }
