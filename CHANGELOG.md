@@ -2,6 +2,12 @@
 
 Notable changes to Portfox. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.7.1] - 2026-11-14
+
+### Changed
+- Preferences is split into categories in a sidebar: General, Appearance, Discovery, Filtering, Warnings and Applications. Ignored services are under Filtering.
+- The DMG installer matches the look of the Portfox website.
+
 ## [1.7.0] - 2026-11-10
 
 ### Added
