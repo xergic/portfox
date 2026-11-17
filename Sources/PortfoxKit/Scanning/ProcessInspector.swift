@@ -19,20 +19,7 @@ public struct ProcessInspector: Sendable {
     /// Executable path, argv and cwd are deliberately absent. They cost three
     /// syscalls each and are only needed for listeners and their ancestors.
     public func processSkeleton() -> [ProcessSnapshot] {
-        var mib: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0]
-        var size = 0
-        guard sysctl(&mib, 4, nil, &size, nil, 0) == 0, size > 0 else { return [] }
-
-        let stride = MemoryLayout<kinfo_proc>.stride
-        // Processes can be created between sizing and reading, so ask for headroom.
-        var entries = [kinfo_proc](repeating: kinfo_proc(), count: size / stride + 64)
-        var readSize = entries.count * stride
-        let status = entries.withUnsafeMutableBytes { pointer in
-            sysctl(&mib, 4, pointer.baseAddress, &readSize, nil, 0)
-        }
-        guard status == 0 else { return [] }
-
-        return entries.prefix(readSize / stride).compactMap { entry in
+        allProcesses().compactMap { entry in
             let pid = entry.kp_proc.p_pid
             guard pid > 0 else { return nil }
             let started = entry.kp_proc.p_un.__p_starttime
@@ -46,9 +33,34 @@ public struct ProcessInspector: Sendable {
         }
     }
 
+    /// The kernel's 16-character name of every process, from one sysctl. Enough
+    /// to tell whether any `codex` runs without a libproc call per process.
+    public func runningProcessNames() -> Set<String> {
+        Set(allProcesses().map { entry in
+            withUnsafeBytes(of: entry.kp_proc.p_comm) { String(decoding: $0.prefix { $0 != 0 }, as: UTF8.self) }
+        })
+    }
+
+    private func allProcesses() -> ArraySlice<kinfo_proc> {
+        var mib: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0]
+        var size = 0
+        guard sysctl(&mib, 4, nil, &size, nil, 0) == 0, size > 0 else { return [] }
+
+        let stride = MemoryLayout<kinfo_proc>.stride
+        // Processes can be created between sizing and reading, so ask for headroom.
+        var entries = [kinfo_proc](repeating: kinfo_proc(), count: size / stride + 64)
+        var readSize = entries.count * stride
+        let status = entries.withUnsafeMutableBytes { pointer in
+            sysctl(&mib, 4, pointer.baseAddress, &readSize, nil, 0)
+        }
+        guard status == 0 else { return [] }
+        return entries.prefix(readSize / stride)
+    }
+
     public func snapshot(pid: pid_t) -> ProcessSnapshot? {
         guard let bsd = bsdInfo(pid: pid) else { return nil }
         let raw = procArgs(pid: pid)
+        let parsed = raw.map(Self.split)
         return ProcessSnapshot(
             pid: pid,
             parentPID: pid_t(bsd.pbi_ppid),
@@ -56,9 +68,10 @@ public struct ProcessInspector: Sendable {
             uid: bsd.pbi_uid,
             startTime: Date(timeIntervalSince1970: TimeInterval(bsd.pbi_start_tvsec)),
             executablePath: executablePath(pid: pid),
-            arguments: raw.map(Self.parseProcArgs) ?? [],
+            arguments: parsed?.arguments ?? [],
             workingDirectory: workingDirectory(pid: pid),
-            localfoxDomain: raw.flatMap { Self.localfoxDomain(in: $0) }
+            localfoxDomain: raw.flatMap { Self.localfoxDomain(in: $0) },
+            agentSession: parsed.flatMap { AgentSessionMarker(environment: Self.environment(after: $0.rest)) }
         )
     }
 
@@ -209,11 +222,30 @@ public struct ProcessInspector: Sendable {
     /// `KERN_PROCARGS2` layout: `Int32 argc`, the executable path, alignment NULs,
     /// then `argc` NUL-terminated arguments, then the environment.
     static func parseProcArgs(_ buffer: [UInt8]) -> [String] {
+        split(buffer).arguments
+    }
+
+    /// The environment entries alone. Read after the arguments, never searched
+    /// for in the whole buffer, so `grep CODEX_THREAD_ID=x` is not a Codex child.
+    /// The block ends at its first empty entry, before the kernel's own strings.
+    static func environment(in buffer: [UInt8]) -> [String] {
+        environment(after: split(buffer).rest)
+    }
+
+    private static func environment(after arguments: ArraySlice<UInt8>) -> [String] {
+        var rest = arguments
+        while rest.first == 0 { rest = rest.dropFirst() }
+        return rest.split(separator: 0, omittingEmptySubsequences: false)
+            .prefix { !$0.isEmpty }
+            .map { String(decoding: $0, as: UTF8.self) }
+    }
+
+    private static func split(_ buffer: [UInt8]) -> (arguments: [String], rest: ArraySlice<UInt8>) {
         let headerSize = MemoryLayout<Int32>.size
-        guard buffer.count > headerSize else { return [] }
+        guard buffer.count > headerSize else { return ([], []) }
 
         let argc = buffer.prefix(headerSize).withUnsafeBytes { $0.loadUnaligned(as: Int32.self) }
-        guard argc > 0 else { return [] }
+        guard argc > 0 else { return ([], []) }
 
         var index = headerSize
         // Skip the executable path.
@@ -236,6 +268,6 @@ public struct ProcessInspector: Sendable {
         if arguments.count < Int(argc), !current.isEmpty {
             arguments.append(String(decoding: current, as: UTF8.self))
         }
-        return arguments
+        return (arguments, buffer[index...])
     }
 }

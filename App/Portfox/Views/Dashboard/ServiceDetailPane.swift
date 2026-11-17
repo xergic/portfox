@@ -70,8 +70,19 @@ struct ServiceDetailPane: View {
                     )
                 case .agent(let agent):
                     LabeledRow(label: "Started by", value: agent.displayName, layout: .inline, valueFont: .portDetail)
+                case .agentEnded(let agent):
+                    LabeledRow(
+                        label: "Started by",
+                        value: "\(agent.displayName), session ended",
+                        layout: .inline,
+                        valueFont: .portDetail,
+                        valueColor: Theme.warning
+                    )
                 case nil:
                     EmptyView()
+                }
+                if let title = state.sessionTitle(for: service) {
+                    LabeledRow(label: "Session", value: title, layout: .inline, valueFont: .portDetail)
                 }
                 if let minutes = state.idleAlerts.idleMinutes[service.id] {
                     LabeledRow(

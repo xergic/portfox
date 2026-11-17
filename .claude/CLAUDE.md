@@ -156,9 +156,24 @@ set, so its row stays stale until Refresh. Do not fix that by weakening the shor
 circuit.
 
 **Origin walks plain ancestors, not `logicalRoot`.** `RunningService.origin` is
-`.orphaned` or `.agent(...)`, orphaned first. An agent runs commands through a
+`.agentEnded(...)`, `.orphaned` or `.agent(...)`, in that order. An agent runs commands through a
 shell, which is a boundary. Match the exact basename (`claude`, `codex`), never a
 substring, or `claude-mem` and `codex-code-mode-host` match.
+
+**An ended session comes from the environment, never from argv.** Claude Code
+sets `CLAUDECODE=1`, `CLAUDE_CODE_SESSION_ID` and `CLAUDE_PID`, Codex sets
+`CODEX_THREAD_ID`. `ProcessInspector.environment(in:)` reads them after the
+arguments, so `grep CODEX_THREAD_ID=x` is not a Codex child. Codex wins when both
+are present, because Codex started from Claude inherits Claude's variables.
+A marker with no live agent is `.agentEnded`, which outranks `.orphaned`. Claude
+is alive when it is an ancestor *or* `CLAUDE_PID` is still a `claude`, because a
+daemonized server leaves the tree while the session runs. That is why
+`buildTree` details the marker's pid. Codex records no pid, so a detached Codex
+server is called ended only when no `codex` runs at all (`runningProcessNames`,
+one sysctl). With any Codex open it keeps today's Orphaned or no badge, because
+saying "ended" about a live session is worse than saying nothing. Session titles stay out of `ScanResult`:
+they change mid-session, so `AppState.sessionTitles` holds them, filled off the
+main actor.
 
 **Every tick reads each service root once, on purpose.** A root can die or be
 adopted by launchd without a socket moving: an ending agent session kills the

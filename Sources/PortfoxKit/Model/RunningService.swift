@@ -64,7 +64,7 @@ public struct RunningService: Identifiable, Hashable, Sendable {
     /// which is why nothing here may be signalled.
     public let container: ContainerSnapshot?
     /// Who started it, when that is worth telling the user. Stable while the
-    /// process runs, except for the one move to `.orphaned` when its launcher dies.
+    /// process runs, except for the one move to `.orphaned` or `.agentEnded` when its launcher dies.
     public let origin: ServiceOrigin?
     /// Version of the framework or runtime, resolved after detection because it
     /// can need a file read or, rarely, asking the binary itself.
@@ -107,10 +107,13 @@ public struct RunningService: Identifiable, Hashable, Sendable {
     /// Whether Restart may be offered. An orphan's argv is a dead launcher's
     /// child, `workerd` without its `wrangler`, so relaunching it would start a
     /// bare runtime with none of the setup its parent did.
-    public var canRestart: Bool { classification.isUserManaged && origin != .orphaned }
+    public var canRestart: Bool { classification.isUserManaged && origin?.isAbandoned != true }
 
     public var isAgentStarted: Bool {
-        if case .agent = origin { true } else { false }
+        switch origin {
+        case .agent, .agentEnded: true
+        case .orphaned, nil: false
+        }
     }
 
     public var type: ServiceType { detection.type }

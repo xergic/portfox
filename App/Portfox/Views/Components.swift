@@ -87,9 +87,11 @@ struct ControlBackground: View {
 /// Who started a service: an agent, or nobody left alive.
 struct OriginBadge: View {
     let origin: ServiceOrigin
+    var sessionTitle: String?
 
     var body: some View {
-        TintedBadge(text: origin.label, tint: origin == .orphaned ? Theme.warning : Theme.roleBoundary)
+        TintedBadge(text: origin.label, tint: origin.isAbandoned ? Theme.warning : Theme.roleBoundary)
+            .help(sessionTitle.map { "Session: \($0)" } ?? "")
     }
 }
 

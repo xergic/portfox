@@ -74,7 +74,7 @@ public struct RelaunchCommand: Equatable, Sendable {
         fileExists: (String) -> Bool = { FileManager.default.fileExists(atPath: $0) }
     ) -> Result<RelaunchCommand, RelaunchRefusal> {
         guard service.canRestart else {
-            return .failure(service.origin == .orphaned ? .orphaned : .managedService)
+            return .failure(service.origin?.isAbandoned == true ? .orphaned : .managedService)
         }
         return make(forRoot: service.rootProcess, directoryExists: directoryExists, fileExists: fileExists)
     }

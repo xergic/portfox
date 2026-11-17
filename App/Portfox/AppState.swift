@@ -28,6 +28,9 @@ final class AppState {
     /// Later copies of a dev server, by id, to the first copy's port. Read off
     /// `rawResult`, so ignoring the original leaves the copy still marked.
     private(set) var duplicateOriginalPorts: [String: Int] = [:]
+    /// Agent session titles by session id. Kept out of `ScanResult` because a
+    /// title changes while the session runs, and the scan must compare equal.
+    var sessionTitles: [String: String] = [:]
     /// The tree from the last scan. The dashboard renders it, and stopping needs
     /// it to sweep orphans.
     private(set) var processTree: ProcessTree?
@@ -338,6 +341,7 @@ final class AppState {
                     appeared = update.result.appeared(since: rawResult)
                     departed = update.result.departed(since: rawResult, watching: watched.keys)
                     rawResult = update.result
+                    loadSessionTitles(for: update.result.everyService)
                     let relaunchable = Set(update.result.services.filter(canRelaunch).map(\.id))
                     if relaunchable != relaunchableServiceIDs { relaunchableServiceIDs = relaunchable }
                     applyFilters()

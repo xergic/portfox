@@ -187,7 +187,7 @@ struct ServiceRowView: View {
     private var badges: some View {
         HStack(spacing: 4) {
             if let origin = service.origin {
-                OriginBadge(origin: origin)
+                OriginBadge(origin: origin, sessionTitle: state.sessionTitle(for: service))
             }
             if let idleMinutes {
                 TintedBadge(text: IdleWatch.label(minutes: idleMinutes), tint: Theme.tertiaryText)

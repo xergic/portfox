@@ -73,6 +73,8 @@ public struct ProcessSnapshot: Identifiable, Hashable, Codable, Sendable {
     /// The domain Localfox serves this process at, from `LOCALFOX_HOST` in its
     /// environment. Read from the same buffer as argv, so it costs no syscall.
     public let localfoxDomain: String?
+    /// The Claude Code or Codex session it was started from, from its environment.
+    public let agentSession: AgentSessionMarker?
 
     public init(
         pid: pid_t,
@@ -83,7 +85,8 @@ public struct ProcessSnapshot: Identifiable, Hashable, Codable, Sendable {
         executablePath: String? = nil,
         arguments: [String] = [],
         workingDirectory: String? = nil,
-        localfoxDomain: String? = nil
+        localfoxDomain: String? = nil,
+        agentSession: AgentSessionMarker? = nil
     ) {
         self.pid = pid
         self.parentPID = parentPID
@@ -94,6 +97,7 @@ public struct ProcessSnapshot: Identifiable, Hashable, Codable, Sendable {
         self.arguments = arguments
         self.workingDirectory = workingDirectory
         self.localfoxDomain = localfoxDomain
+        self.agentSession = agentSession
     }
 
     /// Full command line, whitespace joined.

@@ -1,7 +1,7 @@
 import Foundation
 
 /// A coding agent CLI that can sit above a dev server it started.
-public enum AgentKind: String, Sendable, Hashable {
+public enum AgentKind: String, Sendable, Hashable, Codable {
     case claudeCode
     case codex
 
@@ -17,6 +17,8 @@ public enum AgentKind: String, Sendable, Hashable {
     /// the desktop app's binary is `Claude`, and it is not the CLI.
     private static let byName: [String: AgentKind] = ["claude": .claudeCode, "codex": .codex]
 
+    static func of(name: String) -> AgentKind? { byName[name] }
+
     static func of(_ process: ProcessSnapshot) -> AgentKind? {
         byName[process.executableName]
             ?? process.arguments.first.flatMap { byName[($0 as NSString).lastPathComponent] }
@@ -29,12 +31,23 @@ public enum ServiceOrigin: Sendable, Hashable {
     /// stop it on its own.
     case orphaned
     case agent(AgentKind)
+    /// The agent's session is gone and its server is still running.
+    case agentEnded(AgentKind)
 
     /// Sentence case, the text of the row badge.
     public var label: String {
         switch self {
         case .orphaned: "Orphaned"
         case .agent(let agent): agent.displayName
+        case .agentEnded(let agent): "\(agent.displayName) · ended"
+        }
+    }
+
+    /// Nothing that started it is left to stop it.
+    public var isAbandoned: Bool {
+        switch self {
+        case .orphaned, .agentEnded: true
+        case .agent: false
         }
     }
 }
@@ -45,6 +58,38 @@ public enum Lineage {
     /// Deep enough for `claude → zsh → pnpm → sh -c → node → node`, shallow
     /// enough that a terminal several sessions up is never reached by accident.
     public static let ancestorDepth = 12
+
+    /// Who started a service. An ended session outranks Orphaned, since it
+    /// names what died. `liveness` answers for the marker's session: alive,
+    /// gone, or nil when it cannot be told.
+    public static func origin(
+        isOrphaned: Bool,
+        isUserManaged: Bool,
+        liveAncestor: AgentKind?,
+        marker: AgentSessionMarker?,
+        liveness: (AgentSessionMarker) -> Bool?
+    ) -> ServiceOrigin? {
+        guard isOrphaned || isUserManaged else { return nil }
+        let session = marker.map { ($0, liveness($0)) }
+        if let live = liveAncestor ?? session.flatMap({ $0.1 == true ? $0.0.kind : nil }) {
+            return isOrphaned ? .orphaned : .agent(live)
+        }
+        if let (marker, alive) = session, alive == false { return .agentEnded(marker.kind) }
+        return isOrphaned ? .orphaned : nil
+    }
+
+    /// Whether a marker's agent still runs, checked beyond the ancestors because
+    /// a daemonized server has left the agent's tree while the session runs.
+    /// Claude Code's recorded pid answers exactly. Codex records none, so its
+    /// session is gone only when no `codex` runs at all, and unknown otherwise.
+    public static func liveness(
+        of marker: AgentSessionMarker,
+        tree: ProcessTree,
+        runningNames: () -> Set<String>
+    ) -> Bool? {
+        if let pid = marker.agentPID { return tree.process(pid).flatMap(AgentKind.of) == marker.kind }
+        return runningNames().contains { AgentKind.of(name: $0) == marker.kind } ? nil : false
+    }
 
     /// The nearest agent among a listener's ancestors, nearest first.
     ///

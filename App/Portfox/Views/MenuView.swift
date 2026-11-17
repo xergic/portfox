@@ -166,7 +166,7 @@ struct MenuView: View {
             if !ungrouped.isEmpty {
                 SummaryCount(count: ungrouped.count, label: "other", dot: Theme.tertiaryText)
             }
-            let orphanedCount = result.services.count { $0.origin == .orphaned }
+            let orphanedCount = result.services.count { $0.origin?.isAbandoned == true }
             if orphanedCount > 0 {
                 SummaryCount(count: orphanedCount, label: "orphaned", dot: Theme.warning)
             }

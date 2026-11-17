@@ -318,18 +318,22 @@ public actor ServiceRepository {
             for ancestor in tree.ancestors(of: pid) { detailed.insert(ancestor.pid) }
         }
 
-        for pid in detailed {
-            guard let light = tree.process(pid) else { continue }
-            let key = light.identity
-            // A cached parent goes stale when launchd adopts the process, and a
-            // stale one hides exactly the orphan `Lineage.isOrphaned` looks for.
-            if let cached = processCache[key], cached.parentPID == light.parentPID {
-                tree.replace(cached)
-            } else if let full = inspector.snapshot(pid: pid) {
-                processCache[key] = full
-                tree.replace(full)
+        func detail(_ pids: Set<pid_t>) {
+            for pid in pids {
+                guard let light = tree.process(pid) else { continue }
+                // A cached parent goes stale when launchd adopts the process, and a
+                // stale one hides exactly the orphan `Lineage.isOrphaned` looks for.
+                if let cached = processCache[light.identity], cached.parentPID == light.parentPID {
+                    tree.replace(cached)
+                } else if let full = inspector.snapshot(pid: pid) {
+                    processCache[light.identity] = full
+                    tree.replace(full)
+                }
             }
         }
+        detail(detailed)
+        // A daemonized server left Claude Code's tree, so its recorded pid needs a name to match.
+        detail(Set(listenerPIDs.compactMap { tree.process($0)?.agentSession?.agentPID }).subtracting(detailed))
 
         pruneProcessCache(against: tree)
         return tree
@@ -453,13 +457,13 @@ public actor ServiceRepository {
         let classification = classifier.classify(
             process: listener, detection: detection, project: project, ports: isOrphaned ? [] : ports
         )
-        let origin: ServiceOrigin? = if isOrphaned {
-            .orphaned
-        } else if classification.isUserManaged, let agent = Lineage.agent(among: ancestors) {
-            .agent(agent)
-        } else {
-            nil
-        }
+        let origin = Lineage.origin(
+            isOrphaned: isOrphaned,
+            isUserManaged: classification.isUserManaged,
+            liveAncestor: Lineage.agent(among: ancestors),
+            marker: listener.agentSession,
+            liveness: { Lineage.liveness(of: $0, tree: tree, runningNames: self.inspector.runningProcessNames) }
+        )
 
         return RunningService(
             id: "\(listener.identity)-\(primary.port)",

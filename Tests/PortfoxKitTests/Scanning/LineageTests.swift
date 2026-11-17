@@ -233,3 +233,72 @@ struct UngroupedTests {
         #expect(result.ungrouped.map(\.id) == ["d"])
     }
 }
+
+@Suite("session origin")
+struct SessionOriginTests {
+    private let claudeMarker = AgentSessionMarker(kind: .claudeCode, sessionID: "abc", agentPID: 42)
+
+    private func origin(
+        isOrphaned: Bool = false,
+        isUserManaged: Bool = true,
+        liveAncestor: AgentKind? = nil,
+        marker: AgentSessionMarker?,
+        alive: [ProcessSnapshot] = [],
+        running: Set<String> = []
+    ) -> ServiceOrigin? {
+        Lineage.origin(
+            isOrphaned: isOrphaned,
+            isUserManaged: isUserManaged,
+            liveAncestor: liveAncestor,
+            marker: marker,
+            liveness: { Lineage.liveness(of: $0, tree: ProcessTree(processes: alive), runningNames: { running }) }
+        )
+    }
+
+    @Test("a live agent above the server is that agent")
+    func liveAncestorIsAgent() {
+        #expect(origin(liveAncestor: .claudeCode, marker: claudeMarker) == .agent(.claudeCode))
+        #expect(origin(liveAncestor: .codex, marker: nil) == .agent(.codex))
+    }
+
+    @Test("a marker with no agent left alive is an ended session")
+    func endedClaudeSession() {
+        #expect(origin(marker: claudeMarker) == .agentEnded(.claudeCode))
+    }
+
+    @Test("a server that left the tree of a live Claude session is still that session's")
+    func liveClaudePidKeepsAgent() {
+        let claude = process(42, parent: 500, executable: "/Users/me/.local/bin/claude")
+        #expect(origin(marker: claudeMarker, alive: [claude]) == .agent(.claudeCode))
+    }
+
+    @Test("a recycled Claude pid does not keep the session alive")
+    func recycledClaudePid() {
+        let shell = process(42, parent: 500, executable: "/bin/zsh")
+        #expect(origin(marker: claudeMarker, alive: [shell]) == .agentEnded(.claudeCode))
+    }
+
+    @Test("Codex records no pid, so a detached server is never called ended while any codex runs")
+    func detachedCodexWhileCodexRuns() {
+        let codex = AgentSessionMarker(kind: .codex, sessionID: "t1", agentPID: nil)
+        #expect(origin(marker: codex, running: ["codex"]) == nil)
+        #expect(origin(isOrphaned: true, marker: codex, running: ["codex"]) == .orphaned)
+        #expect(origin(marker: codex, running: ["zsh"]) == .agentEnded(.codex))
+    }
+
+    @Test("an ended session replaces Orphaned")
+    func endedReplacesOrphaned() {
+        #expect(origin(isOrphaned: true, isUserManaged: false, marker: claudeMarker) == .agentEnded(.claudeCode))
+    }
+
+    @Test("an orphan without a marker stays orphaned")
+    func orphanWithoutMarker() {
+        #expect(origin(isOrphaned: true, marker: nil) == .orphaned)
+    }
+
+    @Test("a row that is neither user-managed nor orphaned gets no origin")
+    func notUserManagedNoMarkerOrigin() {
+        #expect(origin(isUserManaged: false, marker: claudeMarker) == nil)
+        #expect(origin(isUserManaged: false, liveAncestor: .claudeCode, marker: nil) == nil)
+    }
+}

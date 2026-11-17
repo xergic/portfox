@@ -199,6 +199,13 @@ struct RelaunchCommandTests {
         #expect(service(.developmentService, origin: .agent(.claudeCode)).canRestart)
     }
 
+    @Test("a server whose agent session ended is refused for the same reason as an orphan")
+    func refusesEndedSessions() {
+        let ended = service(.developmentService, origin: .agentEnded(.codex))
+        #expect(!ended.canRestart)
+        #expect(make(ended) == .failure(.orphaned))
+    }
+
     @Test("every refusal explains itself, and reads as the tail of a sentence")
     func refusalsReadWell() {
         let refusals: [RelaunchRefusal] = [

@@ -117,6 +117,8 @@ The row Portfox would actually signal on Stop is badged "stops here".
 
 ## Duplicate servers
 
+A server Claude Code or Codex started carries the agent's session in its environment. When that session ends and the server keeps running, the row reads "Claude Code · ended" or "Codex · ended" in place of Orphaned. The badge's tooltip and the dashboard name the session by its title when the agent recorded one. Claude Code's comes from `~/.claude/projects`, Codex's from `~/.codex/session_index.jsonl`. Restart is not offered for such a server, the same as for an orphan.
+
 A dev server running a second time from the same folder gets a Duplicate badge. That usually means an agent started `pnpm dev` without noticing it was already up, and the copy took the next port. The oldest process is the original and keeps its row clean. The dashboard names the port the original is on.
 
 Two packages of one monorepo are not duplicates, because each runs from its own folder. Databases and daemons are never marked.
