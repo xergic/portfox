@@ -63,4 +63,22 @@ public struct IdleWatch: Equatable, Sendable {
         servers = next
         return reached
     }
+
+    /// Whole minutes idle for every server idle at least `floor`, the rows that
+    /// say so before the banner does.
+    public func idleMinutes(atLeast floor: Duration) -> [String: Int] {
+        servers.compactMapValues { server in
+            server.idleFor >= floor ? Int(server.idleFor.components.seconds / 60) : nil
+        }
+    }
+
+    public static func label(minutes: Int) -> String { "Idle " + duration(minutes: minutes) }
+
+    /// "45m", "2h", "2h 15m": the row badge, the dashboard and the limit picker.
+    public static func duration(minutes: Int) -> String {
+        let hours = minutes / 60
+        let rest = minutes % 60
+        if hours == 0 { return "\(minutes)m" }
+        return rest == 0 ? "\(hours)h" : "\(hours)h \(rest)m"
+    }
 }

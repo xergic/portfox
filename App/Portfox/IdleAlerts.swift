@@ -10,14 +10,24 @@ import PortfoxKit
 @MainActor
 @Observable
 final class IdleAlerts {
-    static let threshold = Duration.seconds(60 * 60)
+    static let limitChoices = [30, 60, 120, 240, 480]
 
     var isEnabled: Bool {
         didSet {
-            defaults.set(isEnabled, forKey: Self.defaultsKey)
+            defaults.set(isEnabled, forKey: Key.isEnabled)
             if !isEnabled { reset() }
         }
     }
+
+    var limitMinutes: Int {
+        didSet { defaults.set(limitMinutes, forKey: Key.limitMinutes) }
+    }
+
+    var threshold: Duration { .seconds(limitMinutes * 60) }
+
+    /// Minutes idle by service id, for servers past half the limit. Read by the
+    /// rows, so it is written only when a rounded value moves.
+    private(set) var idleMinutes: [String: Int] = [:]
 
     @ObservationIgnored private var watch = IdleWatch()
     /// Its own previous sample, because `ProcessMetrics` keeps one only while
@@ -29,12 +39,17 @@ final class IdleAlerts {
     /// repository's actor.
     let inspector = ProcessInspector()
     private let defaults: UserDefaults
-    private static let defaultsKey = "warnsAboutIdleAgentServers"
+
+    private enum Key {
+        static let isEnabled = "warnsAboutIdleAgentServers"
+        static let limitMinutes = "idleAlertLimitMinutes"
+    }
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        defaults.register(defaults: [Self.defaultsKey: true])
-        isEnabled = defaults.bool(forKey: Self.defaultsKey)
+        defaults.register(defaults: [Key.isEnabled: true, Key.limitMinutes: 60])
+        isEnabled = defaults.bool(forKey: Key.isEnabled)
+        limitMinutes = defaults.integer(forKey: Key.limitMinutes)
     }
 
     /// Percent of a core by pid since the previous sample, and how long ago that was.
@@ -50,12 +65,16 @@ final class IdleAlerts {
     }
 
     func idle(_ readings: [String: IdleWatch.Reading], elapsed: Duration) -> [String] {
-        watch.update(readings, elapsed: elapsed, threshold: Self.threshold)
+        let reached = watch.update(readings, elapsed: elapsed, threshold: threshold)
+        let minutes = watch.idleMinutes(atLeast: threshold / 2)
+        if minutes != idleMinutes { idleMinutes = minutes }
+        return reached
     }
 
     func reset() {
         watch = IdleWatch()
         previous = [:]
         previousAt = nil
+        if !idleMinutes.isEmpty { idleMinutes = [:] }
     }
 }

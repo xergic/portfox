@@ -67,4 +67,32 @@ struct IdleWatchTests {
         #expect(watch.update(["next": quiet], elapsed: hour * 2, threshold: hour).isEmpty)
         #expect(run(&watch, quiet, minutes: 59).isEmpty)
     }
+
+    @Test("idle minutes are reported from the floor up")
+    func idleMinutesReportsFromFloor() {
+        var watch = IdleWatch()
+        _ = watch.update(["next": quiet], elapsed: .zero, threshold: hour)
+        _ = run(&watch, quiet, minutes: 29)
+        #expect(watch.idleMinutes(atLeast: minute * 30).isEmpty)
+
+        _ = run(&watch, quiet, minutes: 1)
+        #expect(watch.idleMinutes(atLeast: minute * 30) == ["next": 30])
+    }
+
+    @Test("a busy sample clears the idle minutes")
+    func idleMinutesResetsOnBusy() {
+        var watch = IdleWatch()
+        _ = watch.update(["next": quiet], elapsed: .zero, threshold: hour)
+        _ = run(&watch, quiet, minutes: 40)
+        _ = run(&watch, IdleWatch.Reading(cpuPercent: 4, peers: []), minutes: 1)
+
+        #expect(watch.idleMinutes(atLeast: minute * 30).isEmpty)
+    }
+
+    @Test("the idle label reads in minutes, then hours")
+    func labelFormats() {
+        #expect(IdleWatch.label(minutes: 45) == "Idle 45m")
+        #expect(IdleWatch.label(minutes: 120) == "Idle 2h")
+        #expect(IdleWatch.label(minutes: 135) == "Idle 2h 15m")
+    }
 }

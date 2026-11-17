@@ -12,7 +12,9 @@ extension AppState {
         }
     }
 
-    var isWatchingIdle: Bool { idleAlerts.isEnabled && notifier.isAuthorized }
+    /// Measured without banner permission too, because the row's idle label
+    /// needs no permission. Only the banner does.
+    var isWatchingIdle: Bool { idleAlerts.isEnabled }
 
     /// Only servers an agent started. Those are the ones nobody remembers: the
     /// session ended, the server did not. A server the user started by hand is
@@ -32,7 +34,9 @@ extension AppState {
             )
         }
 
-        for id in idleAlerts.idle(readings, elapsed: elapsed) {
+        let reached = idleAlerts.idle(readings, elapsed: elapsed)
+        guard notifier.isAuthorized else { return }
+        for id in reached {
             guard let server = servers.first(where: { $0.id == id }) else { continue }
             notifier.postIdle(server)
         }

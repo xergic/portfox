@@ -73,6 +73,14 @@ struct ServiceDetailPane: View {
                 case nil:
                     EmptyView()
                 }
+                if let minutes = state.idleAlerts.idleMinutes[service.id] {
+                    LabeledRow(
+                        label: "Idle",
+                        value: IdleWatch.duration(minutes: minutes),
+                        layout: .inline,
+                        valueFont: .portDetail
+                    )
+                }
                 if let domain = service.localfoxDomain {
                     LabeledRow(label: "Localfox", value: domain, layout: .inline, valueColor: Theme.pathDirectory)
                 }

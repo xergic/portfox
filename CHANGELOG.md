@@ -6,6 +6,8 @@ Notable changes to Portfox. The format follows [Keep a Changelog](https://keepac
 
 ### Added
 - After a stop, the popover and the dashboard say roughly how much memory came back, such as "~850 MB freed". Only processes that really exited count.
+- A server Claude Code or Codex started shows how long it has been idle, such as "Idle 45m", once it passes half the idle limit. The dashboard shows it too. This works without notification permission.
+- "Warn about idle agent servers" has a limit picker: 30 minutes, 1, 2, 4 or 8 hours. The default stays at 1 hour.
 
 ## [1.7.1] - 2026-11-14
 

@@ -178,14 +178,19 @@ struct ServiceRowView: View {
 
     private var hasBadges: Bool {
         service.origin != nil || service.container != nil || duplicateOf != nil || service.localfoxDomain != nil
+            || idleMinutes != nil
     }
 
     private var duplicateOf: Int? { state.duplicateOriginalPorts[service.id] }
+    private var idleMinutes: Int? { state.idleAlerts.idleMinutes[service.id] }
 
     private var badges: some View {
         HStack(spacing: 4) {
             if let origin = service.origin {
                 OriginBadge(origin: origin)
+            }
+            if let idleMinutes {
+                TintedBadge(text: IdleWatch.label(minutes: idleMinutes), tint: Theme.tertiaryText)
             }
             if service.container != nil {
                 TintedBadge(text: ContainerRuntime.displayName(of: service.listenerProcess), tint: Theme.pathDirectory)

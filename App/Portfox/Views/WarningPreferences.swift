@@ -1,3 +1,4 @@
+import PortfoxKit
 import SwiftUI
 
 /// Banners about dev servers that need a look, not about anything starting.
@@ -7,30 +8,38 @@ struct WarningPreferences: View {
     var body: some View {
         @Bindable var state = state
         @Bindable var limits = state.memoryAlerts
+        @Bindable var idle = state.idleAlerts
         PreferencesSection(title: "Resource alerts") {
             PreferenceRow(title: "Warn about memory use", subtitle: memorySubtitle) {
                 PreferenceCheckbox(isOn: $state.warnsAboutMemory)
             }
             PreferenceDivider()
-            limitRow("One server", selection: $limits.perServiceGB, choices: MemoryAlerts.perServiceChoices)
+            limitRow("One server", selection: $limits.perServiceGB, choices: MemoryAlerts.perServiceChoices,
+                     isEnabled: state.warnsAboutMemory) { "\($0) GB" }
             PreferenceDivider()
-            limitRow("All servers", selection: $limits.totalGB, choices: MemoryAlerts.totalChoices)
+            limitRow("All servers", selection: $limits.totalGB, choices: MemoryAlerts.totalChoices,
+                     isEnabled: state.warnsAboutMemory) { "\($0) GB" }
             PreferenceDivider()
             PreferenceRow(title: "Warn about idle agent servers", subtitle: idleSubtitle) {
                 PreferenceCheckbox(isOn: $state.warnsAboutIdleServers)
             }
+            PreferenceDivider()
+            limitRow("Idle for", selection: $idle.limitMinutes, choices: IdleAlerts.limitChoices,
+                     isEnabled: state.warnsAboutIdleServers, label: IdleWatch.duration)
         }
     }
 
-    private func limitRow(_ title: String, selection: Binding<Int>, choices: [Int]) -> some View {
+    private func limitRow(
+        _ title: String,
+        selection: Binding<Int>,
+        choices: [Int],
+        isEnabled: Bool,
+        label: @escaping (Int) -> String
+    ) -> some View {
         PreferenceRow(title: title) {
-            SegmentedControl(
-                selection: selection,
-                options: choices.map { ($0, "\($0) GB") },
-                isEnabled: state.warnsAboutMemory
-            )
+            SegmentedControl(selection: selection, options: choices.map { ($0, label($0)) }, isEnabled: isEnabled)
         }
-        .opacity(state.warnsAboutMemory ? 1 : 0.4)
+        .opacity(isEnabled ? 1 : 0.4)
     }
 
     private var memorySubtitle: String {
@@ -39,8 +48,11 @@ struct WarningPreferences: View {
     }
 
     private var idleSubtitle: String {
-        blocker(isOn: state.warnsAboutIdleServers)
-            ?? "One banner with a Stop button when a server Claude Code or Codex started has been idle for an hour"
+        if state.warnsAboutIdleServers, state.automaticRefresh, !state.notifier.isAuthorized {
+            return "Rows show idle time. Banners need notifications, which macOS has not allowed for Portfox."
+        }
+        return blocker(isOn: state.warnsAboutIdleServers)
+            ?? "One banner with a Stop button when a server Claude Code or Codex started has been idle for the time below"
     }
 
     /// Says why a checked box stays quiet, rather than letting it look broken.

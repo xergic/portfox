@@ -292,6 +292,10 @@ previous sample. A held-open HMR socket is not activity. `IdleAlerts` keeps its 
 previous sample, because `ProcessMetrics` keeps CPU only while the CPU column is
 on, and filling it would draw that column with the preference off.
 
+**Idle labels need no permission, banners do.** `isWatchingIdle` is the
+preference alone, so a row shows "Idle 45m" past half the limit even before
+macOS allows banners. Only posting checks `notifier.isAuthorized`.
+
 **Nothing is ever stopped by a warning.** The idle banner carries a Stop button,
 and the stop goes through `stop(identifiedBy:)`, keyed by the warned root's pid and
 start time, never a `ServiceKey`, so an old banner cannot stop the server that
