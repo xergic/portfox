@@ -20,6 +20,19 @@ struct WatchedMemoryLabel: View {
     }
 }
 
+/// What the last stops gave back, until `FreedMemory` clears it.
+struct FreedMemoryLabel: View {
+    @Environment(AppState.self) private var state
+
+    var body: some View {
+        let bytes = state.freedMemory.bytes
+        if bytes > 0 {
+            SummaryCount(value: "~" + ByteFormat.short(bytes), label: "freed", dot: Theme.success)
+                .transition(.opacity)
+        }
+    }
+}
+
 /// One process's memory, shown on a row of the process tree.
 struct ProcessMemoryLabel: View {
     @Environment(AppState.self) private var state

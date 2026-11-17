@@ -170,6 +170,7 @@ struct MenuView: View {
             if orphanedCount > 0 {
                 SummaryCount(count: orphanedCount, label: "orphaned", dot: Theme.warning)
             }
+            FreedMemoryLabel()
         }
     }
 

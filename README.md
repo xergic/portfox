@@ -182,6 +182,10 @@ arms on the first press and fires on the second, because a `MenuBarExtra` popove
 closes the moment focus leaves it and a modal confirmation would arrive after the
 list it was asking about had gone.
 
+After any stop, the summary line says roughly how much memory came back, such as
+"~850 MB freed", for a few seconds. It counts only processes that really exited,
+measured just before the signal.
+
 ## The scan CLI
 
 ```sh

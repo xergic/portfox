@@ -2,6 +2,11 @@
 
 Notable changes to Portfox. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- After a stop, the popover and the dashboard say roughly how much memory came back, such as "~850 MB freed". Only processes that really exited count.
+
 ## [1.7.1] - 2026-11-14
 
 ### Changed

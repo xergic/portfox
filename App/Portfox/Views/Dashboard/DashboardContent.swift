@@ -81,6 +81,7 @@ struct DashboardContent: View {
                     dot: Theme.accent
                 )
                 WatchedMemoryLabel()
+                FreedMemoryLabel()
             }
         } trailing: {
             IconButton(

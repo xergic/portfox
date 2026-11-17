@@ -171,6 +171,7 @@ final class AppState {
     let health = HealthChecks()
     let memoryAlerts = MemoryAlerts()
     let idleAlerts = IdleAlerts()
+    let freedMemory = FreedMemory()
     let ignoredServices = IgnoredServices()
     private let defaults = UserDefaults.standard
 
@@ -438,9 +439,11 @@ final class AppState {
         defer { busyServiceIDs.remove(service.id) }
 
         let tree = await repository.processTree()
+        let footprint = measure(service, tree: tree)
         let outcome = await controller.stop(service, tree: tree)
         let problem = record(outcome, for: service)
         if outcome.didStop { Telemetry.send(.serviceStopped(service)) }
+        reportFreed([footprint])
         await refresh(.afterAction)
         // After the refresh, never before. A successful refresh clears `lastError`,
         // which would silently swallow the reason a stop did not work.
@@ -477,6 +480,7 @@ final class AppState {
         defer { busyServiceIDs.subtract(services.map(\.id)) }
 
         let tree = await repository.processTree()
+        let footprints = services.map { measure($0, tree: tree) }
         let outcomes = await withTaskGroup(of: StopReport.self) { work in
             for service in services {
                 work.addTask { [controller] in
@@ -490,6 +494,7 @@ final class AppState {
 
         let problems = outcomes.compactMap { record($0.outcome, for: $0.service) }
         for report in outcomes where report.outcome.didStop { Telemetry.send(.serviceStopped(report.service)) }
+        reportFreed(footprints)
         await refresh(.afterAction)
         if !problems.isEmpty { lastError = problems.joined(separator: " ") }
     }
@@ -527,6 +532,7 @@ final class AppState {
         defer { busyServiceIDs.remove(service.id) }
 
         guard let tree = await repository.processTree() else { return }
+        let footprint = measure(service, tree: tree)
         var problem: String?
         if case .refused(let reason) = await controller.forceStop(service, tree: tree) {
             problem = "Portfox will not signal a \(reason)."
@@ -534,8 +540,23 @@ final class AppState {
             Telemetry.send(.serviceForceStopped(service))
         }
         stubbornServiceIDs.remove(service.id)
+        reportFreed([footprint])
         await refresh(.afterAction)
         if let problem { lastError = problem }
+    }
+
+    private func measure(_ service: RunningService, tree: ProcessTree?) -> StopFootprint {
+        let inspector = ProcessInspector()
+        return StopFootprint.measure(
+            service, tree: tree ?? ProcessTree(processes: []), currentIdentity: inspector.currentIdentity
+        ) { inspector.taskSample(pid: $0)?.residentBytes }
+    }
+
+    /// Footprints overlap when two rows share a root, so each pid counts once.
+    private func reportFreed(_ footprints: [StopFootprint]) {
+        let inspector = ProcessInspector()
+        let merged = footprints.reduce(into: [pid_t: StopFootprint.Entry]()) { $0.merge($1.entries) { first, _ in first } }
+        freedMemory.add(StopFootprint(entries: merged).freed { inspector.currentIdentity(pid: $0) == $1 })
     }
 
     func isStubborn(_ service: RunningService) -> Bool { stubbornServiceIDs.contains(service.id) }
