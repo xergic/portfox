@@ -48,7 +48,7 @@ struct MenuView: View {
             footer
         }
         .frame(width: Theme.Metrics.popoverWidth)
-        .background(Theme.background)
+        .background(Theme.sidebarBackground)
         .themedSurface(state.appearance.colorScheme)
         // On the root rather than the field, so the keys still work after a
         // click lands on a row and the field loses focus.
@@ -129,7 +129,8 @@ struct MenuView: View {
         }
         .padding(.horizontal, Theme.Metrics.contentInset)
         .padding(.top, 12)
-        .padding(.bottom, 10)
+        .padding(.bottom, 12)
+        .background(Theme.toolbarBackground)
     }
 
     private var agentWaitButton: some View {
@@ -247,7 +248,8 @@ struct MenuView: View {
                 .keyboardShortcut("q")
         }
         .padding(.horizontal, Theme.Metrics.contentInset)
-        .padding(.vertical, 9)
+        .padding(.vertical, 5)
+        .background(Theme.toolbarBackground)
     }
 }
 
@@ -294,7 +296,7 @@ private struct VersionButton: View {
                 .foregroundStyle(isHovering ? Theme.secondaryText : Theme.tertiaryText)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(AppControlStyle())
         .onHover { isHovering = $0 }
         .help("About Portfox")
     }
@@ -320,9 +322,10 @@ private struct FooterButton: View {
                 }
             }
             .font(.portCaption)
+            .frame(minHeight: 24)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(AppControlStyle())
         .onHover { isHovering = $0 }
     }
 }

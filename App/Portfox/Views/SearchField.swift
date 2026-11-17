@@ -16,13 +16,14 @@ struct SearchField: View {
         HStack(spacing: 7) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(Theme.tertiaryText)
+                .foregroundStyle(Theme.secondaryText)
             if isLive {
-                TextField(prompt, text: $text)
+                TextField(prompt, text: $text, prompt: Text(prompt).foregroundStyle(Theme.secondaryText))
                     .textFieldStyle(.plain)
                     .font(.system(size: 12))
                     .foregroundStyle(Theme.primaryText)
                     .focused($isFocused)
+                    .accessibilityLabel(prompt)
                     .onAppear { if focusesOnAppear { isFocused = true } }
                     .onKeyPress(.escape) {
                         guard !text.isEmpty else { return .ignored }
@@ -32,7 +33,7 @@ struct SearchField: View {
             } else {
                 Text(text.isEmpty ? prompt : text)
                     .font(.system(size: 12))
-                    .foregroundStyle(text.isEmpty ? Theme.tertiaryText : Theme.primaryText)
+                    .foregroundStyle(text.isEmpty ? Theme.secondaryText : Theme.primaryText)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             if !text.isEmpty {
@@ -41,6 +42,10 @@ struct SearchField: View {
         }
         .padding(.horizontal, 9)
         .frame(height: Theme.Metrics.searchHeight)
-        .background(Theme.pill, in: .row)
+        .background {
+            let shape = RoundedRectangle(cornerRadius: Theme.Metrics.controlRadius, style: .continuous)
+            shape.fill(Theme.controlFill)
+                .overlay(shape.strokeBorder(isFocused ? Theme.accent.opacity(0.65) : Theme.border, lineWidth: isFocused ? 2 : 0.5))
+        }
     }
 }

@@ -66,6 +66,7 @@ struct ServiceRowView: View {
         return shape
             .fill(isSelected ? Theme.selectedRow : (isHighlighted ? Theme.cardHover : .clear))
             .overlay(shape.fill(Theme.arrivalRow).opacity(showsArrival ? 1 : 0))
+            .overlay(shape.strokeBorder(isSelected ? Theme.accent.opacity(0.25) : .clear, lineWidth: 0.5))
             .animation(showsArrival ? .easeOut(duration: 0.2) : .easeIn(duration: 0.9), value: showsArrival)
     }
 

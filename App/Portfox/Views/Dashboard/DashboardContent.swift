@@ -20,6 +20,7 @@ struct DashboardContent: View {
             HStack(spacing: 0) {
                 ServiceListPane(result: source, dashboard: dashboard, scrolls: scrolls, forcesHover: forcesHover)
                     .frame(width: Theme.Metrics.sidebarWidth)
+                    .background(Theme.sidebarBackground)
                 Divider().overlay(Theme.separator)
                 detail
             }
@@ -104,6 +105,7 @@ struct DashboardContent: View {
             }
         }
         .padding(.horizontal, Theme.Metrics.contentInset)
-        .frame(height: 44)
+        .frame(height: 52)
+        .background(Theme.toolbarBackground)
     }
 }

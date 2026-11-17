@@ -77,7 +77,7 @@ struct ProjectSectionView: View {
                 // is covered rather than drawn through them.
                 actions
                     .padding(.leading, 6)
-                    .background(Theme.background)
+                    .background(Theme.sidebarBackground)
                     .padding(.trailing, Theme.Metrics.headerActionsInset)
             }
         }

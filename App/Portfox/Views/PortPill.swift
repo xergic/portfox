@@ -56,7 +56,7 @@ struct IconButton: View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.system(size: symbolSize, weight: .medium))
-                .foregroundStyle(isHovering ? Theme.primaryText : tint)
+                .foregroundStyle(isHovering && tint == Theme.secondaryText ? Theme.primaryText : tint)
                 .rotationEffect(.degrees(spins ? 360 : 0))
                 .animation(
                     spins ? .linear(duration: 0.9).repeatForever(autoreverses: false) : .default,
@@ -70,8 +70,9 @@ struct IconButton: View {
                 }
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(AppControlStyle())
         .onHover { isHovering = $0 }
         .help(help)
+        .accessibilityLabel(help.isEmpty ? symbol : help)
     }
 }

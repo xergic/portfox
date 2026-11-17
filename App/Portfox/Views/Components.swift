@@ -26,9 +26,9 @@ struct AppHeader<Summary: View, Trailing: View>: View {
 
     private var identity: some View {
         HStack(spacing: 8) {
-            AppIconView(size: 18)
+            AppIconView(size: 22)
             Text(AppInfo.name)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(Theme.primaryText)
                 .lineLimit(1)
         }
@@ -69,7 +69,7 @@ struct CardBackground: View {
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: Theme.Metrics.cardRadius, style: .continuous)
-        shape.fill(fill).overlay(shape.strokeBorder(border, lineWidth: 1))
+        shape.fill(fill).overlay(shape.strokeBorder(border, lineWidth: 0.5))
     }
 }
 
@@ -80,7 +80,7 @@ struct ControlBackground: View {
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: Theme.Metrics.controlRadius, style: .continuous)
-        shape.fill(isHovering ? Theme.cardHover : fill).overlay(shape.strokeBorder(Theme.separator, lineWidth: 1))
+        shape.fill(isHovering ? Theme.cardHover : fill).overlay(shape.strokeBorder(Theme.separator, lineWidth: 0.5))
     }
 }
 
@@ -147,13 +147,13 @@ struct ActionButton: View {
             .background(ControlBackground(fill: isPrimary ? Theme.accent : Theme.card, isHovering: isHovering && !isPrimary))
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(AppControlStyle())
         .opacity(isEnabled ? 1 : 0.4)
         .onHover { isHovering = $0 }
     }
 }
 
-/// A connected group with the chosen segment filled in the accent.
+/// A connected group with a raised selection, matching macOS segmented controls.
 struct SegmentedControl<Value: Hashable>: View {
     @Binding var selection: Value
     let options: [(value: Value, label: String)]
@@ -170,26 +170,36 @@ struct SegmentedControl<Value: Hashable>: View {
                 } label: {
                     Text(option.label)
                         .font(font)
-                        .foregroundStyle(option.value == selection ? Theme.onAccent : Theme.secondaryText)
+                        .foregroundStyle(option.value == selection ? Theme.primaryText : Theme.secondaryText)
                         .padding(.horizontal, 9)
                         .frame(height: Theme.Metrics.buttonHeight - 2 * Self.inset)
                         .background(
                             RoundedRectangle(cornerRadius: Theme.Metrics.controlRadius - Self.inset, style: .continuous)
-                                .fill(option.value == selection ? Theme.accent : Color.clear)
+                                .fill(option.value == selection ? Theme.segmentSelected : Color.clear)
+                                .shadow(color: .black.opacity(option.value == selection ? 0.12 : 0), radius: 1, y: 1)
                         )
                         .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(AppControlStyle())
+                .accessibilityAddTraits(option.value == selection ? .isSelected : [])
             }
         }
         .padding(Self.inset)
         .background(ControlBackground(fill: Theme.pill))
         .opacity(isEnabled ? 1 : 0.4)
-        .allowsHitTesting(isEnabled)
+        .disabled(!isEnabled)
     }
 }
 
 extension Shape where Self == RoundedRectangle {
     /// The flat row's hover and selection fill, and anything sized to match it.
     static var row: RoundedRectangle { RoundedRectangle(cornerRadius: Theme.Metrics.rowRadius, style: .continuous) }
+}
+
+/// Keeps custom-drawn controls responsive to a press, including keyboard activation.
+struct AppControlStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .opacity(configuration.isPressed ? 0.65 : 1)
+    }
 }

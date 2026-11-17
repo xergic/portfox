@@ -106,6 +106,7 @@ struct ServiceListPane: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, Theme.Metrics.contentInset)
             .padding(.vertical, 10)
+            .background(Theme.toolbarBackground)
     }
 }
 
