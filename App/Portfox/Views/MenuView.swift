@@ -44,6 +44,7 @@ struct MenuView: View {
                 }
             }
 
+            UpdateBanner()
             Divider().overlay(Theme.separator)
             footer
         }

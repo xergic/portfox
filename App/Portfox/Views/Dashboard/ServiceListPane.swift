@@ -19,6 +19,7 @@ struct ServiceListPane: View {
             filters
             Divider().overlay(Theme.separator)
             list
+            UpdateBanner()
             Divider().overlay(Theme.separator)
             footer
         }

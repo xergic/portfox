@@ -5,7 +5,7 @@ import SwiftUI
 /// reference screenshots without Screen Recording permission, and without
 /// hand-driving the menu bar.
 ///
-/// Usage: `Portfox --snapshot out.png [--hover] [--arrived] [--light] [--demo]`, `--snapshot-dashboard out.png`,
+/// Usage: `Portfox --snapshot out.png [--hover] [--arrived] [--light] [--demo] [--update]`, `--snapshot-dashboard out.png`,
 /// `--snapshot-prefs out.png`, `--snapshot-ignored out.png` or
 /// `--snapshot-about out.png`.
 @MainActor
@@ -37,6 +37,7 @@ enum SnapshotRenderer {
 
     static func run(_ request: Request, state: AppState) async {
         if CommandLine.arguments.contains("--light") { state.appearance.force(.light) }
+        if CommandLine.arguments.contains("--update") { Updater.shared.previewBanner(version: "9.9.0") }
         if CommandLine.arguments.contains("--demo") {
             // Nothing may suspend between adopting the fixture and rendering it. The
             // scan `AppState.init` started is still in flight and would replace it.

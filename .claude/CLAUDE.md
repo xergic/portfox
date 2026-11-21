@@ -98,6 +98,13 @@ while a sheet is attached, so an install started from About kept the old version
 running in the dashboard. Every entry point calls `AppState.checkForUpdates()`,
 which dismisses `presentedSheet` and checks from the sheet's `onDismiss`.
 
+**A scheduled update never opens Sparkle's window.** The user driver declines
+it, `Updater.pendingVersion` takes the version, and `UpdateBanner` shows above
+the popover footer and the sidebar footer. Its click calls `checkForUpdates()`,
+which brings up the standard window for the pending update. Sparkle's own daily
+scheduler drives the checks. A timer of ours would compete with it. `--update`
+draws the banner in a snapshot.
+
 **Preferences live in the app, not the kit.** `IgnoredServices` and
 `ProjectIconOverrides` are `UserDefaults`-backed app state. The kit reports the
 machine as it is. This is why `portfox-scan` still lists an ignored service.
