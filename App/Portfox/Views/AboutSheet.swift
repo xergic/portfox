@@ -2,6 +2,7 @@ import AppKit
 import SwiftUI
 
 struct AboutSheet: View {
+    @Environment(AppState.self) private var state
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -66,7 +67,7 @@ struct AboutSheet: View {
 
     private var updateButton: some View {
         PillButton(symbol: "arrow.down.circle", label: "Check for Updates…") {
-            Updater.shared.checkForUpdates()
+            state.checkForUpdates()
         }
         .disabled(!Updater.shared.canCheckForUpdates)
     }

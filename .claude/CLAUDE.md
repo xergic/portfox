@@ -93,6 +93,11 @@ a fork never offers to replace itself with the release build. `Updater` creates
 no controller without it, or in a snapshot run. The Sparkle private key lives in
 the `SPARKLE_ED_PRIVATE_KEY` secret and reaches `generate_appcast` on stdin only.
 
+**An update check closes the open sheet first.** AppKit refuses Sparkle's quit
+while a sheet is attached, so an install started from About kept the old version
+running in the dashboard. Every entry point calls `AppState.checkForUpdates()`,
+which dismisses `presentedSheet` and checks from the sheet's `onDismiss`.
+
 **Preferences live in the app, not the kit.** `IgnoredServices` and
 `ProjectIconOverrides` are `UserDefaults`-backed app state. The kit reports the
 machine as it is. This is why `portfox-scan` still lists an ignored service.

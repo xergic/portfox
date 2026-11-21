@@ -124,6 +124,7 @@ enum SnapshotRenderer {
                 .environment(state)
         case .about:
             AboutSheet()
+                .environment(state)
         }
     }
 }

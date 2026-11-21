@@ -50,6 +50,25 @@ final class AppState {
         var id: String { rawValue }
     }
 
+    @ObservationIgnored private var updateCheckQueued = false
+
+    /// AppKit refuses Sparkle's quit while a sheet is attached, so an install
+    /// started from About or Preferences left the old version running.
+    func checkForUpdates() {
+        guard presentedSheet != nil else {
+            Updater.shared.checkForUpdates()
+            return
+        }
+        updateCheckQueued = true
+        presentedSheet = nil
+    }
+
+    func sheetDidDismiss() {
+        guard updateCheckQueued else { return }
+        updateCheckQueued = false
+        Updater.shared.checkForUpdates()
+    }
+
     var showAllListeners: Bool {
         didSet {
             defaults.set(showAllListeners, forKey: Key.showAllListeners)

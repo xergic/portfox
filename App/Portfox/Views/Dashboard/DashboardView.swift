@@ -21,11 +21,15 @@ struct DashboardView: View {
                 guard let closing = note.object as? NSWindow, closing === window else { return }
                 state.dashboardDidDisappear()
             }
-            .sheet(item: $state.presentedSheet) { sheet in
-                switch sheet {
-                case .preferences: PreferencesSheet().environment(state)
-                case .about: AboutSheet()
+            .sheet(item: $state.presentedSheet, onDismiss: state.sheetDidDismiss) { sheet in
+                Group {
+                    switch sheet {
+                    case .preferences: PreferencesSheet()
+                    case .about: AboutSheet()
+                    }
                 }
+                .environment(state)
+                .allowsAppTermination()
             }
             .onAppear { state.dashboardDidAppear() }
             .onChange(of: state.result.services.map(\.id)) {
@@ -53,5 +57,17 @@ struct DashboardView: View {
     private func applyAppearance(to window: NSWindow) {
         window.appearance = state.appearance.nsAppearance
         window.backgroundColor = NSColor(Theme.background)
+    }
+}
+
+private extension View {
+    /// An attached sheet vetoes Sparkle's quit. `AppState.checkForUpdates` closes
+    /// the sheet first, this covers one opened while the update downloads.
+    @ViewBuilder func allowsAppTermination() -> some View {
+        if #available(macOS 15.4, *) {
+            presentationPreventsAppTermination(false)
+        } else {
+            self
+        }
     }
 }
